@@ -1,0 +1,24 @@
+#ifndef SERVICE_H
+#define SERVICE_H
+
+#include "../Logs/log.h"
+#include "../ReadConfigurations/configurate.h"
+
+class Service
+{
+public:
+    enum  ServiceStatus {
+        InitSuccessful
+    };
+    
+    struct ServiceResponseStruct {
+        enum Service::ServiceStatus Code;
+        std::string Description;
+    };
+    
+    virtual ~Service() = default; 			
+    virtual Service::ServiceResponseStruct init() = 0;
+    virtual void run() = 0;
+};
+
+#endif //SERVICE_H

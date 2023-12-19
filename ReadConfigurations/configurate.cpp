@@ -74,6 +74,7 @@ Configurate::Configurate()
             WebServiceConfig.Port = WebserviceConfigJSON["Port"].i();
             WebServiceConfig.CheckToken = WebserviceConfigJSON["CheckToken"].b();
             WebServiceConfig.TokenTimeAllowed = WebserviceConfigJSON["TokenTimeAllowed"].i();
+            WebServiceConfig.threadNumber = WebserviceConfigJSON["threadNumber"].i();
         }
     }else
     {
@@ -111,11 +112,13 @@ Configurate::Configurate()
                 InputKafkaConfig.BootstrapServers = KafkaDocConfigJSON["BootstrapServers"].s();
                 InputKafkaConfig.Topic = KafkaDocConfigJSON["Topic"].s();
                 InputKafkaConfig.GroupID = KafkaDocConfigJSON["GroupID"].s();
+                InputKafkaConfig.PartitionNumber = KafkaDocConfigJSON["PartitionNumber"].i();
             }else
             {
                 OutputKafkaConfig.BootstrapServers = KafkaDocConfigJSON["BootstrapServers"].s();
                 OutputKafkaConfig.Topic = KafkaDocConfigJSON["Topic"].s();
                 OutputKafkaConfig.GroupID = KafkaDocConfigJSON["GroupID"].s();
+                OutputKafkaConfig.PartitionNumber = KafkaDocConfigJSON["PartitionNumber"].i();
             }
         }
     }else

@@ -1,23 +1,3 @@
-#include <iostream>
-#include <numeric>
-#include <sstream>
-#include <string>
-#include <iomanip>
-#include <ctime>
-
-#include <bsoncxx/v_noabi/bsoncxx/json.hpp>
-#include <mongocxx/v_noabi/mongocxx/client.hpp>
-#include <mongocxx/v_noabi/mongocxx/stdx.hpp>
-#include <mongocxx/v_noabi/mongocxx/uri.hpp>
-#include <mongocxx/v_noabi/mongocxx/instance.hpp>
-#include <bsoncxx/v_noabi/bsoncxx/builder/stream/helpers.hpp>
-#include <bsoncxx/v_noabi/bsoncxx/builder/stream/document.hpp>
-#include <bsoncxx/v_noabi/bsoncxx/builder/basic/document.hpp>
-#include <bsoncxx/v_noabi/bsoncxx/builder/stream/array.hpp>
-#include <mongocxx/v_noabi/mongocxx/pool.hpp>
-#include <mongocxx/v_noabi/mongocxx/exception/exception.hpp>
-#include <mongocxx/v_noabi/mongocxx/exception/bulk_write_exception.hpp>
-
 #include "../Logs/log.h"
 
 class MongoDB

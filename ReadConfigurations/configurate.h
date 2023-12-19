@@ -29,6 +29,7 @@ public:
         int Port;
         bool CheckToken;
         int TokenTimeAllowed;
+        int threadNumber;
     };
 
     struct StoreImageConfigStruct
@@ -44,6 +45,7 @@ public:
         std::string BootstrapServers    = "";
         std::string Topic               = "";
         std::string GroupID             = "";
+        int PartitionNumber;
     };
 
     Configurate(const Configurate& Obj) = delete;
