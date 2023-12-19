@@ -3,9 +3,8 @@
 
 #include "../Cryptography/systemkeys.h"
 #include "../Cryptography/cryptotools.h"
-// #include "database.h"
+#include "../Database/MongoDB.h"
 #include "../Logs/log.h"
-// #include "tools.h"
 
 #define CONFIG_FILE_LOCATION        "/etc/Aggregation.conf"
 
@@ -24,42 +23,30 @@ public:
         std::string Enable              = "";
     };
 
+    struct WebServiceConfigStruct
+    {
+        std::string URI                 = "";
+        int Port;
+        bool CheckToken;
+        int TokenTimeAllowed;
+    };
 
+    struct StoreImageConfigStruct
+    {
+        std::string StorePath           = "";
+        int ColorImageMaxSize;
+        int PlateImageMaxSize;
+        bool AddBanner;
+    };
 
+    struct KafkaConfigStruct
+    {
+        std::string BootstrapServers    = "";
+        std::string Topic               = "";
+        std::string GroupID             = "";
+    };
 
-    // struct WebServiceConfigStruct
-    // {
-    //     std::string ServiceURI;
-    //     int ServicePort;
-    //     std::string InfoTimeAllowed;
-    //     std::map<std::string, std::string> ServiceFields;
-    //     std::string ServerPubKey;
-    //     std::string ClientPubKey;
-    //     std::string QAddr;
-    //     std::string QGroup;
-    //     std::string QTopic;
-    // };
-
-    // struct KnownDevicesStruct
-    // {
-    //     std::string ID;
-    //     std::string DeviceID;
-    //     std::string Name;
-    //     std::string Username;
-    //     std::string Password;
-    //     std::string Token;
-    //     std::string Date;
-    //     //std::string ReservedToken;
-    // };
-
-    // struct AuthenticateConfigStruct
-    // {
-    //     std::string TokenTimeAllowed;
-    //     int DBObjCount = 1;
-    //     std::vector<KnownDevicesStruct> KnownDevicesVec;
-    // };
-
-    // Configurate(const Configurate& Obj) = delete;
+    Configurate(const Configurate& Obj) = delete;
 
     static Configurate* getInstance()
     {
@@ -77,15 +64,20 @@ public:
     DatabaseStruct getDatabaseConfig();
     DatabaseStruct getDatabaseInsert();
     DatabaseStruct getDatabaseFailed();
-    // WebServiceConfigStruct getWebServiceConfig();
-    // AuthenticateConfigStruct getAuthenticateConfig();
+    WebServiceConfigStruct getWebServiceConfig();
+    StoreImageConfigStruct getStoreImageConfig();
+    KafkaConfigStruct getInputKafkaConfig();
+    KafkaConfigStruct getOutputKafkaConfig();
 
 private:
     DatabaseStruct DatabaseConfig;
     DatabaseStruct DatabaseInsert;
     DatabaseStruct DatabaseFailed;
-    // WebServiceConfigStruct WebServiceConfig;
-    // AuthenticateConfigStruct AuthenticateConfig;
+    WebServiceConfigStruct WebServiceConfig;
+    StoreImageConfigStruct StoreImageConfig;
+    KafkaConfigStruct InputKafkaConfig;
+    KafkaConfigStruct OutputKafkaConfig;
+
     static Configurate* InstancePtr;
     Configurate();
 };

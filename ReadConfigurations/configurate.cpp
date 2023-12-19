@@ -16,9 +16,6 @@ Configurate::Configurate()
         throw 0;
     }
 
-    // WebServiceConfig.ServerPubKey = ServerPubKey;
-    // WebServiceConfig.ClientPubKey = ClientPubKey;
-
     try
     {        
         auto ConfigInputJson = crow::json::load(ConfigDecryptedFile);
@@ -55,94 +52,77 @@ Configurate::Configurate()
 
     SHOW_LOG("CONFIG FILE LOADED SUCCESSFULLY");
 
-    // DataBase::DataBaseConfigStruct DBConf;
-    // DBConf.Server = DatabaseConfig.DatabaseIP;
-    // DBConf.User = DatabaseConfig.DatabaseUsername;
-    // DBConf.Password = DatabaseConfig.DatabasePassword;
-    // DBConf.DBName = DatabaseConfig.DatabaseName;
-    // DBConf.EnableLog = true;
-    // DataBase DB;
-    // if(DB.init(DBConf) != 0)
-    // {
-    //     SHOW_ERROR("Configurate: "<<std::to_string(__LINE__)<<"_DataBase init failed");
-    //     throw 0;
-    // }
+    auto Databaseconf       {MongoDB::DatabaseConfig()};
+    Databaseconf.IP = DatabaseConfig.DatabaseIP;
+    Databaseconf.Port = DatabaseConfig.DatabasePort;
+    Databaseconf.User = DatabaseConfig.DatabaseUsername;
+    Databaseconf.Password = DatabaseConfig.DatabasePassword;
 
-    // std::vector<std::map<std::string, std::string>> ConfigRec = DB.selectAllM("Configuration", "");
-    // if(ConfigRec.size() > 0)
-    // {
-    //     WebServiceConfig.ServiceURI = ConfigRec[0]["ServiceURI"];
-    //     WebServiceConfig.ServicePort = std::stoi(ConfigRec[0]["ServicePort"]);
-    //     WebServiceConfig.InfoTimeAllowed = ConfigRec[0]["InfoTimeAllowed"];
-    //     WebServiceConfig.QAddr = ConfigRec[0]["QAddress"];
-    //     WebServiceConfig.QGroup = ConfigRec[0]["QGroup"];
-    //     WebServiceConfig.QTopic = ConfigRec[0]["QTopic"];
-    //     AuthenticateConfig.TokenTimeAllowed = ConfigRec[0]["TokenTimeAllowed"];
-    //     AuthenticateConfig.DBObjCount = std::stoi(ConfigRec[0]["DBObjCount"]);
-    //     ConfigRec.erase(ConfigRec.begin());
-    // }
-    // else
-    // {
-    //     SHOW_ERROR("Configurate: "<<std::to_string(__LINE__)<<"_There is no Configuration Record");
-    //     throw 0;
-    // }
+    auto MongoObj = std::make_shared<MongoDB>(Databaseconf);
 
-    // std::vector<std::vector<std::string>> Fields = DB.selectAll("ServiceFields", "");
-    // int ColCount = Fields[0].size();
-    // for(int i = 0; i < ColCount; i++)
-    // {
-    //     if(Fields[0][i] == "ID")
-    //         continue;
-    //     std::vector<std::vector<std::string>> Col = DB.select("ServiceFields", Fields[0][i], "");
-    //     WebServiceConfig.ServiceFields[Col[0][0]] = Col[1][0];
-    // }
+    std::vector<MongoDB::Field> filter = {};
+    MongoDB::FindOptionStruct Option;
+    
+    std::vector<std::string> WebserviceDoc;
+    auto FindReturn = MongoObj->Find(DatabaseConfig.DatabaseName, "WebService", filter, Option, WebserviceDoc);
+    if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
+    {
+        for(auto& doc : WebserviceDoc)
+        {
+            crow::json::rvalue WebserviceConfigJSON = crow::json::load(doc);
+            WebServiceConfig.URI = WebserviceConfigJSON["URI"].s();
+            WebServiceConfig.Port = WebserviceConfigJSON["Port"].i();
+            WebServiceConfig.CheckToken = WebserviceConfigJSON["CheckToken"].b();
+            WebServiceConfig.TokenTimeAllowed = WebserviceConfigJSON["TokenTimeAllowed"].i();
+        }
+    }else
+    {
+        SHOW_ERROR(FindReturn.Description);
+        throw;
+    }
 
-    // std::vector<std::map<std::string, std::string>> KnownDevicesRec = DB.selectAllM("KnownDevices", "");
-    // if(KnownDevicesRec.size() > 0)
-    // {
-    //     while(KnownDevicesRec.size() > 0)
-    //     {
-    //         KnownDevicesStruct KnownDevices;
-    //         KnownDevices.ID = KnownDevicesRec[0]["ID"];
-    //         KnownDevices.DeviceID = KnownDevicesRec[0]["DeviceID"];
-    //         KnownDevices.Name = KnownDevicesRec[0]["Name"];
-    //         KnownDevices.Username = KnownDevicesRec[0]["Username"];
-    //         KnownDevices.Password = KnownDevicesRec[0]["Password"];
-    //         KnownDevices.Token = KnownDevicesRec[0]["Token"];
-    //         KnownDevices.Date = KnownDevicesRec[0]["Date"];
-    //         //KnownDevices.ReservedToken = boost::lexical_cast<std::string>(boost::uuids::random_generator()());
-    //         AuthenticateConfig.KnownDevicesVec.push_back(KnownDevices);
-    //         KnownDevicesRec.erase(KnownDevicesRec.begin());
-    //     }
-    // }
-    // else
-    // {
-    //     SHOW_ERROR("Configurate: "<<std::to_string(__LINE__)<<"_KnownDevices table is empty");
-    //     throw 0;
-    // }
+    std::vector<std::string> StoreImageDoc;
+    FindReturn = MongoObj->Find(DatabaseConfig.DatabaseName, "StoreImage", filter, Option, StoreImageDoc);
+    if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
+    {
+        for(auto& doc : StoreImageDoc)
+        {
+            crow::json::rvalue StoreImageConfigJSON = crow::json::load(doc);
+            StoreImageConfig.StorePath = StoreImageConfigJSON["StorePath"].s();
+            StoreImageConfig.ColorImageMaxSize = StoreImageConfigJSON["ColorImageMaxSize"].i();
+            StoreImageConfig.PlateImageMaxSize = StoreImageConfigJSON["PlateImageMaxSize"].i();
+            StoreImageConfig.AddBanner = StoreImageConfigJSON["AddBanner"].b();
+        }
+    }else
+    {
+        SHOW_ERROR(FindReturn.Description);
+        throw;
+    }
 
-//    std::vector<std::map<std::string, std::string>> SettingsRec = DB.selectAllM("Settings", "");
-//    if(SettingsRec.size() > 0)
-//    {
-//        Settings.MinPlateImageWidth = std::stoi(SettingsRec[0]["MinPlateImageWidth"]);
-//        Settings.MaxPlateImageWidth = std::stoi(SettingsRec[0]["MaxPlateImageWidth"]);
-//        Settings.MinPlateImageHeight = std::stoi(SettingsRec[0]["MinPlateImageHeight"]);
-//        Settings.MaxPlateImageHeight = std::stoi(SettingsRec[0]["MaxPlateImageHeight"]);
-//        Settings.MinPlateImageSize = std::stoi(SettingsRec[0]["MinPlateImageSize"]);
-//        Settings.MaxPlateImageSize = std::stoi(SettingsRec[0]["MaxPlateImageSize"]);
-//        Settings.MinColorImageWidth = std::stoi(SettingsRec[0]["MinColorImageWidth"]);
-//        Settings.MaxColorImageWidth = std::stoi(SettingsRec[0]["MaxColorImageWidth"]);
-//        Settings.MinColorImageHeight = std::stoi(SettingsRec[0]["MinColorImageHeight"]);
-//        Settings.MaxColorImageHeight = std::stoi(SettingsRec[0]["MaxColorImageHeight"]);
-//        Settings.MinColorImageSize = std::stoi(SettingsRec[0]["MinColorImageSize"]);
-//        Settings.MaxColorImageSize = std::stoi(SettingsRec[0]["MaxColorImageSize"]);
-//        SettingsRec.erase(SettingsRec.begin());
-//    }
-//    else
-//    {
-//        SHOW_ERROR("There is no Settings Record!");
-//        throw -1
-//    }
+    std::vector<std::string> KafkaDoc;
+    FindReturn = MongoObj->Find(DatabaseConfig.DatabaseName, "Kafka", filter, Option, KafkaDoc);
+    if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
+    {
+        for(auto& doc : KafkaDoc)
+        {
+            crow::json::rvalue KafkaDocConfigJSON = crow::json::load(doc);
+            if(KafkaDocConfigJSON["Input"].b())
+            {
+                InputKafkaConfig.BootstrapServers = KafkaDocConfigJSON["BootstrapServers"].s();
+                InputKafkaConfig.Topic = KafkaDocConfigJSON["Topic"].s();
+                InputKafkaConfig.GroupID = KafkaDocConfigJSON["GroupID"].s();
+            }else
+            {
+                OutputKafkaConfig.BootstrapServers = KafkaDocConfigJSON["BootstrapServers"].s();
+                OutputKafkaConfig.Topic = KafkaDocConfigJSON["Topic"].s();
+                OutputKafkaConfig.GroupID = KafkaDocConfigJSON["GroupID"].s();
+            }
+        }
+    }else
+    {
+        SHOW_ERROR(FindReturn.Description);
+        throw;
+    }
 }
 
 Configurate::DatabaseStruct Configurate::getDatabaseConfig()
@@ -158,5 +138,25 @@ Configurate::DatabaseStruct Configurate::getDatabaseInsert()
 Configurate::DatabaseStruct Configurate::getDatabaseFailed()
 {
     return DatabaseFailed;
+}
+
+Configurate::WebServiceConfigStruct Configurate::getWebServiceConfig()
+{
+    return WebServiceConfig;
+}
+
+Configurate::StoreImageConfigStruct Configurate::getStoreImageConfig()
+{
+    return StoreImageConfig;
+}
+
+Configurate::KafkaConfigStruct Configurate::getInputKafkaConfig()
+{
+    return InputKafkaConfig;
+}
+
+Configurate::KafkaConfigStruct Configurate::getOutputKafkaConfig()
+{
+    return OutputKafkaConfig;
 }
 
