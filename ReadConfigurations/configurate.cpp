@@ -52,29 +52,32 @@ Configurate::Configurate()
 
     SHOW_LOG("CONFIG FILE LOADED SUCCESSFULLY");
 
-    auto Databaseconf       {MongoDB::DatabaseConfig()};
-    Databaseconf.IP = DatabaseConfig.DatabaseIP;
-    Databaseconf.Port = DatabaseConfig.DatabasePort;
-    Databaseconf.User = DatabaseConfig.DatabaseUsername;
-    Databaseconf.Password = DatabaseConfig.DatabasePassword;
+    auto AggregationConfigconf       {MongoDB::DatabaseConfig()};
+    AggregationConfigconf.IP = DatabaseConfig.DatabaseIP;
+    AggregationConfigconf.Port = DatabaseConfig.DatabasePort;
+    AggregationConfigconf.User = DatabaseConfig.DatabaseUsername;
+    AggregationConfigconf.Password = DatabaseConfig.DatabasePassword;
 
-    auto MongoObj = std::make_shared<MongoDB>(Databaseconf);
+    auto AggregationConfigDatabase = std::make_shared<MongoDB>(AggregationConfigconf);
 
     std::vector<MongoDB::Field> filter = {};
     MongoDB::FindOptionStruct Option;
     
     std::vector<std::string> WebserviceDoc;
-    auto FindReturn = MongoObj->Find(DatabaseConfig.DatabaseName, "WebService", filter, Option, WebserviceDoc);
+    auto FindReturn = AggregationConfigDatabase->Find(DatabaseConfig.DatabaseName, "WebService", filter, Option, WebserviceDoc);
     if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
     {
         for(auto& doc : WebserviceDoc)
         {
+            Configurate::WebServiceConfigStruct WebServiceConf;
             crow::json::rvalue WebserviceConfigJSON = crow::json::load(doc);
-            WebServiceConfig.URI = WebserviceConfigJSON["URI"].s();
-            WebServiceConfig.Port = WebserviceConfigJSON["Port"].i();
-            WebServiceConfig.CheckToken = WebserviceConfigJSON["CheckToken"].b();
-            WebServiceConfig.TokenTimeAllowed = WebserviceConfigJSON["TokenTimeAllowed"].i();
-            WebServiceConfig.threadNumber = WebserviceConfigJSON["threadNumber"].i();
+            WebServiceConf.URI = WebserviceConfigJSON["URI"].s();
+            WebServiceConf.Port = WebserviceConfigJSON["Port"].i();
+            WebServiceConf.Authentication = WebserviceConfigJSON["Authentication"].b();
+            WebServiceConf.TokenTimeAllowed = WebserviceConfigJSON["TokenTimeAllowed"].i();
+            WebServiceConf.threadNumber = WebserviceConfigJSON["threadNumber"].i();
+
+            this->WebServiceConfig.push_back(WebServiceConf);
         }
     }else
     {
@@ -83,7 +86,7 @@ Configurate::Configurate()
     }
 
     std::vector<std::string> StoreImageDoc;
-    FindReturn = MongoObj->Find(DatabaseConfig.DatabaseName, "StoreImage", filter, Option, StoreImageDoc);
+    FindReturn = AggregationConfigDatabase->Find(DatabaseConfig.DatabaseName, "StoreImage", filter, Option, StoreImageDoc);
     if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
     {
         for(auto& doc : StoreImageDoc)
@@ -101,7 +104,7 @@ Configurate::Configurate()
     }
 
     std::vector<std::string> KafkaDoc;
-    FindReturn = MongoObj->Find(DatabaseConfig.DatabaseName, "Kafka", filter, Option, KafkaDoc);
+    FindReturn = AggregationConfigDatabase->Find(DatabaseConfig.DatabaseName, "Kafka", filter, Option, KafkaDoc);
     if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
     {
         for(auto& doc : KafkaDoc)
@@ -126,40 +129,104 @@ Configurate::Configurate()
         SHOW_ERROR(FindReturn.Description);
         throw;
     }
+
+    std::vector<std::string> ServiceFieldsDoc;
+    FindReturn = AggregationConfigDatabase->Find(DatabaseConfig.DatabaseName, "ServiceFields", filter, Option, ServiceFieldsDoc);
+    if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
+    {
+        for(auto& doc : ServiceFieldsDoc)
+        {
+            crow::json::rvalue ServiceFieldsDocJSON = crow::json::load(doc);
+            crow::json::wvalue KeysValue(ServiceFieldsDocJSON);
+
+            for(auto& key: KeysValue.keys())
+            {
+                if(key == "_id")
+                    continue;
+                this->ServiceFields.servicefields[key] = ServiceFieldsDocJSON[key].s();
+            }
+        }
+    }else
+    {
+        SHOW_ERROR(FindReturn.Description);
+        throw;
+    }
+
+    
+    auto Aggregationconf       {MongoDB::DatabaseConfig()};
+    Aggregationconf.IP = DatabaseInsert.DatabaseIP;
+    Aggregationconf.Port = DatabaseInsert.DatabasePort;
+    Aggregationconf.User = DatabaseInsert.DatabaseUsername;
+    Aggregationconf.Password = DatabaseInsert.DatabasePassword;
+
+    auto AggregationDatabase = std::make_shared<MongoDB>(Aggregationconf);
+    
+    std::vector<std::string> CamerasDoc;
+    FindReturn = AggregationDatabase->Find(DatabaseInsert.DatabaseName, "cameras", filter, Option, CamerasDoc);
+    if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
+    {
+        for(auto& doc : CamerasDoc)
+        {
+            crow::json::rvalue CameraJSON = crow::json::load(doc);
+            
+            CameraStruct Camera;
+            Camera.DeviceID = CameraJSON["deviceId"].i();
+            Camera.Username = CameraJSON["username"].s();
+            Camera.Password = CameraJSON["password"].s();
+
+            this->Cameras.push_back(Camera);
+        }
+    }else
+    {
+        SHOW_ERROR(FindReturn.Description);
+        throw;
+    }
+
+    AggregationConfigDatabase.reset();
+    AggregationDatabase.reset();
 }
 
 Configurate::DatabaseStruct Configurate::getDatabaseConfig()
 {
-    return DatabaseConfig;
+    return this->DatabaseConfig;
 }
 
 Configurate::DatabaseStruct Configurate::getDatabaseInsert()
 {
-    return DatabaseInsert;
+    return this->DatabaseInsert;
 }
 
 Configurate::DatabaseStruct Configurate::getDatabaseFailed()
 {
-    return DatabaseFailed;
+    return this->DatabaseFailed;
 }
 
-Configurate::WebServiceConfigStruct Configurate::getWebServiceConfig()
+std::vector<Configurate::WebServiceConfigStruct> Configurate::getWebServiceConfig()
 {
-    return WebServiceConfig;
+    return this->WebServiceConfig;
 }
 
 Configurate::StoreImageConfigStruct Configurate::getStoreImageConfig()
 {
-    return StoreImageConfig;
+    return this->StoreImageConfig;
 }
 
 Configurate::KafkaConfigStruct Configurate::getInputKafkaConfig()
 {
-    return InputKafkaConfig;
+    return this->InputKafkaConfig;
 }
 
 Configurate::KafkaConfigStruct Configurate::getOutputKafkaConfig()
 {
-    return OutputKafkaConfig;
+    return this->OutputKafkaConfig;
 }
 
+std::vector<Configurate::CameraStruct> Configurate::getCameras()
+{
+    return this->Cameras;
+}
+
+Configurate::ServiceFieldsStruct Configurate::getServiceFields()
+{
+    return this->ServiceFields;
+}

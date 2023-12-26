@@ -56,7 +56,10 @@ public:
     MongoDB(const MongoDB&) = delete;
     MongoDB(MongoDB&&) = delete;
     MongoDB(const DatabaseConfig &DBC);
-    ~MongoDB() = default;
+    ~MongoDB() 
+    {
+        this->Conn.reset();
+    };
 
     ResponseStruct Insert(const std::string &DatabaseName, const std::string &CollectionName, const std::vector<Field>& fields);
     ResponseStruct Find(const std::string &DatabaseName, const std::string &CollectionName, const std::vector<Field>& fields, FindOptionStruct& FindOption, std::vector<std::string>& Documents);

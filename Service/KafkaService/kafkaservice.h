@@ -8,9 +8,7 @@
 class KafkaService : public Service
 {
 public:
-    KafkaService(){};
-
-    Service::ServiceResponseStruct init() override;
+    KafkaService(Configurate::KafkaConfigStruct ServiceConfig);
     void run() override;
 
 private:

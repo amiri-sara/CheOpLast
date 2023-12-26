@@ -8,6 +8,7 @@
 #include <iomanip>
 #include <ctime>
 #include <sys/time.h>
+#include <vector>
 
 #include <bsoncxx/v_noabi/bsoncxx/json.hpp>
 #include <mongocxx/v_noabi/mongocxx/client.hpp>
@@ -26,6 +27,10 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/foreach.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
 
 #include <curl/curl.h>
 
