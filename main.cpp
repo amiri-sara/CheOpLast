@@ -13,6 +13,7 @@ int main()
         SHOW_IMPORTANTLOG2(it->first << " : " << it->second);
     }
     
+#ifdef WEBSERVICE
     auto WebServicesConfig = ConfigurateObj->getWebServiceConfig();
     for(auto& config : WebServicesConfig)
     {
@@ -20,7 +21,9 @@ int main()
         boost::thread WebServiceThread(&WebService::run, service);
         WebServiceThread.detach();
     }
+#endif // WEBSERVICE
 
+#ifdef KAFKASERVICE
     auto InputKafkaConfig = ConfigurateObj->getInputKafkaConfig();
     std::shared_ptr<KafkaService> service2{std::make_shared<KafkaService>(InputKafkaConfig)};
     for(int i = 0; i < InputKafkaConfig.PartitionNumber; i++)
@@ -28,6 +31,7 @@ int main()
         boost::thread KafkaServiceThread(&KafkaService::run, service2);
         KafkaServiceThread.detach();
     }
+#endif // KAFKASERVICE
 
     while(true)
     {

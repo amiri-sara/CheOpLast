@@ -84,7 +84,9 @@ MongoDB::MongoDB(const DatabaseConfig &DBC)
 
     try 
     {
-        //static mongocxx::instance inst{};
+#ifdef CREATEMONGOINSTANCE
+        static mongocxx::instance inst{};
+#endif // CREATEMONGOINSTANCE
         mongocxx::uri uri{MongoIP};
         // std::shared_ptr<mongocxx::client> Conn = std::make_shared<mongocxx::client>(uri);
         this->Conn = std::make_shared<mongocxx::client>(uri);

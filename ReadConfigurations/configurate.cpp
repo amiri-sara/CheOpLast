@@ -62,9 +62,11 @@ Configurate::Configurate()
 
     std::vector<MongoDB::Field> filter = {};
     MongoDB::FindOptionStruct Option;
-    
+
+    MongoDB::ResponseStruct FindReturn;
+#ifdef WEBSERVICE   
     std::vector<std::string> WebserviceDoc;
-    auto FindReturn = AggregationConfigDatabase->Find(DatabaseConfig.DatabaseName, "WebService", filter, Option, WebserviceDoc);
+    FindReturn = AggregationConfigDatabase->Find(DatabaseConfig.DatabaseName, "WebService", filter, Option, WebserviceDoc);
     if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
     {
         for(auto& doc : WebserviceDoc)
@@ -84,6 +86,7 @@ Configurate::Configurate()
         SHOW_ERROR(FindReturn.Description);
         throw;
     }
+#endif // WEBSERVICE 
 
     std::vector<std::string> StoreImageDoc;
     FindReturn = AggregationConfigDatabase->Find(DatabaseConfig.DatabaseName, "StoreImage", filter, Option, StoreImageDoc);
@@ -103,6 +106,7 @@ Configurate::Configurate()
         throw;
     }
 
+#ifdef KAFKASERVICE
     std::vector<std::string> KafkaDoc;
     FindReturn = AggregationConfigDatabase->Find(DatabaseConfig.DatabaseName, "Kafka", filter, Option, KafkaDoc);
     if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
@@ -129,6 +133,7 @@ Configurate::Configurate()
         SHOW_ERROR(FindReturn.Description);
         throw;
     }
+#endif // KAFKASERVICE
 
     std::vector<std::string> ServiceFieldsDoc;
     FindReturn = AggregationConfigDatabase->Find(DatabaseConfig.DatabaseName, "ServiceFields", filter, Option, ServiceFieldsDoc);
