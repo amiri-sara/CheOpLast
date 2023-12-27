@@ -1,13 +1,11 @@
 #include "webservice.h"
 
-Service::ServiceResponseStruct WebService::init()
+WebService::WebService(Configurate::WebServiceConfigStruct ServiceConfig)
 {
     this->app = std::make_shared<crow::SimpleApp>();
     this->app->loglevel(crow::LogLevel::Error);
     
-    auto ConfigurateObj = Configurate::getInstance();
-    this->WebServiceConfig = ConfigurateObj->getWebServiceConfig();
-    return{Service::ServiceStatus::InitSuccessful, "Initial Successful."};
+    this->WebServiceConfig = ServiceConfig;
 }
 
 void WebService::run()
@@ -15,7 +13,7 @@ void WebService::run()
     try 
     {   
         this->InsertRoute();
-        if(this->WebServiceConfig.CheckToken)
+        if(this->WebServiceConfig.Authentication)
             this->TokenRoute();
 
         SHOW_IMPORTANTLOG3("Runinng Aggregation on port " + std::to_string(this->WebServiceConfig.Port));

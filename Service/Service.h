@@ -17,7 +17,7 @@ public:
     };
     
     virtual ~Service() = default; 			
-    virtual Service::ServiceResponseStruct init() = 0;
+
     virtual void run() = 0;
 };
 

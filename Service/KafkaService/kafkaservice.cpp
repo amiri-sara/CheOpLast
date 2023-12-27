@@ -1,21 +1,15 @@
 #include "kafkaservice.h"
-
-Service::ServiceResponseStruct KafkaService::init()
+KafkaService::KafkaService(Configurate::KafkaConfigStruct ServiceConfig)
 {
     this->configuration = std::shared_ptr<RdKafka::Conf>(RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL));
-
-    auto ConfigurateObj = Configurate::getInstance();
-    this->InputKafkaConfig = ConfigurateObj->getInputKafkaConfig();
+    this->InputKafkaConfig = ServiceConfig;
 
     configuration->set("bootstrap.servers", this->InputKafkaConfig.BootstrapServers, this->error);
     configuration->set("group.id", this->InputKafkaConfig.GroupID, this->error);
     configuration->set("auto.offset.reset", "earliest", this->error);
     configuration->set("enable.auto.commit", "true", this->error);
     configuration->set("auto.commit.interval.ms", "500", this->error);
-
-    return{Service::ServiceStatus::InitSuccessful, "Initial Successful."};
 }
-
 void KafkaService::run()
 {
     std::shared_ptr<KafkaProsumer> kp = std::make_shared<KafkaProsumer>(this->configuration.get(), this->InputKafkaConfig.Topic);

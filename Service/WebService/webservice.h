@@ -7,9 +7,7 @@
 class WebService : public Service
 {
 public:
-    WebService(){};
-
-    Service::ServiceResponseStruct init() override;
+    WebService(Configurate::WebServiceConfigStruct ServiceConfig);
     void run() override;
 
 private:    
