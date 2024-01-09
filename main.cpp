@@ -5,13 +5,8 @@
 int main()
 {
     Configurate* ConfigurateObj = Configurate::getInstance();
-
-    auto ServiceFields = ConfigurateObj->getServiceFields().servicefields;
-    
-    for(auto it = ServiceFields.begin(); it != ServiceFields.end(); it++)
-    {
-        SHOW_IMPORTANTLOG2(it->first << " : " << it->second);
-    }
+    boost::thread UpdateRouteThread(&Configurate::RunUpdateService, ConfigurateObj);
+    UpdateRouteThread.detach();
     
 #ifdef WEBSERVICE
     auto WebServicesConfig = ConfigurateObj->getWebServiceConfig();

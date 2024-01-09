@@ -7,8 +7,13 @@ project(Aggregation LANGUAGES CXX)
 
 OPTION(BUILDUBUNTU22 "Build in Ubuntu22" ON)
 OPTION(BUILDUBUNTU20 "Build in Ubuntu20" OFF)
+
 OPTION(WEBSERVICE "Run Web service" ON)
 OPTION(KAFKASERVICE "Run Kafka service" ON)
+OPTION(INSERTDATABASE "Insert the data into the database" ON)
+OPTION(FAILEDDATABASE "failed database" OFF)
+OPTION(STOREIMAGE "Store Image" ON)
+OPTION(KAFKAOUTPUT "Add the output data to the Kafka" ON)
 
 if(BUILDUBUNTU22)
     add_definitions(-DCREATEMONGOINSTANCE)
@@ -20,6 +25,22 @@ endif()
 
 if(KAFKASERVICE)
     add_definitions(-DKAFKASERVICE)
+endif()
+
+if(INSERTDATABASE)
+    add_definitions(-DINSERTDATABASE)
+endif()
+
+if(FAILEDDATABASE)
+    add_definitions(-DFAILEDDATABASE)
+endif()
+
+if(STOREIMAGE)
+    add_definitions(-DSTOREIMAGE)
+endif()
+
+if(KAFKAOUTPUT)
+    add_definitions(-DKAFKAOUTPUT)
 endif()
 
 include_directories(.)
@@ -91,7 +112,7 @@ set(OPENCVLIB       ${OPENCVLIB_dir}/libopencv_imgcodecs.so
                     ${OPENCVLIB_dir}/libopencv_xobjdetect.so
                     ${OPENCVLIB_dir}/libopencv_xphoto.so)
 
-if(KAFKASERVICE)
+if(KAFKASERVICE OR KAFKAOUTPUT)
     if (DEFINED ENV{LIBRDKAFKA_INCLUDE_DIR})
         set(LIBRDKAFKA_INCLUDE_DIR $ENV{LIBRDKAFKA_INCLUDE_DIR})
     else ()
@@ -147,7 +168,7 @@ set(SRC_LIST main.cpp
              Cryptography/systemkeys.cpp
              Database/MongoDB.cpp)
 
-if(KAFKASERVICE)
+if(KAFKASERVICE OR KAFKAOUTPUT)
     set(SRC_LIST    ${SRC_LIST}
                     Service/KafkaService/kafkaservice.cpp
                     Kafka/KafkaProsumer.cpp)
@@ -166,7 +187,7 @@ target_link_libraries(${PROJECT_NAME}
                       boost_chrono 
                       ${OPENCVLIB})
 
-if(KAFKASERVICE)
+if(KAFKASERVICE OR KAFKAOUTPUT)
     target_link_libraries(${PROJECT_NAME} 
                           ${GLIB_LIBRARIES} 
                           rdkafka++)

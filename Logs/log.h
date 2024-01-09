@@ -9,6 +9,7 @@
 #include <ctime>
 #include <sys/time.h>
 #include <vector>
+#include <shared_mutex>
 
 #include <bsoncxx/v_noabi/bsoncxx/json.hpp>
 #include <mongocxx/v_noabi/mongocxx/client.hpp>

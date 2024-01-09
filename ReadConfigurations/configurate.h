@@ -58,9 +58,35 @@ public:
         std::string Password            = "";
     };
 
-    struct ServiceFieldsStruct
+    struct InputFieldsStruct
     {
-        std::map<std::string, std::string> servicefields;
+        bool DeviceID       =   false;
+        bool UserID         =   false;
+        bool StreetID       =   false;
+        bool ViolationID    =   false;
+        bool Direction      =   false;
+        bool PlateValue     =   false;
+        bool PlateType      =   false;
+        bool Suspicious     =   false;
+        bool Speed          =   false;
+        bool VehicleType    =   false;
+        bool VehicleColor   =   false;
+        bool VehicleModel   =   false;
+        bool Lane           =   false;
+        bool PassedTime     =   false;
+        bool ColorImage     =   false;
+        bool GrayScaleImage =   false;
+        bool PlateImage     =   false;
+        bool Latitude       =   false;
+        bool Longitude      =   false;
+        bool Accuracy       =   false;
+        bool PlateRect      =   false;
+        bool CarRect        =   false;
+        bool CodeType       =   false;
+        bool MasterPlate    =   false;
+        bool Probability    =   false;
+        bool RecordID       =   false;
+        bool ReceivedTime   =   false;
     };
 
     Configurate(const Configurate& Obj) = delete;
@@ -78,6 +104,8 @@ public:
         }
     }
 
+    void RunUpdateService();
+
     DatabaseStruct getDatabaseConfig();
     DatabaseStruct getDatabaseInsert();
     DatabaseStruct getDatabaseFailed();
@@ -85,22 +113,30 @@ public:
     StoreImageConfigStruct getStoreImageConfig();
     KafkaConfigStruct getInputKafkaConfig();
     KafkaConfigStruct getOutputKafkaConfig();
-    ServiceFieldsStruct getServiceFields();
+    InputFieldsStruct getInputFields();
     std::vector<CameraStruct> getCameras();
 
 private:
     DatabaseStruct DatabaseConfig;
     DatabaseStruct DatabaseInsert;
     DatabaseStruct DatabaseFailed;
+    WebServiceConfigStruct ReadConfigServiceConfig;
     std::vector<WebServiceConfigStruct> WebServiceConfig;
     StoreImageConfigStruct StoreImageConfig;
     KafkaConfigStruct InputKafkaConfig;
     KafkaConfigStruct OutputKafkaConfig;
-    ServiceFieldsStruct ServiceFields;
+    InputFieldsStruct InputFields;
     std::vector<CameraStruct> Cameras;
+
+    void ReadCamerasCollection();
+
+    void UpdateRoute();
 
     static Configurate* InstancePtr;
     Configurate();
+
+    std::shared_ptr<crow::SimpleApp> app;
+    mutable std::shared_mutex UpdateConfig_mutex;
 };
 
 #endif // CONFIGURATE_H
