@@ -33,6 +33,7 @@ public:
         bool Authentication;
         int TokenTimeAllowed;
         int threadNumber;
+        int DaysforPassedTimeAcceptable;
     };
 
     struct StoreImageConfigStruct
@@ -49,6 +50,7 @@ public:
         std::string Topic               = "";
         std::string GroupID             = "";
         int PartitionNumber;
+        int DaysforPassedTimeAcceptable;
     };
 
     struct CameraStruct

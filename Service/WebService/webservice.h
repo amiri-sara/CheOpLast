@@ -13,6 +13,7 @@ public:
 private:    
     std::shared_ptr<crow::SimpleApp> app;
     Configurate::WebServiceConfigStruct WebServiceConfig;
+    Configurate::InputFieldsStruct InputFields;
 
     void InsertRoute();
     void TokenRoute();

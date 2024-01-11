@@ -3,6 +3,8 @@
 
 #include "../Logs/log.h"
 #include "../ReadConfigurations/configurate.h"
+#include "../DataHandler/datahandler.h"
+#include "../Validator/validator.h"
 
 class Service
 {

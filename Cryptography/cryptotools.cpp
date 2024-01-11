@@ -183,16 +183,12 @@ bool isBase64(unsigned char C)
 
 
 
-// cv::Mat convertBase64ToMatImage(std::string Base64Str)
-// {
-//     cv::Mat Img;
-//     std::string DecodedImage = decodeBase64(Base64Str);
-//     std::vector<uchar> bufferToCompress(DecodedImage.begin(), DecodedImage.end());
-//     Img = cv::imdecode(bufferToCompress, cv::IMREAD_UNCHANGED);
-//     if(Img.total() == 0)
-//     {
-//         SHOW_ERROR("convertBase64ToMatImage error:Img row and col is 0");
-//         return Img;
-//     }
-//     return Img;
-// }
+cv::Mat convertBase64ToMatImage(std::string Base64Str)
+{
+    cv::Mat Img;
+    cipher cipherobj;
+    std::string DecodedImage = cipherobj.base64_decode(Base64Str);
+    std::vector<uchar> bufferToCompress(DecodedImage.begin(), DecodedImage.end());
+    Img = cv::imdecode(bufferToCompress, cv::IMREAD_UNCHANGED);
+    return Img;
+}

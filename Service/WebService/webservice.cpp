@@ -4,8 +4,10 @@ WebService::WebService(Configurate::WebServiceConfigStruct ServiceConfig)
 {
     this->app = std::make_shared<crow::SimpleApp>();
     this->app->loglevel(crow::LogLevel::Error);
-    
     this->WebServiceConfig = ServiceConfig;
+
+    Configurate* ConfigurateObj = Configurate::getInstance();
+    this->InputFields = ConfigurateObj->getInputFields();
 }
 
 void WebService::run()
@@ -47,12 +49,31 @@ void WebService::InsertRoute()
     Route += "Insert";
     
     this->app->route_dynamic(Route.c_str()).methods(crow::HTTPMethod::POST)([&](const crow::request& req ) {
-        SHOW_IMPORTANTLOG2(req.body);
         
-        auto Res    {crow::json::wvalue()};
-        Res["res"]  = "Insert Route";
+        //! "startTime" for Computing process time for this request
+        auto startTime = std::chrono::high_resolution_clock::now();
+        
+        std::shared_ptr<DataHandler::DataHandlerStruct> DH = std::make_shared<DataHandler::DataHandlerStruct>();
+        DH->Request.body = req.body;
 
-        return crow::response{200 , "Insert Route"};
+        std::string Host("");
+        auto itr = req.headers.find("Host");
+        if (itr != req.headers.end())
+            Host = itr->second;
+        SHOW_IMPORTANTLOG("Recived request from IP -> " + Host);
+        DH->Request.Host = Host;
+
+        Configurate* ConfigurateObj = Configurate::getInstance();
+
+        DH->hasInputFields = this->InputFields;
+        DH->Cameras = ConfigurateObj->getCameras();
+        DH->DaysforPassedTimeAcceptable = this->WebServiceConfig.DaysforPassedTimeAcceptable;
+
+        std::shared_ptr<Validator> Validatorobj = std::make_shared<Validator>();
+        if(!(Validatorobj->run(DH)))
+            return crow::response{DH->Response.HTTPCode , DH->Response.Description};
+        
+        return crow::response{DH->Response.HTTPCode , DH->Response.Description};
     });
 }
 

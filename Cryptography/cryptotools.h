@@ -14,6 +14,6 @@ struct DecryptedOutputStruct
 DecryptedOutputStruct decryptFile(std::string FilePath,std::string ServerPublicKey, std::string ClientPublicKey);
 DecryptedOutputStruct decryptString(std::string InputStr,std::string ServerPrivateKeyPath, std::string ClientPublicKeyPath);
 bool isBase64(unsigned char C);
-// cv::Mat convertBase64ToMatImage(std::string Base64Str);
+cv::Mat convertBase64ToMatImage(std::string Base64Str);
 
 #endif // CRYPTOTOOLS_H

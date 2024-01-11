@@ -128,6 +128,7 @@ Configurate::Configurate()
             this->InputKafkaConfig.Topic = KafkaDocConfigJSON["Topic"].s();
             this->InputKafkaConfig.GroupID = KafkaDocConfigJSON["GroupID"].s();
             this->InputKafkaConfig.PartitionNumber = KafkaDocConfigJSON["PartitionNumber"].i();
+            this->InputKafkaConfig.DaysforPassedTimeAcceptable = KafkaDocConfigJSON["DaysforPassedTimeAcceptable"].i();
 #endif // KAFKASERVICE
 #ifdef WEBSERVICE   
             crow::json::rvalue WebServiceArray = AggregationInputJSON["WebService"];
@@ -142,6 +143,7 @@ Configurate::Configurate()
                 WebServiceConf.Authentication = WebserviceConfigJSON["Authentication"].b();
                 WebServiceConf.TokenTimeAllowed = WebserviceConfigJSON["TokenTimeAllowed"].i();
                 WebServiceConf.threadNumber = WebserviceConfigJSON["threadNumber"].i();
+                WebServiceConf.DaysforPassedTimeAcceptable = WebserviceConfigJSON["DaysforPassedTimeAcceptable"].i();
                 this->WebServiceConfig.push_back(WebServiceConf);
             }
 #endif // WEBSERVICE 
