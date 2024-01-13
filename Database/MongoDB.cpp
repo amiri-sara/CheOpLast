@@ -88,9 +88,7 @@ MongoDB::MongoDB(const DatabaseConfig &DBC)
         static mongocxx::instance inst{};
 #endif // CREATEMONGOINSTANCE
         mongocxx::uri uri{MongoIP};
-        // std::shared_ptr<mongocxx::client> Conn = std::make_shared<mongocxx::client>(uri);
-        this->Conn = std::make_shared<mongocxx::client>(uri);
-        // this->db = std::make_shared<mongocxx::database>(Conn->database(DBC.DatabaseName.c_str()));
+        this->mongoPool = std::make_shared<mongocxx::pool>(uri);
     } 
     catch (const mongocxx::exception& e) 
     {
@@ -100,11 +98,9 @@ MongoDB::MongoDB(const DatabaseConfig &DBC)
 
 MongoDB::ResponseStruct MongoDB::Insert(const std::string &DatabaseName, const std::string &CollectionName, const std::vector<Field>& fields)
 {
-    if (!this->Conn) {
-        return ResponseStruct{MongoStatus::Connection, "Connection Error"};
-    }
+    std::shared_ptr<mongocxx::pool::entry> client = std::make_shared<mongocxx::pool::entry>(this->mongoPool->acquire());    
     
-    std::shared_ptr<mongocxx::database> db = std::make_shared<mongocxx::database>(this->Conn->database(DatabaseName.c_str()));
+    std::shared_ptr<mongocxx::database> db = std::make_shared<mongocxx::database>((*client)->database(DatabaseName.c_str()));
     // Check if the database is valid
     if (!db) {
         return ResponseStruct{MongoStatus::Database, "Access Database Error"};
@@ -174,11 +170,9 @@ MongoDB::ResponseStruct MongoDB::Insert(const std::string &DatabaseName, const s
 
 MongoDB::ResponseStruct MongoDB::Find(const std::string &DatabaseName, const std::string &CollectionName, const std::vector<Field>& fields, FindOptionStruct& FindOption, std::vector<std::string>& Documents)
 {
-    if (!this->Conn) {
-        return ResponseStruct{MongoStatus::Connection, "Connection Error"};
-    }
-    
-    std::shared_ptr<mongocxx::database> db = std::make_shared<mongocxx::database>(this->Conn->database(DatabaseName.c_str()));
+    std::shared_ptr<mongocxx::pool::entry> client = std::make_shared<mongocxx::pool::entry>(this->mongoPool->acquire());
+
+    std::shared_ptr<mongocxx::database> db = std::make_shared<mongocxx::database>((*client)->database(DatabaseName.c_str()));
     // Check if the database is valid
     if (!db) {
         return ResponseStruct{MongoStatus::Database, "Access Database Error"};
@@ -273,11 +267,9 @@ MongoDB::ResponseStruct MongoDB::Find(const std::string &DatabaseName, const std
 
 MongoDB::ResponseStruct MongoDB::Update(const std::string &DatabaseName, const std::string &CollectionName, const std::vector<Field>& findfields, const std::vector<Field>& updatefields)
 {
-    if (!this->Conn) {
-        return ResponseStruct{MongoStatus::Connection, "Connection Error"};
-    }
-    
-    std::shared_ptr<mongocxx::database> db = std::make_shared<mongocxx::database>(this->Conn->database(DatabaseName.c_str()));
+    std::shared_ptr<mongocxx::pool::entry> client = std::make_shared<mongocxx::pool::entry>(this->mongoPool->acquire());
+
+    std::shared_ptr<mongocxx::database> db = std::make_shared<mongocxx::database>((*client)->database(DatabaseName.c_str()));
     // Check if the database is valid
     if (!db) {
         return ResponseStruct{MongoStatus::Database, "Access Database Error"};
@@ -430,11 +422,9 @@ MongoDB::ResponseStruct MongoDB::Update(const std::string &DatabaseName, const s
 
 MongoDB::ResponseStruct MongoDB::Delete(const std::string &DatabaseName, const std::string &CollectionName, const std::vector<Field>& findfields)
 {
-    if (!this->Conn) {
-        return ResponseStruct{MongoStatus::Connection, "Connection Error"};
-    }
-    
-    std::shared_ptr<mongocxx::database> db = std::make_shared<mongocxx::database>(this->Conn->database(DatabaseName.c_str()));
+    std::shared_ptr<mongocxx::pool::entry> client = std::make_shared<mongocxx::pool::entry>(this->mongoPool->acquire());
+        
+    std::shared_ptr<mongocxx::database> db = std::make_shared<mongocxx::database>((*client)->database(DatabaseName.c_str()));
     // Check if the database is valid
     if (!db) {
         return ResponseStruct{MongoStatus::Database, "Access Database Error"};

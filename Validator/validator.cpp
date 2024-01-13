@@ -1216,7 +1216,27 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             return false;
         }
 
+        if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+        {
+            std::string CalculatedRecordID = this->GeneratMongoIDHash(DH->ProcessedInputData.PassedTimeLocal, DH->Input.PlateValue, DH->Input.ViolationID, DH->Input.DeviceID);
+            if(CalculatedRecordID != RecordID)
+            {
+                DH->Response.HTTPCode = 400;
+                DH->Response.errorCode = INVALIDRECORDID;
+                DH->Response.Description = "The RecordID value does not match the other values.";
+                return false;
+            }
+        }
+
         DH->Input.RecordID = RecordID;
+        DH->ProcessedInputData.MongoID = RecordID;
+    }else
+    {
+        if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+        {
+            std::string CalculatedRecordID = this->GeneratMongoIDHash(DH->ProcessedInputData.PassedTimeLocal, DH->Input.PlateValue, DH->Input.ViolationID, DH->Input.DeviceID);
+            DH->ProcessedInputData.MongoID = CalculatedRecordID;
+        }
     }
 
     // ReceivedTime
@@ -1255,4 +1275,43 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
         DH->ProcessedInputData.ReceivedTimeLocal = ReceivedTimeLocal;
     }
     return true;
+}
+
+std::string Validator::GeneratMongoIDHash(const std::tm &PassedTime, const std::string &PlateValue, const int &ViolationID, const int &DeviceID)
+{
+    std::string HashID = "";
+    
+    std::tm PassedTimeCopy = PassedTime;
+    std::string HexUnixTime = GetHex(mktime(&PassedTimeCopy));
+    if(HexUnixTime.size()<8)
+    {
+        for(int i = 0 ; i < (8 - HexUnixTime.size());i++)
+            HashID += "0";
+    }
+    HashID += HexUnixTime;
+
+    std::string HexPlateValue = GetHex(std::stoi(PlateValue));
+    if(HexPlateValue.size() < 8)
+    {
+        for(int i = 0 ; i < (8 - HexPlateValue.size());i++)
+            HashID += "0";
+    }
+    HashID += HexPlateValue;
+
+    std::string HexVID = GetHex(ViolationID);
+    if(HexVID.size()< 2)
+    {
+        for(int i = 0 ; i < (2 - HexVID.size());i++)
+            HashID += "0";
+    }
+    HashID += HexVID;
+
+    std::string HexDeviceID = GetHex(DeviceID);
+    if(HexDeviceID.size() < 6) {
+        for(int i = 0 ; i < (6 - HexDeviceID.size());i++)
+            HashID += "0";
+    }
+    HashID += HexDeviceID;
+
+    return HashID;
 }

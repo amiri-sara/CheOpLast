@@ -181,8 +181,6 @@ bool isBase64(unsigned char C)
     return (isalnum(C) || (C == '+') || (C == '/'));
 }
 
-
-
 cv::Mat convertBase64ToMatImage(std::string Base64Str)
 {
     cv::Mat Img;
@@ -191,4 +189,25 @@ cv::Mat convertBase64ToMatImage(std::string Base64Str)
     std::vector<uchar> bufferToCompress(DecodedImage.begin(), DecodedImage.end());
     Img = cv::imdecode(bufferToCompress, cv::IMREAD_UNCHANGED);
     return Img;
+}
+
+std::string GetHex(const int &N)
+{
+    char hex_string[20];
+    for(int i = 0 ; i < 20 ; i ++)
+        hex_string[i] = ' ' ;
+    sprintf(hex_string, "%x", N); //convert number to hex
+
+    std::string Hex = "";
+    for(int i = 0 ; i  < 20 ; i ++)
+    {
+        if(hex_string[i]!= ' ')
+        {
+            Hex+=hex_string[i];
+        }
+        else
+            break;
+    }
+    Hex.pop_back();
+    return Hex;
 }

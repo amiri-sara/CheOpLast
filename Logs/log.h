@@ -54,6 +54,7 @@
 #define INVALIDPLATEIMAGE                                   607
 #define INVALIDCOLORIMAGE                                   609
 #define INVALIDCOLORIMAGESIZE                               610
+#define DUPLICATERECORD                                     613
 #define INVALIDPLATERECT                                    614
 #define INVALIDCARRECT                                      615
 #define INVALIDDEVICEID                                     616
@@ -71,6 +72,7 @@
 #define INVALIDLATITUDE                                     628
 #define INVALIDLONGITUDE                                    629
 #define INVALIDACCURACY                                     630
+#define DATABASEERROR                                       651
 
 #define INVALIDGRAYSCALEIMAGE                               632
 #define INVALIDCODETYPE                                     633

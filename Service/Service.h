@@ -5,6 +5,7 @@
 #include "../ReadConfigurations/configurate.h"
 #include "../DataHandler/datahandler.h"
 #include "../Validator/validator.h"
+#include "../Cryptography/cryptotools.h"
 
 class Service
 {
@@ -18,9 +19,13 @@ public:
         std::string Description;
     };
     
+    Service();
     virtual ~Service() = default; 			
-
     virtual void run() = 0;
+protected:
+    Configurate::InputFieldsStruct InputFields;
+    Configurate::InfoDatabaseStruct InsertDatabaseInfo;
+    std::shared_ptr<MongoDB> InsertDatabase;
 };
 
 #endif //SERVICE_H

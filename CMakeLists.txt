@@ -168,7 +168,8 @@ set(SRC_LIST main.cpp
              Cryptography/systemkeys.cpp
              Database/MongoDB.cpp
              Validator/validator.cpp
-             Time/timetools.cpp)
+             Time/timetools.cpp
+             Service/Service.cpp)
 
 if(KAFKASERVICE OR KAFKAOUTPUT)
     set(SRC_LIST    ${SRC_LIST}

@@ -15,35 +15,39 @@ Configurate::Configurate()
         SHOW_ERROR("Configurate: "<<std::to_string(__LINE__)<<"_There is no config file");
         throw 0;
     }
+    
+    ConnectDatabaseStruct ConfigDatabaseConnect;
+    ConnectDatabaseStruct InsertDatabaseConnect;
+    ConnectDatabaseStruct FailedDatabaseConnect;
 
     try
     {        
         auto ConfigInputJson = crow::json::load(ConfigDecryptedFile);
 
-        this->DatabaseConfig.DatabaseIP       = ConfigInputJson["Aggregation_Config_Database_IP"].s();
-        this->DatabaseConfig.DatabasePort     = ConfigInputJson["Aggregation_Config_Database_PORT"].s();
-        this->DatabaseConfig.DatabaseUsername = ConfigInputJson["Aggregation_Config_Database_USER"].s();
-        this->DatabaseConfig.DatabasePassword = ConfigInputJson["Aggregation_Config_Database_PASS"].s();
-        this->DatabaseConfig.DETAIL           = ConfigInputJson["Aggregation_Config_Database_DETAIL"].s();
-        this->DatabaseConfig.DatabaseName     = ConfigInputJson["Aggregation_Config_Database_Name"].s();
+        ConfigDatabaseConnect.DatabaseIP       = ConfigInputJson["Aggregation_Config_Database_IP"].s();
+        ConfigDatabaseConnect.DatabasePort     = ConfigInputJson["Aggregation_Config_Database_PORT"].s();
+        ConfigDatabaseConnect.DatabaseUsername = ConfigInputJson["Aggregation_Config_Database_USER"].s();
+        ConfigDatabaseConnect.DatabasePassword = ConfigInputJson["Aggregation_Config_Database_PASS"].s();
+        ConfigDatabaseConnect.DETAIL           = ConfigInputJson["Aggregation_Config_Database_DETAIL"].s();
+        this->ConfigDatabaseInfo.DatabaseName     = ConfigInputJson["Aggregation_Config_Database_Name"].s();
 
-        this->DatabaseInsert.DatabaseIP       = ConfigInputJson["Aggregation_Insert_Database_IP"].s();
-        this->DatabaseInsert.DatabasePort     = ConfigInputJson["Aggregation_Insert_Database_PORT"].s();
-        this->DatabaseInsert.DatabaseUsername = ConfigInputJson["Aggregation_Insert_Database_USER"].s();
-        this->DatabaseInsert.DatabasePassword = ConfigInputJson["Aggregation_Insert_Database_PASS"].s();
-        this->DatabaseInsert.DETAIL           = ConfigInputJson["Aggregation_Insert_Database_DETAIL"].s();
-        this->DatabaseInsert.DatabaseName     = ConfigInputJson["Aggregation_Insert_Database_Name"].s();
-        this->DatabaseInsert.CollectionName   = ConfigInputJson["Aggregation_Insert_Collection_Name"].s();
+        InsertDatabaseConnect.DatabaseIP       = ConfigInputJson["Aggregation_Insert_Database_IP"].s();
+        InsertDatabaseConnect.DatabasePort     = ConfigInputJson["Aggregation_Insert_Database_PORT"].s();
+        InsertDatabaseConnect.DatabaseUsername = ConfigInputJson["Aggregation_Insert_Database_USER"].s();
+        InsertDatabaseConnect.DatabasePassword = ConfigInputJson["Aggregation_Insert_Database_PASS"].s();
+        InsertDatabaseConnect.DETAIL           = ConfigInputJson["Aggregation_Insert_Database_DETAIL"].s();
+        this->InsertDatabaseInfo.DatabaseName     = ConfigInputJson["Aggregation_Insert_Database_Name"].s();
+        this->InsertDatabaseInfo.CollectionName   = ConfigInputJson["Aggregation_Insert_Collection_Name"].s();
 
 #ifdef FAILEDDATABASE
-        this->DatabaseFailed.Enable           = ConfigInputJson["Aggregation_Failed_Database_Enable"].s();
-        this->DatabaseFailed.DatabaseIP       = ConfigInputJson["Aggregation_Failed_Database_IP"].s();
-        this->DatabaseFailed.DatabasePort     = ConfigInputJson["Aggregation_Failed_Database_PORT"].s();
-        this->DatabaseFailed.DatabaseUsername = ConfigInputJson["Aggregation_Failed_Database_USER"].s();
-        this->DatabaseFailed.DatabasePassword = ConfigInputJson["Aggregation_Failed_Database_PASS"].s();
-        this->DatabaseFailed.DETAIL           = ConfigInputJson["Aggregation_Failed_Database_DETAIL"].s();
-        this->DatabaseFailed.DatabaseName     = ConfigInputJson["Aggregation_Failed_Database_Name"].s();
-        this->DatabaseFailed.CollectionName   = ConfigInputJson["Aggregation_Failed_Collection_Name"].s();
+        this->FailedDatabaseInfo.Enable           = ConfigInputJson["Aggregation_Failed_Database_Enable"].s();
+        FailedDatabaseConnect.DatabaseIP       = ConfigInputJson["Aggregation_Failed_Database_IP"].s();
+        FailedDatabaseConnect.DatabasePort     = ConfigInputJson["Aggregation_Failed_Database_PORT"].s();
+        FailedDatabaseConnect.DatabaseUsername = ConfigInputJson["Aggregation_Failed_Database_USER"].s();
+        FailedDatabaseConnect.DatabasePassword = ConfigInputJson["Aggregation_Failed_Database_PASS"].s();
+        FailedDatabaseConnect.DETAIL           = ConfigInputJson["Aggregation_Failed_Database_DETAIL"].s();
+        this->FailedDatabaseInfo.DatabaseName     = ConfigInputJson["Aggregation_Failed_Database_Name"].s();
+        this->FailedDatabaseInfo.CollectionName   = ConfigInputJson["Aggregation_Failed_Collection_Name"].s();
 #endif // FAILEDDATABASE
     }
     catch(...)
@@ -55,12 +59,27 @@ Configurate::Configurate()
     SHOW_LOG("CONFIG FILE LOADED SUCCESSFULLY");
 
     auto AggregationConfigconf       {MongoDB::DatabaseConfig()};
-    AggregationConfigconf.IP = DatabaseConfig.DatabaseIP;
-    AggregationConfigconf.Port = DatabaseConfig.DatabasePort;
-    AggregationConfigconf.User = DatabaseConfig.DatabaseUsername;
-    AggregationConfigconf.Password = DatabaseConfig.DatabasePassword;
+    AggregationConfigconf.IP = ConfigDatabaseConnect.DatabaseIP;
+    AggregationConfigconf.Port = ConfigDatabaseConnect.DatabasePort;
+    AggregationConfigconf.User = ConfigDatabaseConnect.DatabaseUsername;
+    AggregationConfigconf.Password = ConfigDatabaseConnect.DatabasePassword;
+    this->ConfigDatabase = std::make_shared<MongoDB>(AggregationConfigconf);
 
-    auto AggregationConfigDatabase = std::make_shared<MongoDB>(AggregationConfigconf);
+    auto AggregationInsertconf       {MongoDB::DatabaseConfig()};
+    AggregationInsertconf.IP = InsertDatabaseConnect.DatabaseIP;
+    AggregationInsertconf.Port = InsertDatabaseConnect.DatabasePort;
+    AggregationInsertconf.User = InsertDatabaseConnect.DatabaseUsername;
+    AggregationInsertconf.Password = InsertDatabaseConnect.DatabasePassword;
+    this->InsertDatabase = std::make_shared<MongoDB>(AggregationInsertconf);
+
+#ifdef FAILEDDATABASE
+    auto AggregationFailedconf       {MongoDB::DatabaseConfig()};
+    AggregationFailedconf.IP = FailedDatabaseConnect.DatabaseIP;
+    AggregationFailedconf.Port = FailedDatabaseConnect.DatabasePort;
+    AggregationFailedconf.User = FailedDatabaseConnect.DatabaseUsername;
+    AggregationFailedconf.Password = FailedDatabaseConnect.DatabasePassword;
+    this->FailedDatabase = std::make_shared<MongoDB>(AggregationFailedconf);
+#endif // FAILEDDATABASE
 
     std::vector<MongoDB::Field> filter = {};
     MongoDB::FindOptionStruct Option;
@@ -68,7 +87,7 @@ Configurate::Configurate()
     MongoDB::ResponseStruct FindReturn;
 
     std::vector<std::string> ConfigDoc;
-    FindReturn = AggregationConfigDatabase->Find(this->DatabaseConfig.DatabaseName, "Config", filter, Option, ConfigDoc);
+    FindReturn = this->ConfigDatabase->Find(this->ConfigDatabaseInfo.DatabaseName, "Config", filter, Option, ConfigDoc);
     if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
     {
         for(auto& doc : ConfigDoc)
@@ -86,7 +105,7 @@ Configurate::Configurate()
     }
 
     std::vector<std::string> InputDoc;
-    FindReturn = AggregationConfigDatabase->Find(this->DatabaseConfig.DatabaseName, "Input", filter, Option, InputDoc);
+    FindReturn = this->ConfigDatabase->Find(this->ConfigDatabaseInfo.DatabaseName, "Input", filter, Option, InputDoc);
     if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
     {
         for(auto& doc : InputDoc)
@@ -155,7 +174,7 @@ Configurate::Configurate()
     }
 
     std::vector<std::string> OutputDoc;
-    FindReturn = AggregationConfigDatabase->Find(DatabaseConfig.DatabaseName, "Output", filter, Option, OutputDoc);
+    FindReturn = this->ConfigDatabase->Find(this->ConfigDatabaseInfo.DatabaseName, "Output", filter, Option, OutputDoc);
     if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
     {
         for(auto& doc : OutputDoc)
@@ -183,29 +202,18 @@ Configurate::Configurate()
     }
 
     this->ReadCamerasCollection();
-    
-    AggregationConfigDatabase.reset();
 }
 
 void Configurate::ReadCamerasCollection()
 {
     std::lock_guard<std::shared_mutex> lock(this->UpdateConfig_mutex);
     
-    auto Aggregationconf       {MongoDB::DatabaseConfig()};
-    Aggregationconf.IP = this->DatabaseInsert.DatabaseIP;
-    Aggregationconf.Port = this->DatabaseInsert.DatabasePort;
-    Aggregationconf.User = this->DatabaseInsert.DatabaseUsername;
-    Aggregationconf.Password = this->DatabaseInsert.DatabasePassword;
-
-    auto AggregationDatabase = std::make_shared<MongoDB>(Aggregationconf);
-    
     std::vector<MongoDB::Field> filter = {};
     MongoDB::FindOptionStruct Option;
-
     MongoDB::ResponseStruct FindReturn;
 
     std::vector<std::string> CamerasDoc;
-    FindReturn = AggregationDatabase->Find(this->DatabaseInsert.DatabaseName, "cameras", filter, Option, CamerasDoc);
+    FindReturn = this->InsertDatabase->Find(this->InsertDatabaseInfo.DatabaseName, "cameras", filter, Option, CamerasDoc);
     if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
     {
         this->Cameras.clear();
@@ -225,7 +233,6 @@ void Configurate::ReadCamerasCollection()
         SHOW_ERROR(FindReturn.Description);
         throw;
     }
-    AggregationDatabase.reset();
 }
 
 void Configurate::RunUpdateService()
@@ -285,19 +292,24 @@ void Configurate::UpdateRoute()
     });
 }
 
-Configurate::DatabaseStruct Configurate::getDatabaseConfig()
+Configurate::InfoDatabaseStruct Configurate::getInsertDatabaseInfo()
 {
-    return this->DatabaseConfig;
+    return this->InsertDatabaseInfo;
 }
 
-Configurate::DatabaseStruct Configurate::getDatabaseInsert()
+Configurate::InfoDatabaseStruct Configurate::getFailedDatabaseInfo()
 {
-    return this->DatabaseInsert;
+    return this->FailedDatabaseInfo;
 }
 
-Configurate::DatabaseStruct Configurate::getDatabaseFailed()
+std::shared_ptr<MongoDB> Configurate::getInsertDatabase()
 {
-    return this->DatabaseFailed;
+    return this->InsertDatabase;
+}
+
+std::shared_ptr<MongoDB> Configurate::getFailedDatabase()
+{
+    return this->FailedDatabase;
 }
 
 std::vector<Configurate::WebServiceConfigStruct> Configurate::getWebServiceConfig()

@@ -14,13 +14,17 @@
 class Configurate
 {
 public:
-    struct DatabaseStruct
+    struct ConnectDatabaseStruct
     {
         std::string DatabaseIP          = "";
         std::string DatabasePort        = "";
         std::string DatabaseUsername    = "";
         std::string DatabasePassword    = "";
         std::string DETAIL              = "";
+    };
+
+    struct InfoDatabaseStruct
+    {
         std::string DatabaseName        = "";
         std::string CollectionName      = "";
         std::string Enable              = "";
@@ -108,9 +112,10 @@ public:
 
     void RunUpdateService();
 
-    DatabaseStruct getDatabaseConfig();
-    DatabaseStruct getDatabaseInsert();
-    DatabaseStruct getDatabaseFailed();
+    InfoDatabaseStruct getInsertDatabaseInfo();
+    InfoDatabaseStruct getFailedDatabaseInfo();
+    std::shared_ptr<MongoDB> getInsertDatabase();
+    std::shared_ptr<MongoDB> getFailedDatabase();
     std::vector<WebServiceConfigStruct> getWebServiceConfig();
     StoreImageConfigStruct getStoreImageConfig();
     KafkaConfigStruct getInputKafkaConfig();
@@ -119,9 +124,12 @@ public:
     std::vector<CameraStruct> getCameras();
 
 private:
-    DatabaseStruct DatabaseConfig;
-    DatabaseStruct DatabaseInsert;
-    DatabaseStruct DatabaseFailed;
+    InfoDatabaseStruct ConfigDatabaseInfo;
+    InfoDatabaseStruct InsertDatabaseInfo;
+    InfoDatabaseStruct FailedDatabaseInfo;
+    std::shared_ptr<MongoDB> ConfigDatabase;
+    std::shared_ptr<MongoDB> InsertDatabase;
+    std::shared_ptr<MongoDB> FailedDatabase;
     WebServiceConfigStruct ReadConfigServiceConfig;
     std::vector<WebServiceConfigStruct> WebServiceConfig;
     StoreImageConfigStruct StoreImageConfig;

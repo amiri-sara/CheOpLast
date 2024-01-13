@@ -5,9 +5,6 @@ WebService::WebService(Configurate::WebServiceConfigStruct ServiceConfig)
     this->app = std::make_shared<crow::SimpleApp>();
     this->app->loglevel(crow::LogLevel::Error);
     this->WebServiceConfig = ServiceConfig;
-
-    Configurate* ConfigurateObj = Configurate::getInstance();
-    this->InputFields = ConfigurateObj->getInputFields();
 }
 
 void WebService::run()
@@ -46,7 +43,7 @@ void WebService::InsertRoute()
         Route += "/";
     if(Route[0] != '/')
         Route = "/" + Route;
-    Route += "Insert";
+    Route += "insert";
     
     this->app->route_dynamic(Route.c_str()).methods(crow::HTTPMethod::POST)([&](const crow::request& req ) {
         
@@ -55,13 +52,10 @@ void WebService::InsertRoute()
         
         std::shared_ptr<DataHandler::DataHandlerStruct> DH = std::make_shared<DataHandler::DataHandlerStruct>();
         DH->Request.body = req.body;
+        crow::json::wvalue Response;
 
-        std::string Host("");
-        auto itr = req.headers.find("Host");
-        if (itr != req.headers.end())
-            Host = itr->second;
-        SHOW_IMPORTANTLOG("Recived request from IP -> " + Host);
-        DH->Request.Host = Host;
+        DH->Request.remoteIP = req.ipAddress;
+        SHOW_IMPORTANTLOG("Recived request from IP -> " + DH->Request.remoteIP);
 
         Configurate* ConfigurateObj = Configurate::getInstance();
 
@@ -69,11 +63,45 @@ void WebService::InsertRoute()
         DH->Cameras = ConfigurateObj->getCameras();
         DH->DaysforPassedTimeAcceptable = this->WebServiceConfig.DaysforPassedTimeAcceptable;
 
+        // 1- Validation Input data
         std::shared_ptr<Validator> Validatorobj = std::make_shared<Validator>();
         if(!(Validatorobj->run(DH)))
-            return crow::response{DH->Response.HTTPCode , DH->Response.Description};
+        {
+            Response["Status"] = DH->Response.errorCode;
+            Response["Description"] = DH->Response.Description;
+            return crow::response{DH->Response.HTTPCode , Response};
+        }
+
+        // 2- Check RecordID exist in database or not
+        std::vector<MongoDB::Field> filter = {
+            // equal
+            {"_id", DH->ProcessedInputData.MongoID, MongoDB::FieldType::ObjectId, "$gte"},
+            {"_id", DH->ProcessedInputData.MongoID, MongoDB::FieldType::ObjectId, "$lte"}
+
+        };
+        MongoDB::FindOptionStruct Option;
+        std::vector<std::string> ResultDoc;
+        auto FindReturn = this->InsertDatabase->Find(this->InsertDatabaseInfo.DatabaseName, this->InsertDatabaseInfo.CollectionName, filter, Option, ResultDoc);
+        if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
+        {
+            if(!(ResultDoc.empty()))
+            {
+                Response["Status"] = DUPLICATERECORD;
+                Response["Description"] = "Duplicate Record.";
+                return crow::response{400 , Response};
+            }
+        }else
+        {
+            SHOW_ERROR(FindReturn.Description);
+            Response["Status"] = DATABASEERROR;
+            Response["Description"] = "Network Internal Service Error.";
+            return crow::response{500 , Response};
+        }
         
-        return crow::response{DH->Response.HTTPCode , DH->Response.Description};
+        
+        Response["Status"] = SUCCESSFUL;
+        Response["Description"] = "Successful";
+        return crow::response{200 , Response};
     });
 }
 
@@ -84,7 +112,7 @@ void WebService::TokenRoute()
         Route += "/";
     if(Route[0] != '/')
         Route = "/" + Route;
-    Route += "Token";
+    Route += "token";
     
     this->app->route_dynamic(Route.c_str()).methods(crow::HTTPMethod::POST)([&](const crow::request& req ) {
         SHOW_IMPORTANTLOG2(req.body);

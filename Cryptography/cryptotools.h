@@ -15,5 +15,6 @@ DecryptedOutputStruct decryptFile(std::string FilePath,std::string ServerPublicK
 DecryptedOutputStruct decryptString(std::string InputStr,std::string ServerPrivateKeyPath, std::string ClientPublicKeyPath);
 bool isBase64(unsigned char C);
 cv::Mat convertBase64ToMatImage(std::string Base64Str);
+std::string GetHex(const int &N);
 
 #endif // CRYPTOTOOLS_H

@@ -50,11 +50,12 @@ namespace DataHandler
         cv::Mat PlateImageMat;
         std::tm PassedTimeLocal;
         std::tm ReceivedTimeLocal;
+        std::string MongoID;
     };
 
     struct RequestStruct
     {
-        std::string Host = "";
+        std::string remoteIP = "";
         std::string body = "";
         crow::json::rvalue JsonRvalue;
         int NumberofInputFields;
