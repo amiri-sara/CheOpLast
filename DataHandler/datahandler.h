@@ -48,9 +48,18 @@ namespace DataHandler
     {
         cv::Mat ColorImageMat;
         cv::Mat PlateImageMat;
+        cv::Mat ThumbnailImage;
+        cv::Mat Banner;
         std::tm PassedTimeLocal;
         std::tm ReceivedTimeLocal;
         std::string MongoID;
+    };
+
+    struct StoreImageAddressStruct
+    {
+        std::string ImageFolder;
+        std::string ImageName;
+        std::string ImageAddress;
     };
 
     struct RequestStruct
@@ -72,8 +81,12 @@ namespace DataHandler
     {
         Configurate::InputFieldsStruct hasInputFields;
         std::vector<Configurate::CameraStruct> Cameras;
+        Configurate::StoreImageConfigStruct StoreImageConfig;
+        std::unordered_map<int, Configurate::ViolationStruct> ViolationMap;
+        Configurate::ViolationStruct ViolationInfo;
         InputStruct Input;
         ProcessedInputDataStruct ProcessedInputData;
+        StoreImageAddressStruct StoreImageAddress; 
         RequestStruct Request;
         ResponseStruct Response;
         int DaysforPassedTimeAcceptable;

@@ -72,7 +72,6 @@
 #define INVALIDLATITUDE                                     628
 #define INVALIDLONGITUDE                                    629
 #define INVALIDACCURACY                                     630
-#define DATABASEERROR                                       651
 
 #define INVALIDGRAYSCALEIMAGE                               632
 #define INVALIDCODETYPE                                     633
@@ -80,5 +79,10 @@
 #define INVALIDPROBABILITY                                  635
 #define INVALIDRECORDID                                     636
 #define INVALIDRECEIVEDTIME                                 637
+
+#define DATABASEERROR                                       651
+#define CANNOTFINDVIOLATIONID                               652
+#define CANNOTCREATETHUMBNAILIMAGE                          653
+
 
 #endif // LOG_H

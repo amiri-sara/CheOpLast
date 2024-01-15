@@ -872,6 +872,16 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             return false;
         }
         
+
+        // std::vector<uchar> imageData;
+        // std::vector<int> Param;
+        // Param.push_back(cv::IMWRITE_JPEG_QUALITY);
+        // int CompressLevel = 95;
+        // Param.push_back(CompressLevel);
+
+
+        // cv::imencode(".jpg", ColorImageMat, imageData, Param);
+        // SHOW_IMPORTANTLOG2(imageData.size() / 1024);
         // double ColorImageMatSizeKB = static_cast<double>(ColorImageMat.total() * ColorImageMat.elemSize()) / 1024.0;
         // if(ColorImageMatSizeKB > 300.0)
         // {
@@ -1298,7 +1308,11 @@ std::string Validator::GeneratMongoIDHash(const std::tm &PassedTime, const std::
     }
     HashID += HexPlateValue;
 
-    std::string HexVID = GetHex(ViolationID);
+    int VI = 0;
+    if(ViolationID != 0)
+        VI = ViolationID - 2000;
+    
+    std::string HexVID = GetHex(VI);
     if(HexVID.size()< 2)
     {
         for(int i = 0 ; i < (2 - HexVID.size());i++)

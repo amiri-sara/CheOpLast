@@ -46,6 +46,7 @@ public:
         int ColorImageMaxSize;
         int PlateImageMaxSize;
         bool AddBanner;
+        std::string FontAddress         = "";
     };
 
     struct KafkaConfigStruct
@@ -62,6 +63,9 @@ public:
         int DeviceID;
         std::string Username            = "";
         std::string Password            = "";
+        std::string Location            = "";
+        int PoliceCode;
+        int AllowedSpeed;
     };
 
     struct InputFieldsStruct
@@ -95,6 +99,12 @@ public:
         bool ReceivedTime   =   false;
     };
 
+    struct ViolationStruct
+    {
+        std::string Description;
+        std::string ImageSuffix;
+    };
+
     Configurate(const Configurate& Obj) = delete;
 
     static Configurate* getInstance()
@@ -122,6 +132,7 @@ public:
     KafkaConfigStruct getOutputKafkaConfig();
     InputFieldsStruct getInputFields();
     std::vector<CameraStruct> getCameras();
+    std::unordered_map<int, ViolationStruct> getViolationMap();
 
 private:
     InfoDatabaseStruct ConfigDatabaseInfo;
@@ -137,6 +148,7 @@ private:
     KafkaConfigStruct OutputKafkaConfig;
     InputFieldsStruct InputFields;
     std::vector<CameraStruct> Cameras;
+    std::unordered_map<int, ViolationStruct> ViolationMap;
 
     void ReadCamerasCollection();
 

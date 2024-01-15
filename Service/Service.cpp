@@ -6,4 +6,6 @@ Service::Service()
     this->InputFields = ConfigurateObj->getInputFields();
     this->InsertDatabaseInfo = ConfigurateObj->getInsertDatabaseInfo();
     this->InsertDatabase = ConfigurateObj->getInsertDatabase();
+    this->StoreImageConfig = ConfigurateObj->getStoreImageConfig();
+    this->ViolationMap = ConfigurateObj->getViolationMap();
 }

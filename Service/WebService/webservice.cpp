@@ -60,6 +60,8 @@ void WebService::InsertRoute()
         Configurate* ConfigurateObj = Configurate::getInstance();
 
         DH->hasInputFields = this->InputFields;
+        DH->StoreImageConfig = this->StoreImageConfig;
+        DH->ViolationMap = this->ViolationMap;
         DH->Cameras = ConfigurateObj->getCameras();
         DH->DaysforPassedTimeAcceptable = this->WebServiceConfig.DaysforPassedTimeAcceptable;
 
@@ -98,6 +100,16 @@ void WebService::InsertRoute()
             return crow::response{500 , Response};
         }
         
+        // 3- Store Image
+        std::shared_ptr<storeimage> storeimageobj = std::make_shared<storeimage>();
+        if(!(storeimageobj->run(DH)))
+        {
+            Response["Status"] = DH->Response.errorCode;
+            Response["Description"] = DH->Response.Description;
+            return crow::response{DH->Response.HTTPCode , Response};
+        }
+
+        // 4- Save Data
         
         Response["Status"] = SUCCESSFUL;
         Response["Description"] = "Successful";

@@ -6,6 +6,7 @@
 #include "../DataHandler/datahandler.h"
 #include "../Validator/validator.h"
 #include "../Cryptography/cryptotools.h"
+#include "../StoreImage/storeimage.h"
 
 class Service
 {
@@ -25,6 +26,9 @@ public:
 protected:
     Configurate::InputFieldsStruct InputFields;
     Configurate::InfoDatabaseStruct InsertDatabaseInfo;
+    Configurate::StoreImageConfigStruct StoreImageConfig;
+    std::unordered_map<int, Configurate::ViolationStruct> ViolationMap;
+    
     std::shared_ptr<MongoDB> InsertDatabase;
 };
 

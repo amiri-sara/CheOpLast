@@ -169,7 +169,8 @@ set(SRC_LIST main.cpp
              Database/MongoDB.cpp
              Validator/validator.cpp
              Time/timetools.cpp
-             Service/Service.cpp)
+             Service/Service.cpp
+             StoreImage/storeimage.cpp)
 
 if(KAFKASERVICE OR KAFKAOUTPUT)
     set(SRC_LIST    ${SRC_LIST}
@@ -202,4 +203,10 @@ if(BUILDUBUNTU20)
 elseif(BUILDUBUNTU22)
     target_link_libraries(${PROJECT_NAME} /usr/local/lib/mongocxx/libmongocxx.so
                                           /usr/local/lib/mongocxx/libbsoncxx.so)
+endif()
+
+if(BUILDUBUNTU20)
+    target_link_libraries(${PROJECT_NAME} /usr/local/lib/libbannerapi.so)
+elseif(BUILDUBUNTU22)
+target_link_libraries(${PROJECT_NAME} /usr/local/lib/banner/libbannerapi.so)
 endif()

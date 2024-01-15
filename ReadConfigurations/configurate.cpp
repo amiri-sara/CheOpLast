@@ -185,7 +185,24 @@ Configurate::Configurate()
             this->StoreImageConfig.StorePath = StoreImageConfigJSON["StorePath"].s();
             this->StoreImageConfig.ColorImageMaxSize = StoreImageConfigJSON["ColorImageMaxSize"].i();
             this->StoreImageConfig.PlateImageMaxSize = StoreImageConfigJSON["PlateImageMaxSize"].i();
-            this->StoreImageConfig.AddBanner = StoreImageConfigJSON["AddBanner"].b();
+            
+            crow::json::rvalue BannerJSON = StoreImageConfigJSON["Banner"];
+            crow::json::wvalue WBannerJSON(BannerJSON);
+            this->StoreImageConfig.AddBanner = BannerJSON["active"].b();
+            this->StoreImageConfig.FontAddress = BannerJSON["fontAddress"].s();            
+            std::vector<std::string> BannerKeys = WBannerJSON.keys();
+            for(auto& key : BannerKeys)
+            {
+                if(key == "active" || key == "fontAddress")
+                    continue;
+                
+                int ViolationID = std::stoi(key);
+                Configurate::ViolationStruct VS;
+                VS.Description = BannerJSON[key]["Description"].s();
+                VS.ImageSuffix = BannerJSON[key]["Suffix"].s();
+                
+                this->ViolationMap[ViolationID] = VS;
+            }
 #endif // STOREIMAGE
 #ifdef KAFKAOUTPUT
             crow::json::rvalue KafkaConfigJSON = OutputConfigJSON["Kafka"];
@@ -210,23 +227,46 @@ void Configurate::ReadCamerasCollection()
     
     std::vector<MongoDB::Field> filter = {};
     MongoDB::FindOptionStruct Option;
-    MongoDB::ResponseStruct FindReturn;
 
-    std::vector<std::string> CamerasDoc;
-    FindReturn = this->InsertDatabase->Find(this->InsertDatabaseInfo.DatabaseName, "cameras", filter, Option, CamerasDoc);
+    std::vector<std::string> SystemDoc;
+    MongoDB::ResponseStruct FindReturn = this->InsertDatabase->Find(this->InsertDatabaseInfo.DatabaseName, "systems", filter, Option, SystemDoc);
     if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
     {
         this->Cameras.clear();
-        for(auto& doc : CamerasDoc)
+        for(auto& doc : SystemDoc)
         {
-            crow::json::rvalue CameraJSON = crow::json::load(doc);
-            
-            CameraStruct Camera;
-            Camera.DeviceID = CameraJSON["deviceId"].i();
-            Camera.Username = CameraJSON["username"].s();
-            Camera.Password = CameraJSON["password"].s();
+            crow::json::rvalue SystemJSON = crow::json::load(doc);
 
-            this->Cameras.push_back(Camera);
+            std::string ID = SystemJSON["_id"]["$oid"].s();
+            std::vector<MongoDB::Field> devicefilter = 
+            {
+                {"systemId", ID, MongoDB::FieldType::ObjectId, "$gte"},
+                {"systemId", ID, MongoDB::FieldType::ObjectId, "$lte"}
+            };
+                
+            std::vector<std::string> DeviceDoc;
+            MongoDB::ResponseStruct DeviceFindReturn = this->InsertDatabase->Find(this->InsertDatabaseInfo.DatabaseName, "cameras", devicefilter, Option, DeviceDoc);
+            if(DeviceFindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
+            {
+                for(auto& doc : DeviceDoc)
+                {
+                    crow::json::rvalue CameraJSON = crow::json::load(doc);
+            
+                    CameraStruct Camera;
+                    Camera.DeviceID     = CameraJSON["deviceId"].i();
+                    Camera.Username     = CameraJSON["username"].s();
+                    Camera.Password     = CameraJSON["password"].s();
+                    Camera.Location     = SystemJSON["location"].s();
+                    Camera.PoliceCode   = SystemJSON["policeCode"].i();
+                    Camera.AllowedSpeed = SystemJSON["allowedSpeed"].i();
+
+                    this->Cameras.push_back(Camera);
+                }
+            }else
+            {
+                SHOW_ERROR(DeviceFindReturn.Description);
+                throw;
+            }
         }
     }else
     {
@@ -341,4 +381,9 @@ std::vector<Configurate::CameraStruct> Configurate::getCameras()
 Configurate::InputFieldsStruct Configurate::getInputFields()
 {
     return this->InputFields;
+}
+
+std::unordered_map<int, Configurate::ViolationStruct> Configurate::getViolationMap()
+{
+    return this->ViolationMap;
 }
