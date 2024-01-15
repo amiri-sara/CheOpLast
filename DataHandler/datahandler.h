@@ -30,6 +30,7 @@ namespace DataHandler
         std::string Suspicious;
         std::string PassedTime;
         std::string ColorImage;
+        std::string ImageAddress;
         std::string GrayScaleImage;
         std::string PlateImage;
         std::string PlateRect;
@@ -79,7 +80,8 @@ namespace DataHandler
 
     struct DataHandlerStruct
     {
-        Configurate::InputFieldsStruct hasInputFields;
+        Configurate::FieldsStruct hasInputFields;
+        Configurate::FieldsStruct hasOutputFields;
         std::vector<Configurate::CameraStruct> Cameras;
         Configurate::StoreImageConfigStruct StoreImageConfig;
         std::unordered_map<int, Configurate::ViolationStruct> ViolationMap;
@@ -90,6 +92,9 @@ namespace DataHandler
         RequestStruct Request;
         ResponseStruct Response;
         int DaysforPassedTimeAcceptable;
+
+        std::shared_ptr<MongoDB> InsertDatabase;
+        Configurate::InfoDatabaseStruct InsertDatabaseInfo;
     };
 }
 

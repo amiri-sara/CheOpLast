@@ -169,8 +169,7 @@ set(SRC_LIST main.cpp
              Database/MongoDB.cpp
              Validator/validator.cpp
              Time/timetools.cpp
-             Service/Service.cpp
-             StoreImage/storeimage.cpp)
+             Service/Service.cpp)
 
 if(KAFKASERVICE OR KAFKAOUTPUT)
     set(SRC_LIST    ${SRC_LIST}
@@ -180,6 +179,16 @@ endif()
 if(WEBSERVICE)
     set(SRC_LIST    ${SRC_LIST}
                     Service/WebService/webservice.cpp)
+endif()
+
+if(STOREIMAGE)
+    set(SRC_LIST    ${SRC_LIST}
+                    StoreImage/storeimage.cpp)
+endif()
+
+if(INSERTDATABASE OR KAFKAOUTPUT)
+    set(SRC_LIST    ${SRC_LIST}
+                    SaveData/savedata.cpp)
 endif()
 
 add_executable(${PROJECT_NAME} ${SRC_LIST})

@@ -128,6 +128,7 @@ Configurate::Configurate()
             this->InputFields.Lane            = InputFieldsJSON["Lane"].b();
             this->InputFields.PassedTime      = InputFieldsJSON["PassedTime"].b();
             this->InputFields.ColorImage      = InputFieldsJSON["ColorImage"].b();
+            this->InputFields.ImageAddress    = InputFieldsJSON["ImageAddress"].b();
             this->InputFields.GrayScaleImage  = InputFieldsJSON["GrayScaleImage"].b();
             this->InputFields.PlateImage      = InputFieldsJSON["PlateImage"].b();
             this->InputFields.Latitude        = InputFieldsJSON["Latitude"].b();
@@ -180,6 +181,37 @@ Configurate::Configurate()
         for(auto& doc : OutputDoc)
         {
             crow::json::rvalue OutputConfigJSON = crow::json::load(doc);
+
+            crow::json::rvalue OutputFieldsJSON = OutputConfigJSON["OutputFields"];
+            this->OutputFields.DeviceID          = OutputFieldsJSON["DeviceID"].b();
+            this->OutputFields.UserID            = OutputFieldsJSON["UserID"].b();
+            this->OutputFields.StreetID          = OutputFieldsJSON["StreetID"].b();
+            this->OutputFields.ViolationID       = OutputFieldsJSON["ViolationID"].b();
+            this->OutputFields.Direction         = OutputFieldsJSON["Direction"].b();
+            this->OutputFields.PlateValue        = OutputFieldsJSON["PlateValue"].b();
+            this->OutputFields.PlateType         = OutputFieldsJSON["PlateType"].b();
+            this->OutputFields.Suspicious        = OutputFieldsJSON["Suspicious"].b();
+            this->OutputFields.Speed             = OutputFieldsJSON["Speed"].b();
+            this->OutputFields.VehicleType       = OutputFieldsJSON["VehicleType"].b();
+            this->OutputFields.VehicleColor      = OutputFieldsJSON["VehicleColor"].b();
+            this->OutputFields.VehicleModel      = OutputFieldsJSON["VehicleModel"].b();
+            this->OutputFields.Lane              = OutputFieldsJSON["Lane"].b();
+            this->OutputFields.PassedTime        = OutputFieldsJSON["PassedTime"].b();
+            this->OutputFields.ColorImage        = OutputFieldsJSON["ColorImage"].b();
+            this->OutputFields.ImageAddress      = OutputFieldsJSON["ImageAddress"].b();
+            this->OutputFields.GrayScaleImage    = OutputFieldsJSON["GrayScaleImage"].b();
+            this->OutputFields.PlateImage        = OutputFieldsJSON["PlateImage"].b();
+            this->OutputFields.Latitude          = OutputFieldsJSON["Latitude"].b();
+            this->OutputFields.Longitude         = OutputFieldsJSON["Longitude"].b();
+            this->OutputFields.Accuracy          = OutputFieldsJSON["Accuracy"].b();
+            this->OutputFields.PlateRect         = OutputFieldsJSON["PlateRect"].b();
+            this->OutputFields.CarRect           = OutputFieldsJSON["CarRect"].b();
+            this->OutputFields.CodeType          = OutputFieldsJSON["CodeType"].b();
+            this->OutputFields.MasterPlate       = OutputFieldsJSON["MasterPlate"].b();
+            this->OutputFields.Probability       = OutputFieldsJSON["Probability"].b();
+            this->OutputFields.RecordID          = OutputFieldsJSON["RecordID"].b();
+            this->OutputFields.ReceivedTime      = OutputFieldsJSON["ReceivedTime"].b();
+
 #ifdef STOREIMAGE
             crow::json::rvalue StoreImageConfigJSON = OutputConfigJSON["StoreImage"];
             this->StoreImageConfig.StorePath = StoreImageConfigJSON["StorePath"].s();
@@ -378,9 +410,14 @@ std::vector<Configurate::CameraStruct> Configurate::getCameras()
     return this->Cameras;
 }
 
-Configurate::InputFieldsStruct Configurate::getInputFields()
+Configurate::FieldsStruct Configurate::getInputFields()
 {
     return this->InputFields;
+}
+
+Configurate::FieldsStruct Configurate::getOutputFields()
+{
+    return this->OutputFields;
 }
 
 std::unordered_map<int, Configurate::ViolationStruct> Configurate::getViolationMap()

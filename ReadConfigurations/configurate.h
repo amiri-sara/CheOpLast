@@ -68,7 +68,7 @@ public:
         int AllowedSpeed;
     };
 
-    struct InputFieldsStruct
+    struct FieldsStruct
     {
         bool DeviceID       =   false;
         bool UserID         =   false;
@@ -85,6 +85,7 @@ public:
         bool Lane           =   false;
         bool PassedTime     =   false;
         bool ColorImage     =   false;
+        bool ImageAddress   =   false;
         bool GrayScaleImage =   false;
         bool PlateImage     =   false;
         bool Latitude       =   false;
@@ -130,7 +131,8 @@ public:
     StoreImageConfigStruct getStoreImageConfig();
     KafkaConfigStruct getInputKafkaConfig();
     KafkaConfigStruct getOutputKafkaConfig();
-    InputFieldsStruct getInputFields();
+    FieldsStruct getInputFields();
+    FieldsStruct getOutputFields();
     std::vector<CameraStruct> getCameras();
     std::unordered_map<int, ViolationStruct> getViolationMap();
 
@@ -146,7 +148,8 @@ private:
     StoreImageConfigStruct StoreImageConfig;
     KafkaConfigStruct InputKafkaConfig;
     KafkaConfigStruct OutputKafkaConfig;
-    InputFieldsStruct InputFields;
+    FieldsStruct InputFields;
+    FieldsStruct OutputFields;
     std::vector<CameraStruct> Cameras;
     std::unordered_map<int, ViolationStruct> ViolationMap;
 

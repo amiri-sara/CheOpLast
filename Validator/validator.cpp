@@ -872,27 +872,38 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             return false;
         }
         
+        auto ColorImageLength = ColorImage.length();
+        auto sizeInBytes = 4 * std::ceil((ColorImageLength / 3))*0.5624896334383812;
+        auto sizeInKb = sizeInBytes/1000;
 
-        // std::vector<uchar> imageData;
-        // std::vector<int> Param;
-        // Param.push_back(cv::IMWRITE_JPEG_QUALITY);
-        // int CompressLevel = 95;
-        // Param.push_back(CompressLevel);
-
-
-        // cv::imencode(".jpg", ColorImageMat, imageData, Param);
-        // SHOW_IMPORTANTLOG2(imageData.size() / 1024);
-        // double ColorImageMatSizeKB = static_cast<double>(ColorImageMat.total() * ColorImageMat.elemSize()) / 1024.0;
-        // if(ColorImageMatSizeKB > 300.0)
-        // {
-        //     DH->Response.HTTPCode = 400;
-        //     DH->Response.errorCode = INVALIDCOLORIMAGESIZE;
-        //     DH->Response.Description = "The size of the ColorImage should not be more than 300KB";
-        //     return false;
-        // }
+        if(sizeInKb > DH->StoreImageConfig.ColorImageMaxSize)
+        {
+            DH->Response.HTTPCode = 400;
+            DH->Response.errorCode = INVALIDCOLORIMAGESIZE;
+            DH->Response.Description = "The size of the ColorImage should not be more than 300KB";
+            return false;
+        }
 
         DH->Input.ColorImage = ColorImage;
         DH->ProcessedInputData.ColorImageMat = ColorImageMat;
+    }
+
+    // ImageAddress
+    if(DH->hasInputFields.ImageAddress)
+    {
+        std::string ImageAddress;
+        try
+        {
+            ImageAddress = DH->Request.JsonRvalue["ImageAddress"].s();
+        }catch(...)
+        {
+            DH->Response.HTTPCode = 400;
+            DH->Response.errorCode = INVALIDCOLORIMAGE;
+            DH->Response.Description = "The type of ImageAddress is invalid.";
+            return false; 
+        }
+
+        DH->Input.ImageAddress = ImageAddress;
     }
 
     // GrayScaleImage
@@ -933,14 +944,17 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             return false;
         }
 
-        // double PlateImageMatSizeKB = static_cast<double>(PlateImageMat.total() * PlateImageMat.elemSize()) / 1024.0;
-        // if(PlateImageMatSizeKB > 50.0)
-        // {
-        //     DH->Response.HTTPCode = 400;
-        //     DH->Response.errorCode = INVALIDCOLORIMAGESIZE;
-        //     DH->Response.Description = "The size of the PlateImage should not be more than 300KB";
-        //     return false;
-        // }
+        auto PlateImageLength = PlateImage.length();
+        auto sizeInBytes = 4 * std::ceil((PlateImageLength / 3))*0.5624896334383812;
+        auto sizeInKb = sizeInBytes/1000;
+
+        if(sizeInKb > DH->StoreImageConfig.PlateImageMaxSize)
+        {
+            DH->Response.HTTPCode = 400;
+            DH->Response.errorCode = INVALIDCOLORIMAGESIZE;
+            DH->Response.Description = "The size of the ColorImage should not be more than 50KB";
+            return false;
+        }
 
         DH->Input.PlateImage = PlateImage;
         DH->ProcessedInputData.PlateImageMat = PlateImageMat;

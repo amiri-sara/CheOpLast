@@ -7,6 +7,7 @@
 #include "../Validator/validator.h"
 #include "../Cryptography/cryptotools.h"
 #include "../StoreImage/storeimage.h"
+#include "../SaveData/savedata.h"
 
 class Service
 {
@@ -24,7 +25,8 @@ public:
     virtual ~Service() = default; 			
     virtual void run() = 0;
 protected:
-    Configurate::InputFieldsStruct InputFields;
+    Configurate::FieldsStruct InputFields;
+    Configurate::FieldsStruct OutputFields;
     Configurate::InfoDatabaseStruct InsertDatabaseInfo;
     Configurate::StoreImageConfigStruct StoreImageConfig;
     std::unordered_map<int, Configurate::ViolationStruct> ViolationMap;

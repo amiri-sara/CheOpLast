@@ -60,10 +60,13 @@ void WebService::InsertRoute()
         Configurate* ConfigurateObj = Configurate::getInstance();
 
         DH->hasInputFields = this->InputFields;
+        DH->hasOutputFields = this->OutputFields;
         DH->StoreImageConfig = this->StoreImageConfig;
         DH->ViolationMap = this->ViolationMap;
         DH->Cameras = ConfigurateObj->getCameras();
         DH->DaysforPassedTimeAcceptable = this->WebServiceConfig.DaysforPassedTimeAcceptable;
+        DH->InsertDatabase = this->InsertDatabase;
+        DH->InsertDatabaseInfo = this->InsertDatabaseInfo;
 
         // 1- Validation Input data
         std::shared_ptr<Validator> Validatorobj = std::make_shared<Validator>();
@@ -83,7 +86,7 @@ void WebService::InsertRoute()
         };
         MongoDB::FindOptionStruct Option;
         std::vector<std::string> ResultDoc;
-        auto FindReturn = this->InsertDatabase->Find(this->InsertDatabaseInfo.DatabaseName, this->InsertDatabaseInfo.CollectionName, filter, Option, ResultDoc);
+        auto FindReturn = DH->InsertDatabase->Find(this->InsertDatabaseInfo.DatabaseName, this->InsertDatabaseInfo.CollectionName, filter, Option, ResultDoc);
         if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
         {
             if(!(ResultDoc.empty()))
@@ -110,6 +113,13 @@ void WebService::InsertRoute()
         }
 
         // 4- Save Data
+        std::shared_ptr<savedata> savedataobj = std::make_shared<savedata>();
+        if(!(savedataobj->run(DH)))
+        {
+            Response["Status"] = DH->Response.errorCode;
+            Response["Description"] = DH->Response.Description;
+            return crow::response{DH->Response.HTTPCode , Response};
+        }
         
         Response["Status"] = SUCCESSFUL;
         Response["Description"] = "Successful";
