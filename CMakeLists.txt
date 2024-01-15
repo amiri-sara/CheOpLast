@@ -197,7 +197,8 @@ target_link_libraries(${PROJECT_NAME}
                       pthread 
                       crypto 
                       boost_thread 
-                      boost_chrono 
+                      boost_chrono
+                      boost_filesystem 
                       ${OPENCVLIB})
 
 if(KAFKASERVICE OR KAFKAOUTPUT)

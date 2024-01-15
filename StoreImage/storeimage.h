@@ -16,6 +16,9 @@ private:
     bool CreateAddress(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH);
     bool CreateThumbnail(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH);
     bool CreateBanner(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH);
+    
+    bool StoreImage(std::string FolderName, std::string ImageName, cv::Mat Image, bool EnableResize, int MaxSize);
+    void setPermissionsDir(std::string Path);
 };
 
 

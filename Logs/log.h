@@ -33,6 +33,7 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
+#include <boost/filesystem.hpp>
 
 #include <opencv2/opencv.hpp>
 
@@ -83,6 +84,10 @@
 #define DATABASEERROR                                       651
 #define CANNOTFINDVIOLATIONID                               652
 #define CANNOTCREATETHUMBNAILIMAGE                          653
+
+#define CANNOTSAVECOLORIMAGE                                654
+#define CANNOTSAVEPLATEIMAGE                                655
+#define CANNOTSAVETHUMBNAILIMAGE                            656
 
 
 #endif // LOG_H

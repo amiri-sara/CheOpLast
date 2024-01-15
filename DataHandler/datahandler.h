@@ -50,7 +50,6 @@ namespace DataHandler
         cv::Mat ColorImageMat;
         cv::Mat PlateImageMat;
         cv::Mat ThumbnailImage;
-        cv::Mat Banner;
         std::tm PassedTimeLocal;
         std::tm ReceivedTimeLocal;
         std::string MongoID;

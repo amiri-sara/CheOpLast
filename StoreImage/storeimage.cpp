@@ -23,6 +23,37 @@ bool storeimage::run(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH)
         }
     }
 
+    // Store Color Images
+    std::string FolderName = DH->StoreImageConfig.StorePath + "/" + DH->StoreImageAddress.ImageFolder;
+    std::string ColorImageName = DH->StoreImageAddress.ImageName + DH->ViolationInfo.ImageSuffix + ".jpg";
+    if(!(this->StoreImage(FolderName, ColorImageName, DH->ProcessedInputData.ColorImageMat, true, DH->StoreImageConfig.ColorImageMaxSize)))
+    {
+        DH->Response.HTTPCode = 400;
+        DH->Response.errorCode = CANNOTSAVECOLORIMAGE;
+        DH->Response.Description = "Internal Error.";
+        return false;
+    }
+
+    // Store plate Images
+    std::string PlateImageName = DH->StoreImageAddress.ImageName + "_P" + ".jpg";
+    if(!(this->StoreImage(FolderName, PlateImageName, DH->ProcessedInputData.PlateImageMat, true, DH->StoreImageConfig.PlateImageMaxSize)))
+    {
+        DH->Response.HTTPCode = 400;
+        DH->Response.errorCode = CANNOTSAVEPLATEIMAGE;
+        DH->Response.Description = "Internal Error.";
+        return false;
+    }
+
+    // Store Thumbnail Image
+    std::string ThumbnailImageName = DH->StoreImageAddress.ImageName + "_IT" + ".jpg";
+    if(!(this->StoreImage(FolderName, ThumbnailImageName, DH->ProcessedInputData.ThumbnailImage, true, 5)))
+    {
+        DH->Response.HTTPCode = 400;
+        DH->Response.errorCode = CANNOTSAVETHUMBNAILIMAGE;
+        DH->Response.Description = "Internal Error.";
+        return false;
+    }
+
     return true;
 }
 
@@ -134,6 +165,7 @@ bool storeimage::CreateBanner(const std::shared_ptr<DataHandler::DataHandlerStru
         Config.fontHeight = 12;
     }
 
+    Config.BannerWidth = ImageWidth;
     BA.init(Config);
 
     // Create Lines
@@ -208,7 +240,7 @@ bool storeimage::CreateBanner(const std::shared_ptr<DataHandler::DataHandlerStru
 
         // Speed
         BannerAPI::LineStruct line6;
-        std::string SpeedLine = "           سرعت : " + std::to_string(DH->Input.Speed) + " ";
+        std::string SpeedLine = "          سرعت : " + std::to_string(DH->Input.Speed) + " ";
         line6.Text = SpeedLine;
         line6.LineAllignment = BannerAPI::LTR;
         Lines.push_back(line6);
@@ -228,6 +260,89 @@ bool storeimage::CreateBanner(const std::shared_ptr<DataHandler::DataHandlerStru
     line8.LineAllignment = BannerAPI::RTL;
     Lines.push_back(line8);
 
-    DH->ProcessedInputData.Banner = BA.Run(Lines);
+    cv::Mat Banner = BA.Run(Lines);
+    cv::vconcat(Banner, DH->ProcessedInputData.ColorImageMat, DH->ProcessedInputData.ColorImageMat);
+    
     return true;
+}
+
+bool storeimage::StoreImage(std::string FolderName, std::string ImageName, cv::Mat Image, bool EnableResize, int MaxSize)
+{
+    setPermissionsDir(FolderName+"/");
+
+    std::vector<uchar> ImgData;
+    std::vector<int> Param;
+    Param.push_back(cv::IMWRITE_JPEG_QUALITY);
+    Param.push_back(100);
+
+    std::string OutputImageName =  FolderName+ "/" +ImageName;
+
+    if(EnableResize)
+    {
+        do
+        {
+            Param[1] -= 10;
+            cv::imencode(".jpg", Image, ImgData, Param);
+            if(Param[1] == 0)
+                break;
+        }
+        while(ImgData.size()/1024 >MaxSize);
+
+        std::string DataArray = std::string(reinterpret_cast<const char*>(&ImgData[0]),ImgData.size());
+        std::ofstream MyImage(OutputImageName, std::ios::out);
+
+        if(MyImage.is_open())
+        {
+            MyImage.write(DataArray.c_str(),DataArray.size());
+            MyImage.close();
+        }
+        else
+        {
+            return false;
+        }
+    }
+    else
+    {
+        if(!cv::imwrite(OutputImageName, Image, Param))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+void storeimage::setPermissionsDir(std::string Path)
+{
+    std::string SupPath = "";
+    std::vector<std::string> SubPathVec;
+    if(boost::filesystem::is_directory(Path))
+    {
+        return;
+    }
+    do
+    {
+        size_t Indx = Path.find_last_of('/');
+        if(Indx == std::string::npos)
+        {
+            return;
+        }
+
+        SupPath = Path.substr(0, Indx);
+        std::string SubPath = Path.substr(Indx);
+        SubPathVec.push_back(SubPath);
+        Path = SupPath;
+    }
+    while(!boost::filesystem::is_directory(SupPath));
+
+    SubPathVec.erase(SubPathVec.begin());
+    while(SubPathVec.size() > 0)
+    {
+        std::string SPath = SupPath+SubPathVec.back();
+        SubPathVec.erase(SubPathVec.end());
+        boost::filesystem::create_directories(SPath);
+        boost::filesystem::permissions(SPath, boost::filesystem::owner_all |boost::filesystem::group_all | boost::filesystem::others_all);
+        SupPath = SPath;
+    }
+
+    return;
 }
