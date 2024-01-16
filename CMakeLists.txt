@@ -14,6 +14,7 @@ OPTION(INSERTDATABASE "Insert the data into the database" ON)
 OPTION(FAILEDDATABASE "failed database" OFF)
 OPTION(STOREIMAGE "Store Image" ON)
 OPTION(KAFKAOUTPUT "Add the output data to the Kafka" ON)
+OPTION(VALUEVALIDATION "Validation value of input" ON)
 
 if(BUILDUBUNTU22)
     add_definitions(-DCREATEMONGOINSTANCE)
@@ -41,6 +42,10 @@ endif()
 
 if(KAFKAOUTPUT)
     add_definitions(-DKAFKAOUTPUT)
+endif()
+
+if(VALUEVALIDATION)
+    add_definitions(-DVALUEVALIDATION)
 endif()
 
 include_directories(.)

@@ -91,9 +91,9 @@ namespace DataHandler
         RequestStruct Request;
         ResponseStruct Response;
         int DaysforPassedTimeAcceptable;
-
         std::shared_ptr<MongoDB> InsertDatabase;
         Configurate::InfoDatabaseStruct InsertDatabaseInfo;
+        bool DebugMode;
     };
 }
 

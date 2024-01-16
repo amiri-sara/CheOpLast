@@ -8,6 +8,7 @@
 #include "../Cryptography/cryptotools.h"
 #include "../StoreImage/storeimage.h"
 #include "../SaveData/savedata.h"
+#include "../crow.h"
 
 class Service
 {
@@ -25,13 +26,13 @@ public:
     virtual ~Service() = default; 			
     virtual void run() = 0;
 protected:
-    Configurate::FieldsStruct InputFields;
-    Configurate::FieldsStruct OutputFields;
-    Configurate::InfoDatabaseStruct InsertDatabaseInfo;
-    Configurate::StoreImageConfigStruct StoreImageConfig;
-    std::unordered_map<int, Configurate::ViolationStruct> ViolationMap;
+    // Configurate::FieldsStruct InputFields;
+    // Configurate::FieldsStruct OutputFields;
+    // Configurate::InfoDatabaseStruct InsertDatabaseInfo;
+    // Configurate::StoreImageConfigStruct StoreImageConfig;
+    // std::unordered_map<int, Configurate::ViolationStruct> ViolationMap;
     
-    std::shared_ptr<MongoDB> InsertDatabase;
+    // std::shared_ptr<MongoDB> InsertDatabase;
 };
 
 #endif //SERVICE_H

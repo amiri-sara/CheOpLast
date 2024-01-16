@@ -93,6 +93,8 @@ bool KafkaProsumer::read(DummyData *data, std::string error) noexcept
     {
         // TODO: handle headers and other metadata
         data->text = std::string(static_cast<const char *>(message->payload()), static_cast<int>(message->len()));
+        data->partition = message->partition();
+        data->offset = message->offset();
         return true;
     }else
     {

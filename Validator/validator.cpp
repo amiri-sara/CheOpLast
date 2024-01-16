@@ -16,10 +16,6 @@ bool Validator::run(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH)
 
     if(!(this->CheckRequestValues(DH)))
         return false;
-    
-    DH->Response.HTTPCode = 200;
-    DH->Response.errorCode = SUCCESSFUL;
-    DH->Response.Description = "Validation of request is successful";
 
     return true;
 }
@@ -404,6 +400,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             return false; 
         }
 
+#ifdef VALUEVALIDATION
         std::string DeviceIDStr = std::to_string(DeviceID);
         if(DeviceIDStr.length() != 7)
         {
@@ -430,6 +427,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             DH->Response.Description = "This DeviceID does not exist.";
             return false; 
         }
+#endif // VALUEVALIDATION
 
         DH->Input.DeviceID = DeviceID;
     }
@@ -448,7 +446,8 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             DH->Response.Description = "The type of UserID is invalid.";
             return false; 
         }
-        
+
+#ifdef VALUEVALIDATION
         std::string UserIDStr = std::to_string(UserID);
         if(UserIDStr.length() > 10)
         {
@@ -457,6 +456,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             DH->Response.Description = "The number of digits of the UserID value should not be more than 10.";
             return false;
         }
+#endif // VALUEVALIDATION
         
         DH->Input.UserID = UserID;
     }
@@ -475,7 +475,8 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             DH->Response.Description = "The type of StreetID is invalid.";
             return false; 
         }
-        
+
+#ifdef VALUEVALIDATION
         std::string StreetIDStr = std::to_string(StreetID);
         if(StreetID != 0 && (StreetIDStr.length() < 8 || StreetIDStr.length() > 12))
         {
@@ -484,7 +485,8 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             DH->Response.Description = "The number of digits of the StreetID value must be a value between 8 and 12.";
             return false;
         }
-
+#endif // VALUEVALIDATION
+        
         DH->Input.StreetID = StreetID;
     }
 
@@ -503,6 +505,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             return false; 
         }
         
+#ifdef VALUEVALIDATION
         if(ViolationID != 0 && (ViolationID < 2002 || ViolationID > 2255))
         {
             DH->Response.HTTPCode = 400;
@@ -510,6 +513,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             DH->Response.Description = "The value of ViolationID is invalid.";
             return false;
         }
+#endif // VALUEVALIDATION
 
         DH->Input.ViolationID = ViolationID;
     }
@@ -528,7 +532,8 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             DH->Response.Description = "The type of Direction is invalid.";
             return false; 
         }
-        
+
+#ifdef VALUEVALIDATION
         if(Direction < -1 || Direction > 2)
         {
             DH->Response.HTTPCode = 400;
@@ -536,6 +541,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             DH->Response.Description = "The value of Direction must be between -1 and 2.";
             return false;
         }
+#endif // VALUEVALIDATION
 
         DH->Input.Direction = Direction;
     }
@@ -555,6 +561,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             return false; 
         }
         
+#ifdef VALUEVALIDATION
         if(PlateType < 0 || PlateType > 100)
         {
             DH->Response.HTTPCode = 400;
@@ -562,6 +569,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             DH->Response.Description = "The value of PlateType is invalid.";
             return false;
         }
+#endif // VALUEVALIDATION
 
         DH->Input.PlateType = PlateType;
     }
@@ -581,6 +589,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             return false; 
         }
 
+#ifdef VALUEVALIDATION
         if(PlateValue.empty())
         {
             DH->Response.HTTPCode = 400;
@@ -635,6 +644,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
                 return false;
             }
         }
+#endif // VALUEVALIDATION
 
         DH->Input.PlateValue = PlateValue;
     }
@@ -654,6 +664,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             return false; 
         }
 
+#ifdef VALUEVALIDATION
         if(Suspicious.length() > 15)
         {
             DH->Response.HTTPCode = 400;
@@ -661,6 +672,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             DH->Response.Description = "The number of characters of the Suspicious value should not be more than 15.";
             return false;
         }
+#endif // VALUEVALIDATION
 
         DH->Input.Suspicious = Suspicious;
     }
@@ -679,7 +691,8 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             DH->Response.Description = "The type of Speed is invalid.";
             return false; 
         }
-        
+
+#ifdef VALUEVALIDATION
         if(Speed < 0 || Speed > 300)
         {
             DH->Response.HTTPCode = 400;
@@ -687,6 +700,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             DH->Response.Description = "The value of Speed must be a value between 0 and 300.";
             return false;
         }
+#endif // VALUEVALIDATION 
 
         DH->Input.Speed = Speed;
     }    
@@ -706,6 +720,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             return false; 
         }
 
+#ifdef VALUEVALIDATION
         if(VehicleType < 0 || VehicleType > 2)
         {
             DH->Response.HTTPCode = 400;
@@ -713,6 +728,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             DH->Response.Description = "The value of VehicleType must be a value between 0 and 2.";
             return false;
         }
+#endif // VALUEVALIDATION
 
         DH->Input.VehicleType = VehicleType;
     }
@@ -732,6 +748,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             return false; 
         }
 
+#ifdef VALUEVALIDATION
         if(VehicleColor < -1 || VehicleColor > 20)
         {
             DH->Response.HTTPCode = 400;
@@ -739,6 +756,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             DH->Response.Description = "The value of VehicleColor is invalid.";
             return false;
         }
+#endif // VALUEVALIDATION
 
         DH->Input.VehicleColor = VehicleColor;
     }
@@ -757,7 +775,8 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             DH->Response.Description = "The type of VehicleModel is invalid.";
             return false; 
         }
-        
+
+#ifdef VALUEVALIDATION
         if(VehicleModel < -1 || VehicleModel > 100)
         {
             DH->Response.HTTPCode = 400;
@@ -765,6 +784,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             DH->Response.Description = "The value of VehicleModel is invalid.";
             return false;
         }
+#endif // VALUEVALIDATION
 
         DH->Input.VehicleModel = VehicleModel;
     }
@@ -784,6 +804,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             return false; 
         }
 
+#ifdef VALUEVALIDATION
         if(Lane < 0 || Lane > 9)
         {
             DH->Response.HTTPCode = 400;
@@ -791,6 +812,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             DH->Response.Description = "The value of Lane must be a value between 0 and 9.";
             return false;
         }
+#endif // VALUEVALIDATION
 
         DH->Input.Lane = Lane;
     }
@@ -809,7 +831,8 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             DH->Response.Description = "The type of PassedTime is invalid.";
             return false; 
         }
-        
+
+#ifdef VALUEVALIDATION
         if(PassedTime.empty() || PassedTime.length() != 20)
         {
             DH->Response.HTTPCode = 400;
@@ -817,6 +840,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             DH->Response.Description = "The value of PassedTime must not be empty and its number of characters must be equal to 20(YYYY-MM-DDTHH:MM:SSZ).";
             return false;
         }
+#endif // VALUEVALIDATION
 
         std::tm PassedTimeLocal = {};
         if(!(ConvertISO8601TimeToLocal(PassedTime, PassedTimeLocal)))
@@ -827,6 +851,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             return false;
         }
 
+#ifdef VALUEVALIDATION
         std::tm DayAgo = getDaysAgo(DH->DaysforPassedTimeAcceptable);
         if(compareDate(PassedTimeLocal, DayAgo) == -1)
         {
@@ -835,6 +860,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             DH->Response.Description = "The data is old.";
             return false;
         }
+#endif // VALUEVALIDATION
 
         DH->Input.PassedTime = PassedTime;
         DH->ProcessedInputData.PassedTimeLocal = PassedTimeLocal;
@@ -855,6 +881,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             return false; 
         }
 
+#ifdef VALUEVALIDATION
         if(ColorImage.empty())
         {
             DH->Response.HTTPCode = 400;
@@ -862,6 +889,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             DH->Response.Description = "The ColorImage should not be empty.";
             return false;
         }
+#endif // VALUEVALIDATION
 
         cv::Mat ColorImageMat = convertBase64ToMatImage(ColorImage);
         if(ColorImageMat.total() == 0)
@@ -872,6 +900,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             return false;
         }
         
+#ifdef VALUEVALIDATION
         auto ColorImageLength = ColorImage.length();
         auto sizeInBytes = 4 * std::ceil((ColorImageLength / 3))*0.5624896334383812;
         auto sizeInKb = sizeInBytes/1000;
@@ -883,9 +912,12 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             DH->Response.Description = "The size of the ColorImage should not be more than 300KB";
             return false;
         }
+#endif // VALUEVALIDATION
 
         DH->Input.ColorImage = ColorImage;
+#ifdef STOREIMAGE
         DH->ProcessedInputData.ColorImageMat = ColorImageMat;
+#endif // STOREIMAGE
     }
 
     // ImageAddress
@@ -927,6 +959,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             return false; 
         }
 
+#ifdef VALUEVALIDATION
         if(PlateImage.empty())
         {
             DH->Response.HTTPCode = 400;
@@ -934,6 +967,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             DH->Response.Description = "The PlateImage should not be empty.";
             return false;
         }
+#endif // VALUEVALIDATION
 
         cv::Mat PlateImageMat = convertBase64ToMatImage(PlateImage);
         if(PlateImageMat.total() == 0)
@@ -944,6 +978,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             return false;
         }
 
+#ifdef VALUEVALIDATION
         auto PlateImageLength = PlateImage.length();
         auto sizeInBytes = 4 * std::ceil((PlateImageLength / 3))*0.5624896334383812;
         auto sizeInKb = sizeInBytes/1000;
@@ -955,9 +990,12 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             DH->Response.Description = "The size of the ColorImage should not be more than 50KB";
             return false;
         }
+#endif // VALUEVALIDATION
 
         DH->Input.PlateImage = PlateImage;
+#ifdef STOREIMAGE
         DH->ProcessedInputData.PlateImageMat = PlateImageMat;
+#endif // STOREIMAGE
     }
 
     // Latitude
@@ -975,6 +1013,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             return false; 
         }
 
+#ifdef VALUEVALIDATION
         std::string LatitudeStr = std::to_string(Latitude);
         if(Latitude < 0 || LatitudeStr.length() > 8)
         {
@@ -983,6 +1022,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             DH->Response.Description = "The value of Latitude is invalid.";
             return false;
         }
+#endif // VALUEVALIDATION
 
         DH->Input.Latitude = Latitude;
     }
@@ -1002,6 +1042,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             return false; 
         }
 
+#ifdef VALUEVALIDATION
         std::string LongitudeStr = std::to_string(Longitude);
         if(Longitude < 0 || LongitudeStr.length() > 8)
         {
@@ -1010,6 +1051,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             DH->Response.Description = "The value of Longitude is invalid.";
             return false;
         }
+#endif // VALUEVALIDATION
 
         DH->Input.Longitude = Longitude;
     }
@@ -1028,7 +1070,8 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             DH->Response.Description = "The type of Accuracy is invalid.";
             return false; 
         }
-        
+
+#ifdef VALUEVALIDATION
         if(Accuracy < 0 || Accuracy > 100)
         {
             DH->Response.HTTPCode = 400;
@@ -1036,6 +1079,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             DH->Response.Description = "The value of Accuracy is invalid.";
             return false;
         }
+#endif // VALUEVALIDATION
 
         DH->Input.Accuracy = Accuracy;
     }   
@@ -1055,6 +1099,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             return false; 
         }
 
+#ifdef VALUEVALIDATION
         if(PlateRect.empty() || PlateRect.length() > 20)
         {
             DH->Response.HTTPCode = 400;
@@ -1062,6 +1107,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             DH->Response.Description = "The value of PlateRect is invalid.";
             return false;
         }
+#endif // VALUEVALIDATION
 
         DH->Input.PlateRect = PlateRect;
     }
@@ -1081,6 +1127,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             return false; 
         }
 
+#ifdef VALUEVALIDATION
         if(CarRect.empty() || CarRect.length() > 20)
         {
             DH->Response.HTTPCode = 400;
@@ -1088,6 +1135,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             DH->Response.Description = "The value of CarRect is invalid.";
             return false;
         }
+#endif // VALUEVALIDATION
 
         DH->Input.CarRect = CarRect;
     }
@@ -1107,6 +1155,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             return false; 
         }
 
+#ifdef VALUEVALIDATION
         if(CodeType < 0 || CodeType > 20)
         {
             DH->Response.HTTPCode = 400;
@@ -1114,6 +1163,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             DH->Response.Description = "The value of CodeType is invalid.";
             return false;
         }
+#endif // VALUEVALIDATION
 
         DH->Input.CodeType = CodeType;
     }
@@ -1133,6 +1183,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             return false; 
         }
 
+#ifdef VALUEVALIDATION
         if(Probability < 0 || Probability > 100)
         {
             DH->Response.HTTPCode = 400;
@@ -1140,6 +1191,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             DH->Response.Description = "The value of Probability is invalid.";
             return false;
         }
+#endif // VALUEVALIDATION
 
         DH->Input.Probability = Probability;
     }
@@ -1159,6 +1211,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             return false; 
         }
 
+#ifdef VALUEVALIDATION
         if(MasterPlate.empty())
         {
             DH->Response.HTTPCode = 400;
@@ -1213,6 +1266,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
                 return false;
             }
         }
+#endif // VALUEVALIDATION
 
         DH->Input.MasterPlate = MasterPlate;
     }
@@ -1256,11 +1310,13 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
         DH->ProcessedInputData.MongoID = RecordID;
     }else
     {
+#ifdef INSERTDATABASE
         if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
         {
             std::string CalculatedRecordID = this->GeneratMongoIDHash(DH->ProcessedInputData.PassedTimeLocal, DH->Input.PlateValue, DH->Input.ViolationID, DH->Input.DeviceID);
             DH->ProcessedInputData.MongoID = CalculatedRecordID;
         }
+#endif // INSERTDATABASE
     }
 
     // ReceivedTime
@@ -1278,6 +1334,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             return false; 
         }
         
+#ifdef VALUEVALIDATION
         if(ReceivedTime.empty() || ReceivedTime.length() != 20)
         {
             DH->Response.HTTPCode = 400;
@@ -1285,6 +1342,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             DH->Response.Description = "The value of ReceivedTime must not be empty and its number of characters must be equal to 20(YYYY-MM-DDTHH:MM:SSZ).";
             return false;
         }
+#endif // VALUEVALIDATION
 
         std::tm ReceivedTimeLocal = {};
         if(!(ConvertISO8601TimeToLocal(ReceivedTime, ReceivedTimeLocal)))

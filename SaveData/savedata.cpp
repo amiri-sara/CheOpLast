@@ -2,14 +2,14 @@
 
 bool savedata::run(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH)
 {
-    // Insert Database
 #ifdef INSERTDATABASE
+    // Insert Database
     if(!(this->InsertDatabase(DH)))
         return false;
 #endif // INSERTDATABASE
 
-    // Insert Kafka
 #ifdef KAFKAOUTPUT
+    // Insert Kafka
     if(!(this->InsertKafka(DH)))
         return false;
 #endif // KAFKAOUTPUT

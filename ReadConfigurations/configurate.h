@@ -38,6 +38,7 @@ public:
         int TokenTimeAllowed;
         int threadNumber;
         int DaysforPassedTimeAcceptable;
+        bool DebugMode;
     };
 
     struct StoreImageConfigStruct
@@ -56,6 +57,7 @@ public:
         std::string GroupID             = "";
         int PartitionNumber;
         int DaysforPassedTimeAcceptable;
+        bool DebugMode;
     };
 
     struct CameraStruct
