@@ -21,6 +21,7 @@ public:
         std::string DatabaseUsername    = "";
         std::string DatabasePassword    = "";
         std::string DETAIL              = "";
+        bool TLSMode                    =false;
     };
 
     struct InfoDatabaseStruct

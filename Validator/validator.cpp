@@ -909,7 +909,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
         {
             DH->Response.HTTPCode = 400;
             DH->Response.errorCode = INVALIDCOLORIMAGESIZE;
-            DH->Response.Description = "The size of the ColorImage should not be more than 300KB";
+            DH->Response.Description = "The size of the ColorImage should not be more than " + std::to_string(DH->StoreImageConfig.ColorImageMaxSize) + "KB";
             return false;
         }
 
@@ -995,7 +995,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
         {
             DH->Response.HTTPCode = 400;
             DH->Response.errorCode = INVALIDCOLORIMAGESIZE;
-            DH->Response.Description = "The size of the ColorImage should not be more than 50KB";
+            DH->Response.Description = "The size of the ColorImage should not be more than " + std::to_string(DH->StoreImageConfig.PlateImageMaxSize) + "KB";
             return false;
         }
 #endif // VALUEVALIDATION

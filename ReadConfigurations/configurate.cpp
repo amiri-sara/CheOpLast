@@ -28,6 +28,7 @@ Configurate::Configurate()
         ConfigDatabaseConnect.DatabasePort     = ConfigInputJson["Aggregation_Config_Database_PORT"].s();
         ConfigDatabaseConnect.DatabaseUsername = ConfigInputJson["Aggregation_Config_Database_USER"].s();
         ConfigDatabaseConnect.DatabasePassword = ConfigInputJson["Aggregation_Config_Database_PASS"].s();
+        ConfigDatabaseConnect.TLSMode          = ConfigInputJson["Aggregation_Config_Database_TLS"].i();
         ConfigDatabaseConnect.DETAIL           = ConfigInputJson["Aggregation_Config_Database_DETAIL"].s();
         this->ConfigDatabaseInfo.DatabaseName     = ConfigInputJson["Aggregation_Config_Database_Name"].s();
 
@@ -35,6 +36,7 @@ Configurate::Configurate()
         InsertDatabaseConnect.DatabasePort     = ConfigInputJson["Aggregation_Insert_Database_PORT"].s();
         InsertDatabaseConnect.DatabaseUsername = ConfigInputJson["Aggregation_Insert_Database_USER"].s();
         InsertDatabaseConnect.DatabasePassword = ConfigInputJson["Aggregation_Insert_Database_PASS"].s();
+        InsertDatabaseConnect.TLSMode          = ConfigInputJson["Aggregation_Insert_Database_TLS"].i();
         InsertDatabaseConnect.DETAIL           = ConfigInputJson["Aggregation_Insert_Database_DETAIL"].s();
         this->InsertDatabaseInfo.DatabaseName     = ConfigInputJson["Aggregation_Insert_Database_Name"].s();
         this->InsertDatabaseInfo.CollectionName   = ConfigInputJson["Aggregation_Insert_Collection_Name"].s();
@@ -45,6 +47,7 @@ Configurate::Configurate()
         FailedDatabaseConnect.DatabasePort     = ConfigInputJson["Aggregation_Failed_Database_PORT"].s();
         FailedDatabaseConnect.DatabaseUsername = ConfigInputJson["Aggregation_Failed_Database_USER"].s();
         FailedDatabaseConnect.DatabasePassword = ConfigInputJson["Aggregation_Failed_Database_PASS"].s();
+        FailedDatabaseConnect.TLSMode          = ConfigInputJson["Aggregation_Failed_Database_TLS"].i();
         FailedDatabaseConnect.DETAIL           = ConfigInputJson["Aggregation_Failed_Database_DETAIL"].s();
         this->FailedDatabaseInfo.DatabaseName     = ConfigInputJson["Aggregation_Failed_Database_Name"].s();
         this->FailedDatabaseInfo.CollectionName   = ConfigInputJson["Aggregation_Failed_Collection_Name"].s();
@@ -63,6 +66,8 @@ Configurate::Configurate()
     AggregationConfigconf.Port = ConfigDatabaseConnect.DatabasePort;
     AggregationConfigconf.User = ConfigDatabaseConnect.DatabaseUsername;
     AggregationConfigconf.Password = ConfigDatabaseConnect.DatabasePassword;
+    AggregationConfigconf.TLSMode  = ConfigDatabaseConnect.TLSMode;
+    AggregationConfigconf.Detail   = ConfigDatabaseConnect.DETAIL;
     this->ConfigDatabase = std::make_shared<MongoDB>(AggregationConfigconf);
 
     auto AggregationInsertconf       {MongoDB::DatabaseConfig()};
@@ -70,6 +75,8 @@ Configurate::Configurate()
     AggregationInsertconf.Port = InsertDatabaseConnect.DatabasePort;
     AggregationInsertconf.User = InsertDatabaseConnect.DatabaseUsername;
     AggregationInsertconf.Password = InsertDatabaseConnect.DatabasePassword;
+    AggregationInsertconf.TLSMode  = InsertDatabaseConnect.TLSMode;
+    AggregationInsertconf.Detail   = InsertDatabaseConnect.DETAIL;
     this->InsertDatabase = std::make_shared<MongoDB>(AggregationInsertconf);
 
 #ifdef FAILEDDATABASE
@@ -78,6 +85,8 @@ Configurate::Configurate()
     AggregationFailedconf.Port = FailedDatabaseConnect.DatabasePort;
     AggregationFailedconf.User = FailedDatabaseConnect.DatabaseUsername;
     AggregationFailedconf.Password = FailedDatabaseConnect.DatabasePassword;
+    AggregationFailedconf.TLSMode  = FailedDatabaseConnect.TLSMode;
+    AggregationFailedconf.Detail   = FailedDatabaseConnect.DETAIL;
     this->FailedDatabase = std::make_shared<MongoDB>(AggregationFailedconf);
 #endif // FAILEDDATABASE
 

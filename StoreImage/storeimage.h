@@ -5,12 +5,12 @@
 #include "../DataHandler/datahandler.h"
 #include "../Time/timetools.h"
 
-//#ifdef BUILDUBUNTU22
+#ifdef BUILDUBUNTU22
 #include "./banner22/bannerapi.h"
-//#endif // BUILDUBUNTU22
-#ifdef BUILDUBUNTU20
+#endif // BUILDUBUNTU22
+//#ifdef BUILDUBUNTU20
 #include "./banner20/bannerapi.h"
-#endif // BUILDUBUNTU20
+//#endif // BUILDUBUNTU20
 
 
 class storeimage
