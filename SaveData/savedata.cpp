@@ -284,7 +284,7 @@ bool savedata::InsertDatabase(const std::shared_ptr<DataHandler::DataHandlerStru
     {
         if(DH->hasInputFields.MasterPlate)
         {  
-            MongoDB::Field MasterPlateField = {"MasterPlate", DH->Input.MasterPlate, MongoDB::FieldType::String};
+            MongoDB::Field MasterPlateField = {"MasterPlateValue", DH->Input.MasterPlate, MongoDB::FieldType::String};
             fields.push_back(MasterPlateField);
         }
     }

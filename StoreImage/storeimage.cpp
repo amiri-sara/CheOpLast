@@ -95,7 +95,7 @@ bool storeimage::CreateAddress(const std::shared_ptr<DataHandler::DataHandlerStr
     DH->StoreImageAddress.ImageFolder = std::to_string(DH->Input.DeviceID) + "/" + Year + "/" + Month + "/" + Day + "/" + Hour + "/" + Min + "/" + Sec + "/" + DH->ProcessedInputData.MongoID + "/";
     
     DH->StoreImageAddress.ImageName = DH->Input.PlateValue;
-    DH->StoreImageAddress.ImageAddress = DH->StoreImageAddress.ImageFolder + DH->StoreImageAddress.ImageName + DH->ViolationInfo.ImageSuffix;
+    DH->StoreImageAddress.ImageAddress = DH->StoreImageAddress.ImageFolder + DH->StoreImageAddress.ImageName + DH->ViolationInfo.ImageSuffix + ".jpg";
 
     return true;
 }
@@ -200,6 +200,7 @@ bool storeimage::CreateBanner(const std::shared_ptr<DataHandler::DataHandlerStru
     BannerAPI::LineStruct line3;
 
     std::string streetLocation;
+    std::string subMode;
     int AllowedSpeed;
     int PoliceCode;
     for(auto& camera : DH->Cameras)
@@ -209,6 +210,7 @@ bool storeimage::CreateBanner(const std::shared_ptr<DataHandler::DataHandlerStru
             streetLocation = camera.Location;
             AllowedSpeed = camera.AllowedSpeed;
             PoliceCode = camera.PoliceCode;
+            subMode = camera.subMode;
             break;
         }
     }
@@ -229,7 +231,7 @@ bool storeimage::CreateBanner(const std::shared_ptr<DataHandler::DataHandlerStru
     line4.LineAllignment = BannerAPI::LTR;
     Lines.push_back(line4);
 
-    if(DH->Input.ViolationID == 0) //2002/
+    if(subMode == "speed") // Speed Camera
     {
         // Allowed Speed
         BannerAPI::LineStruct line5;
@@ -261,7 +263,16 @@ bool storeimage::CreateBanner(const std::shared_ptr<DataHandler::DataHandlerStru
     Lines.push_back(line8);
 
     cv::Mat Banner = BA.Run(Lines);
-    cv::vconcat(Banner, DH->ProcessedInputData.ColorImageMat, DH->ProcessedInputData.ColorImageMat);
+    try
+    {
+        cv::vconcat(Banner, DH->ProcessedInputData.ColorImageMat, DH->ProcessedInputData.ColorImageMat);
+    }catch(...)
+    {
+        DH->Response.HTTPCode = 500;
+        DH->Response.errorCode = CANNOTCREATEBANNER;
+        DH->Response.Description = "Internal Error.";
+        return false;
+    }
     
     return true;
 }

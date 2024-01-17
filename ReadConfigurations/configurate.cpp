@@ -291,6 +291,7 @@ void Configurate::ReadCamerasCollection()
                     Camera.Location     = SystemJSON["location"].s();
                     Camera.PoliceCode   = SystemJSON["policeCode"].i();
                     Camera.AllowedSpeed = SystemJSON["allowedSpeed"].i();
+                    Camera.subMode      = SystemJSON["subMode"].s();
 
                     this->Cameras.push_back(Camera);
                 }

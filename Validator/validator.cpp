@@ -609,7 +609,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             }
         }else if(DH->Input.PlateType == 2)
         {
-            if(PlateValue.length() != 7 || !(std::all_of(PlateValue.begin(), PlateValue.end(),[](char c) { return std::isdigit(static_cast<unsigned char>(c));})))
+            if(PlateValue.length() != 8 || !(std::all_of(PlateValue.begin(), PlateValue.end(),[](char c) { return std::isdigit(static_cast<unsigned char>(c));})))
             {
                 DH->Response.HTTPCode = 400;
                 DH->Response.errorCode = INVALIDPLATEVALUE;
@@ -910,6 +910,14 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             DH->Response.HTTPCode = 400;
             DH->Response.errorCode = INVALIDCOLORIMAGESIZE;
             DH->Response.Description = "The size of the ColorImage should not be more than 300KB";
+            return false;
+        }
+
+        if(ColorImageMat.channels() != 3)
+        {
+            DH->Response.HTTPCode = 400;
+            DH->Response.errorCode = INVALIDCOLORIMAGE;
+            DH->Response.Description = "ColorImage should have 3 channels.";
             return false;
         }
 #endif // VALUEVALIDATION
@@ -1231,7 +1239,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             }
         }else if(DH->Input.PlateType == 2)
         {
-            if(MasterPlate.length() != 7 || !(std::all_of(MasterPlate.begin(), MasterPlate.end(),[](char c) { return std::isdigit(static_cast<unsigned char>(c));})))
+            if(MasterPlate.length() != 8 || !(std::all_of(MasterPlate.begin(), MasterPlate.end(),[](char c) { return std::isdigit(static_cast<unsigned char>(c));})))
             {
                 DH->Response.HTTPCode = 400;
                 DH->Response.errorCode = INVALIDMASTERPLATE;
@@ -1296,7 +1304,9 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
 
         if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
         {
-            std::string CalculatedRecordID = this->GeneratMongoIDHash(DH->ProcessedInputData.PassedTimeLocal, DH->Input.PlateValue, DH->Input.ViolationID, DH->Input.DeviceID);
+            std::string MOngoIdPlate = DH->hasInputFields.MasterPlate ? DH->Input.MasterPlate : DH->Input.PlateValue;
+            std::string CalculatedRecordID = this->GeneratMongoIDHash(DH->ProcessedInputData.PassedTimeLocal, MOngoIdPlate, DH->Input.ViolationID, DH->Input.DeviceID);
+            
             if(CalculatedRecordID != RecordID)
             {
                 DH->Response.HTTPCode = 400;
@@ -1313,7 +1323,9 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
 #ifdef INSERTDATABASE
         if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
         {
-            std::string CalculatedRecordID = this->GeneratMongoIDHash(DH->ProcessedInputData.PassedTimeLocal, DH->Input.PlateValue, DH->Input.ViolationID, DH->Input.DeviceID);
+            std::string MOngoIdPlate = DH->hasInputFields.MasterPlate ? DH->Input.MasterPlate : DH->Input.PlateValue;
+            std::string CalculatedRecordID = this->GeneratMongoIDHash(DH->ProcessedInputData.PassedTimeLocal, MOngoIdPlate, DH->Input.ViolationID, DH->Input.DeviceID);
+
             DH->ProcessedInputData.MongoID = CalculatedRecordID;
         }
 #endif // INSERTDATABASE

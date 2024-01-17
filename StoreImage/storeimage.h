@@ -4,7 +4,14 @@
 #include "../Logs/log.h"
 #include "../DataHandler/datahandler.h"
 #include "../Time/timetools.h"
-#include "bannerapi.h"
+
+//#ifdef BUILDUBUNTU22
+#include "./banner22/bannerapi.h"
+//#endif // BUILDUBUNTU22
+#ifdef BUILDUBUNTU20
+#include "./banner20/bannerapi.h"
+#endif // BUILDUBUNTU20
+
 
 class storeimage
 {

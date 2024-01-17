@@ -68,6 +68,7 @@ public:
         std::string Location            = "";
         int PoliceCode;
         int AllowedSpeed;
+        std::string subMode             = "";
     };
 
     struct FieldsStruct

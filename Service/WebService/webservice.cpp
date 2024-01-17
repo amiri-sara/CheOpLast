@@ -159,8 +159,7 @@ void WebService::InsertRoute()
         
         Response["Status"] = SUCCESSFUL;
         Response["Description"] = "Successful";
-        if(DH->DebugMode)
-            SHOW_LOG(crow::json::dump(Response));
+        SHOW_LOG(crow::json::dump(Response));
         return crow::response{200 , Response};
     });
 }

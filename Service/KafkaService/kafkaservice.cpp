@@ -81,7 +81,6 @@ void KafkaService::run()
                     }
                 }else
                 {
-                    SHOW_ERROR(FindReturn.Description);
                     Response["Status"] = DATABASEERROR;
                     Response["Description"] = "Network Internal Service Error.";
                     if(DH->DebugMode)
@@ -133,8 +132,7 @@ void KafkaService::run()
 
                 Response["Status"] = SUCCESSFUL;
                 Response["Description"] = "Successful";
-                if(DH->DebugMode)
-                    SHOW_LOG(crow::json::dump(Response));
+                SHOW_LOG(crow::json::dump(Response));
             }
 
         }

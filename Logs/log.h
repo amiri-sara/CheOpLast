@@ -88,6 +88,6 @@
 #define CANNOTSAVECOLORIMAGE                                654
 #define CANNOTSAVEPLATEIMAGE                                655
 #define CANNOTSAVETHUMBNAILIMAGE                            656
-
+#define CANNOTCREATEBANNER                                  657
 
 #endif // LOG_H

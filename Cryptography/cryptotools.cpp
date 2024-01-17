@@ -196,7 +196,7 @@ std::string GetHex(const int &N)
     char hex_string[20];
     for(int i = 0 ; i < 20 ; i ++)
         hex_string[i] = ' ' ;
-    sprintf(hex_string, "%x", N); //convert number to hex
+    sprintf(hex_string, "%X", N); //convert number to hex
 
     std::string Hex = "";
     for(int i = 0 ; i  < 20 ; i ++)
