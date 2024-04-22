@@ -14,6 +14,10 @@ bool storeimage::run(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH)
     if(!(this->CreateThumbnail(DH)))
         return false;
 
+    // Add Plate crop
+    if(!(this->AddPlateCrop(DH)))
+        return false;
+
     // Create banner
     if(DH->StoreImageConfig.AddBanner)
     {        
@@ -116,6 +120,41 @@ bool storeimage::CreateThumbnail(const std::shared_ptr<DataHandler::DataHandlerS
     }
 }
 
+bool storeimage::AddPlateCrop(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH)
+{
+    bool addCrop;
+    for(auto& camera : DH->Cameras)
+    {
+        if(camera.DeviceID == DH->Input.DeviceID)
+        {
+            addCrop = camera.addCrop;
+            break;
+        }
+    }
+    
+    if(!addCrop)
+        return true;
+
+    try
+    {
+        cv::Mat largerImg;
+        float plateToColorImage = DH->StoreImageConfig.PlateImagePercent / 100.0 + 1;
+        cv::resize(DH->ProcessedInputData.PlateImageMat, largerImg, cv::Size(), plateToColorImage, plateToColorImage);
+        cv::Rect roi(0, 0, largerImg.cols, largerImg.rows);
+        cv::Mat target = DH->ProcessedInputData.ColorImageMat(roi);
+        largerImg.copyTo(target);
+    } 
+    catch(...)
+    {
+        DH->Response.HTTPCode = 500;
+        DH->Response.errorCode = CANNOTADDPLATECROP;
+        DH->Response.Description = "Internal Error.";
+        return false;
+    }
+
+     return true;
+ }
+
 bool storeimage::CreateBanner(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH)
 {
     if(DH->ProcessedInputData.ColorImageMat.cols < 300)
@@ -125,6 +164,28 @@ bool storeimage::CreateBanner(const std::shared_ptr<DataHandler::DataHandlerStru
         DH->Response.Description = "The width of the ColorImage for banner printing must be at least 300 pixels.";
         return false;
     }
+
+    // Read information related to the camera
+    std::string streetLocation;
+    std::string subMode;
+    int AllowedSpeed;
+    int PoliceCode;
+    bool addBanner;
+    for(auto& camera : DH->Cameras)
+    {
+        if(camera.DeviceID == DH->Input.DeviceID)
+        {
+            streetLocation = camera.Location;
+            AllowedSpeed = camera.AllowedSpeed;
+            PoliceCode = camera.PoliceCode;
+            subMode = camera.subMode;
+            addBanner = camera.addBanner;
+            break;
+        }
+    }
+
+    if(subMode == "redLight" || subMode == "cctv" || (!addBanner))
+        return true;
 
     // Initialize Banner
     BannerAPI BA;
@@ -198,24 +259,44 @@ bool storeimage::CreateBanner(const std::shared_ptr<DataHandler::DataHandlerStru
 
     // Location
     BannerAPI::LineStruct line3;
-
-    std::string streetLocation;
-    std::string subMode;
-    int AllowedSpeed;
-    int PoliceCode;
-    for(auto& camera : DH->Cameras)
+    std::string LocationLine = "";
+    if(subMode == "vehicle") // Vehicle ANPR
     {
-        if(camera.DeviceID == DH->Input.DeviceID)
+        std::string Response = "";
+        for(auto i = 0; i < 3; i++)
         {
-            streetLocation = camera.Location;
-            AllowedSpeed = camera.AllowedSpeed;
-            PoliceCode = camera.PoliceCode;
-            subMode = camera.subMode;
-            break;
+            int Ret = getLocationName(std::to_string(DH->Input.Latitude), std::to_string(DH->Input.Longitude), Response);
+            if(Ret == CURLE_OK)
+            {
+                break;
+            }
+            else if(Ret != CURLE_OK && (Ret == CURLE_COULDNT_CONNECT || Ret == CURLE_OPERATION_TIMEDOUT))
+            {
+                if(DH->DebugMode)
+                    SHOW_ERROR("getLocationName service : Auth Connection Failed. Retry Again!");
+            }
+            else if(Ret != CURLE_OK)
+            {
+                if(DH->DebugMode)
+                    SHOW_ERROR("getLocationName service : Auth Connection Failed.");
+                break;
+            }
+        }
+
+        if(Response == "")
+        {
+            LocationLine = "محل تردد/تخلف : " + std::to_string(DH->Input.Latitude) + " , " + std::to_string(DH->Input.Longitude) + " ";
+        }
+        else
+        {
+            LocationLine = "محل تردد/تخلف : " + Response + " ";
         }
     }
+    else
+    {
+        LocationLine = "محل تردد/تخلف : " + streetLocation + " "; 
+    }
     
-    std::string LocationLine = "محل تردد/تخلف : " + streetLocation + " ";
     line3.Text = LocationLine;
     line3.LineAllignment = BannerAPI::RTL;
     Lines.push_back(line3);
@@ -259,10 +340,11 @@ bool storeimage::CreateBanner(const std::shared_ptr<DataHandler::DataHandlerStru
     BannerAPI::LineStruct line8;
     std::string ViolationLine = DH->ViolationInfo.Description + " ";
     line8.Text = ViolationLine;
-    line8.LineAllignment = BannerAPI::RTL;
+    line8.LineAllignment = BannerAPI::LTR;
     Lines.push_back(line8);
 
     cv::Mat Banner = BA.Run(Lines);
+
     try
     {
         cv::vconcat(Banner, DH->ProcessedInputData.ColorImageMat, DH->ProcessedInputData.ColorImageMat);
@@ -356,4 +438,43 @@ void storeimage::setPermissionsDir(std::string Path)
     }
 
     return;
+}
+
+size_t writeToString(void *ptr, size_t size, size_t count, void *stream)
+{
+    ((std::string*)stream)->append((char*)ptr, 0, size*count);
+    return size*count;
+}
+
+int storeimage::getLocationName(std::string Lat, std::string Lon, std::string &Response)
+{
+    int Ret = -1;
+    CURL * curl = curl_easy_init();
+    if(curl)
+    {
+        std::string URL = "http://127.0.0.1:82/reverse?lat="+Lat+"&lon="+Lon+"&format=json&zoom=18&accept-language=fa";
+        std::string response;
+        curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "GET");
+        curl_easy_setopt(curl, CURLOPT_URL, URL.c_str());
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeToString);
+        curl_easy_setopt(curl, CURLOPT_TIMEOUT, 3L);
+        CURLcode res = curl_easy_perform(curl);
+        Ret = res;
+        try
+        {
+            auto Loc = crow::json::load(response);
+            std::string city = Loc["address"]["city"].s();
+            std::string road = Loc["address"]["road"].s();
+            Response = city+"-"+road;
+        }
+        catch(...)
+        {
+            SHOW_ERROR("Invalid Json In getLocationName");
+        }
+
+        curl_easy_cleanup(curl);
+    }
+
+    return Ret;
 }

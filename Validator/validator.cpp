@@ -1023,7 +1023,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
 
 #ifdef VALUEVALIDATION
         std::string LatitudeStr = std::to_string(Latitude);
-        if(Latitude < 0 || LatitudeStr.length() > 8)
+        if(Latitude < 0 || LatitudeStr.length() > 10)
         {
             DH->Response.HTTPCode = 400;
             DH->Response.errorCode = INVALIDLATITUDE;
@@ -1052,7 +1052,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
 
 #ifdef VALUEVALIDATION
         std::string LongitudeStr = std::to_string(Longitude);
-        if(Longitude < 0 || LongitudeStr.length() > 8)
+        if(Longitude < 0 || LongitudeStr.length() > 10)
         {
             DH->Response.HTTPCode = 400;
             DH->Response.errorCode = INVALIDLONGITUDE;

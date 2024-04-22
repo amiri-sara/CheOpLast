@@ -47,6 +47,7 @@ public:
         std::string StorePath           = "";
         int ColorImageMaxSize;
         int PlateImageMaxSize;
+        int PlateImagePercent;
         bool AddBanner;
         std::string FontAddress         = "";
     };
@@ -70,6 +71,8 @@ public:
         int PoliceCode;
         int AllowedSpeed;
         std::string subMode             = "";
+        bool addBanner                  = false;
+        bool addCrop                    = false;
     };
 
     struct FieldsStruct

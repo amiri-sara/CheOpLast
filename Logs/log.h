@@ -89,5 +89,6 @@
 #define CANNOTSAVEPLATEIMAGE                                655
 #define CANNOTSAVETHUMBNAILIMAGE                            656
 #define CANNOTCREATEBANNER                                  657
+#define CANNOTADDPLATECROP                                  658
 
 #endif // LOG_H
