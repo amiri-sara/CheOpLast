@@ -294,7 +294,7 @@ bool savedata::InsertDatabase(const std::shared_ptr<DataHandler::DataHandlerStru
     {
         if(DH->hasInputFields.RecordID)
         {  
-            MongoDB::Field RecordIDField = {"RecordID", DH->ProcessedInputData.MongoID, MongoDB::FieldType::String};
+            MongoDB::Field RecordIDField = {"RecordID", DH->ProcessedInputData.MongoID, MongoDB::FieldType::ObjectId};
             fields.push_back(RecordIDField);
         }
     }
@@ -323,8 +323,8 @@ bool savedata::InsertDatabase(const std::shared_ptr<DataHandler::DataHandlerStru
         }
     }
 
-    MongoDB::Field IDField = {"_id", DH->ProcessedInputData.MongoID, MongoDB::FieldType::ObjectId};
-    fields.push_back(IDField);
+    // MongoDB::Field IDField = {"_id", DH->ProcessedInputData.MongoID, MongoDB::FieldType::ObjectId};
+    // fields.push_back(IDField);
 
     auto InsertReturn = DH->InsertDatabase->Insert(DH->InsertDatabaseInfo.DatabaseName, DH->InsertDatabaseInfo.CollectionName, fields);
     if(InsertReturn.Code != MongoDB::MongoStatus::InsertSuccessful)

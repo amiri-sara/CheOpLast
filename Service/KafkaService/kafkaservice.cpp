@@ -62,8 +62,8 @@ void KafkaService::run()
                 // 2- Check RecordID exist in database or not
                 std::vector<MongoDB::Field> filter = {
                     // equal
-                    {"_id", DH->ProcessedInputData.MongoID, MongoDB::FieldType::ObjectId, "$gte"},
-                    {"_id", DH->ProcessedInputData.MongoID, MongoDB::FieldType::ObjectId, "$lte"}
+                    {"RecordID", DH->ProcessedInputData.MongoID, MongoDB::FieldType::ObjectId, "$gte"},
+                    {"RecordID", DH->ProcessedInputData.MongoID, MongoDB::FieldType::ObjectId, "$lte"}
 
                 };
                 MongoDB::FindOptionStruct Option;

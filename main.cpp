@@ -2,6 +2,8 @@
 #include "./Service/WebService/webservice.h"
 #include "./Service/KafkaService/kafkaservice.h"
 
+#define AGGREGATION_VERSION "0.1.0"
+
 int main(int argc, char *argv[])
 {
     bool DebugMode = false;
@@ -13,10 +15,12 @@ int main(int argc, char *argv[])
             DebugMode = true;
         }else if((argc == 2) && ((!strcmp(argv[1], "v")) || (!strcmp(argv[1], "V")) || (!strcmp(argv[1], "-v")) || (!strcmp(argv[1], "-V"))))
         {
-            SHOW_LOG("0.0.0");
+            std::cout << AGGREGATION_VERSION << std::endl;
+            return 0;
         }else
         {
             SHOW_ERROR("Invalid Argument.");
+            return 0;
         }
     }
     

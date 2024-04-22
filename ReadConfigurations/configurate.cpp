@@ -226,6 +226,7 @@ Configurate::Configurate()
             this->StoreImageConfig.StorePath = StoreImageConfigJSON["StorePath"].s();
             this->StoreImageConfig.ColorImageMaxSize = StoreImageConfigJSON["ColorImageMaxSize"].i();
             this->StoreImageConfig.PlateImageMaxSize = StoreImageConfigJSON["PlateImageMaxSize"].i();
+            this->StoreImageConfig.PlateImagePercent = StoreImageConfigJSON["PlateImagePercent"].i();
             
             crow::json::rvalue BannerJSON = StoreImageConfigJSON["Banner"];
             crow::json::wvalue WBannerJSON(BannerJSON);
@@ -301,6 +302,8 @@ void Configurate::ReadCamerasCollection()
                     Camera.PoliceCode   = SystemJSON["policeCode"].i();
                     Camera.AllowedSpeed = SystemJSON["allowedSpeed"].i();
                     Camera.subMode      = SystemJSON["subMode"].s();
+                    Camera.addBanner    = SystemJSON["addBanner"].b();
+                    Camera.addCrop      = SystemJSON["addCrop"].b();
 
                     this->Cameras.push_back(Camera);
                 }

@@ -54,8 +54,9 @@ if(BUILDUBUNTU20)
     include_directories(/home/mohammad/opencv/4.2.0/include/opencv4)
     set(OPENCVLIB_dir /usr/local/lib)
 elseif(BUILDUBUNTU22)
-    include_directories(/home/mohammad/opencv/4.7/include/opencv4)
-    set(OPENCVLIB_dir /usr/local/lib/opencv)
+    set(inc_dir /usr/local/include)
+    include_directories(${inc_dir}/opencv/4.7/opencv4)
+    set(OPENCVLIB_dir /usr/local/lib/opencv/4.7)
 endif()
 
 include_directories(.
@@ -88,7 +89,6 @@ set(OPENCVLIB       ${OPENCVLIB_dir}/libopencv_imgcodecs.so
                     ${OPENCVLIB_dir}/libopencv_flann.so
                     ${OPENCVLIB_dir}/libopencv_fuzzy.so
                     ${OPENCVLIB_dir}/libopencv_gapi.so
-                    ${OPENCVLIB_dir}/libopencv_hdf.so
                     ${OPENCVLIB_dir}/libopencv_hfs.so
                     ${OPENCVLIB_dir}/libopencv_img_hash.so
                     ${OPENCVLIB_dir}/libopencv_line_descriptor.so
@@ -199,6 +199,7 @@ endif()
 add_executable(${PROJECT_NAME} ${SRC_LIST})
 
 target_link_libraries(${PROJECT_NAME} 
+                      curl
                       pthread 
                       crypto 
                       boost_thread 
