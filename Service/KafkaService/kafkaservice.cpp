@@ -107,9 +107,14 @@ void KafkaService::run()
                 auto storeImageFinishTime = std::chrono::high_resolution_clock::now();
                 auto storeImaheTime =  std::chrono::duration_cast<std::chrono::nanoseconds>(storeImageFinishTime - storeImageStartTime);        
 
-                // 4- Save Data
                 auto saveDataStartTime = std::chrono::high_resolution_clock::now();
+#if defined KAFKAOUTPUT || defined INSERTDATABASE
+                // 4- Save Data
                 std::shared_ptr<savedata> savedataobj = std::make_shared<savedata>();
+#ifdef KAFKAOUTPUT
+                int OutputKafkaConnectionIndex = this->getKafkaConnectionIndex();
+                savedataobj->setOutputKafkaConnection(this->OutputKafkaConnections[OutputKafkaConnectionIndex]);
+#endif // KAFKAOUTPUT
                 if(!(savedataobj->run(DH)))
                 {
                     Response["Status"] = DH->Response.errorCode;
@@ -118,10 +123,13 @@ void KafkaService::run()
                         SHOW_ERROR(crow::json::dump(Response));
                     continue;
                 }
-
+#ifdef KAFKAOUTPUT
+                this->releaseIndex(OutputKafkaConnectionIndex);
+#endif // KAFKAOUTPUT
+#endif // KAFKAOUTPUT || INSERTDATABASE
                 auto saveDataFinishTime = std::chrono::high_resolution_clock::now();
                 auto saveDataTime =  std::chrono::duration_cast<std::chrono::nanoseconds>(saveDataFinishTime - saveDataStartTime);     
-                
+
                 auto requestFinishTime = std::chrono::high_resolution_clock::now();
                 auto requestTime =  std::chrono::duration_cast<std::chrono::nanoseconds>(requestFinishTime - requstStartTime);
                 

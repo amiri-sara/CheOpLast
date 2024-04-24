@@ -10,6 +10,11 @@
 #include "../SaveData/savedata.h"
 #include "../crow.h"
 
+#if defined KAFKAOUTPUT || defined KAFKASERVICE
+    #include "../Kafka/KafkaProsumer.h"
+    #include "../Kafka/Utility.h"
+#endif // KAFKAOUTPUT || KAFKASERVICE
+
 class Service
 {
 public:
@@ -26,13 +31,15 @@ public:
     virtual ~Service() = default; 			
     virtual void run() = 0;
 protected:
-    // Configurate::FieldsStruct InputFields;
-    // Configurate::FieldsStruct OutputFields;
-    // Configurate::InfoDatabaseStruct InsertDatabaseInfo;
-    // Configurate::StoreImageConfigStruct StoreImageConfig;
-    // std::unordered_map<int, Configurate::ViolationStruct> ViolationMap;
-    
-    // std::shared_ptr<MongoDB> InsertDatabase;
+
+#ifdef KAFKAOUTPUT
+    std::vector<std::shared_ptr<KafkaProsumer>> OutputKafkaConnections;
+#endif // KAFKAOUTPUT
+    Configurate::KafkaConfigStruct OutputKafkaConfig; 
+    std::vector<bool> FreeKafkaVec;
+    int getKafkaConnectionIndex();
+    void releaseIndex(int Index);
+    boost::mutex FreeKafkaMutex;
 };
 
 #endif //SERVICE_H

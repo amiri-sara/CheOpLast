@@ -291,9 +291,9 @@ bool savedata::InsertDatabase(const std::shared_ptr<DataHandler::DataHandlerStru
 
     // RecordID
     if(DH->hasOutputFields.RecordID)
-    {
-        if(DH->hasInputFields.RecordID)
-        {  
+    {  
+        if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+        {
             MongoDB::Field RecordIDField = {"RecordID", DH->ProcessedInputData.MongoID, MongoDB::FieldType::ObjectId};
             fields.push_back(RecordIDField);
         }
@@ -338,9 +338,224 @@ bool savedata::InsertDatabase(const std::shared_ptr<DataHandler::DataHandlerStru
     return true;
 }
 
-
+#ifdef KAFKAOUTPUT
 bool savedata::InsertKafka(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH)
 {
+    crow::json::wvalue Response;
+
+    // DeviceID
+    if(DH->hasOutputFields.DeviceID)
+    {
+        if(DH->hasInputFields.DeviceID)
+            Response["DeviceID"] = DH->Input.DeviceID;
+    }
+
+    // UserID
+    if(DH->hasOutputFields.UserID)
+    {
+        if(DH->hasInputFields.UserID)
+            Response["UserID"] = DH->Input.UserID;
+    }
+
+    // StreetID
+    if(DH->hasOutputFields.StreetID)
+    {
+        if(DH->hasInputFields.StreetID)
+            Response["StreetID"] = DH->Input.StreetID;
+    }
+
+    // ViolationID
+    if(DH->hasOutputFields.ViolationID)
+    {
+        if(DH->hasInputFields.ViolationID)
+            Response["ViolationID"] = DH->Input.ViolationID;
+    }
+
+    // Direction
+    if(DH->hasOutputFields.Direction)
+    {
+        if(DH->hasInputFields.Direction)
+            Response["Direction"] = DH->Input.Direction;
+    }
+
+    // PlateType
+    if(DH->hasOutputFields.PlateType)
+    {
+        if(DH->hasInputFields.PlateType)
+            Response["PlateType"] = DH->Input.PlateType;
+    }
+
+    // PlateValue
+    if(DH->hasOutputFields.PlateValue)
+    {
+        if(DH->hasInputFields.PlateValue)
+            Response["PlateValue"] = DH->Input.PlateValue;
+    }
+
+    // Suspicious
+    if(DH->hasOutputFields.Suspicious)
+    {
+        if(DH->hasInputFields.Suspicious)
+            Response["Suspicious"] = DH->Input.Suspicious;
+    }
+    
+    // Speed
+    if(DH->hasOutputFields.Speed)
+    {
+        if(DH->hasInputFields.Speed)
+            Response["Speed"] = DH->Input.Speed;
+    }
+
+    // VehicleType
+    if(DH->hasOutputFields.VehicleType)
+    {
+        if(DH->hasInputFields.VehicleType)
+            Response["VehicleType"] = DH->Input.VehicleType;
+    }
+
+    // VehicleColor
+    if(DH->hasOutputFields.VehicleColor)
+    {
+        if(DH->hasInputFields.VehicleColor)
+            Response["VehicleColor"] = DH->Input.VehicleColor;
+    }
+
+    // VehicleModel
+    if(DH->hasOutputFields.VehicleModel)
+    {
+        if(DH->hasInputFields.VehicleModel)
+            Response["VehicleModel"] = DH->Input.VehicleModel;
+    }
+
+    // Lane
+    if(DH->hasOutputFields.Lane)
+    {
+        if(DH->hasInputFields.Lane)
+            Response["Lane"] = DH->Input.Lane;
+    }
+
+    // PassedTime
+    if(DH->hasOutputFields.PassedTime)
+    {
+        if(DH->hasInputFields.PassedTime)
+            Response["PassedTime"] = DH->Input.PassedTime;
+    }
+
+    // ColorImage
+    if(DH->hasOutputFields.ColorImage)
+    {
+        if(DH->hasInputFields.ColorImage)
+            Response["ColorImage"] = DH->Input.ColorImage;
+    }
+
+    // ImageAddress
+    if(DH->hasOutputFields.ImageAddress)
+    {
+        if(DH->hasInputFields.ImageAddress)
+        {            
+            Response["ImageAddress"] = DH->Input.ImageAddress;
+        }else
+        {
+            Response["ImageAddress"] = DH->StoreImageAddress.ImageAddress;
+        }
+    }
+
+    // GrayScaleImage
+    if(DH->hasOutputFields.GrayScaleImage)
+    {
+        if(DH->hasInputFields.GrayScaleImage)
+            Response["GrayScaleImage"] = DH->Input.GrayScaleImage;
+    }
+
+    // PlateImage
+    if(DH->hasOutputFields.PlateImage)
+    {
+        if(DH->hasInputFields.PlateImage)
+            Response["PlateImage"] = DH->Input.PlateImage;
+    }
+
+    // Latitude
+    if(DH->hasOutputFields.Latitude)
+    {
+        if(DH->hasInputFields.Latitude)
+            Response["Latitude"] = DH->Input.Latitude;
+    }
+
+    // Longitude
+    if(DH->hasOutputFields.Longitude)
+    {
+        if(DH->hasInputFields.Longitude)
+            Response["Longitude"] = DH->Input.Longitude;
+    }
+    
+    // Accuracy
+    if(DH->hasOutputFields.Accuracy)
+    {
+        if(DH->hasInputFields.Accuracy)
+            Response["Accuracy"] = DH->Input.Accuracy;
+    }
+
+    // PlateRect
+    if(DH->hasOutputFields.PlateRect)
+    {
+        if(DH->hasInputFields.PlateRect)
+            Response["PlateRect"] = DH->Input.PlateRect;
+    }
+
+    // CarRect
+    if(DH->hasOutputFields.CarRect)
+    {
+        if(DH->hasInputFields.CarRect)
+            Response["CarRect"] = DH->Input.CarRect;
+    }
+
+    // CodeType
+    if(DH->hasOutputFields.CodeType)
+    {
+        if(DH->hasInputFields.CodeType)
+            Response["CodeType"] = DH->Input.CodeType;
+    }
+
+    // Probability
+    if(DH->hasOutputFields.Probability)
+    {
+        if(DH->hasInputFields.Probability)
+            Response["Probability"] = DH->Input.Probability;
+    }
+
+    // MasterPlate
+    if(DH->hasOutputFields.MasterPlate)
+    {
+        if(DH->hasInputFields.MasterPlate)
+            Response["MasterPlateValue"] = DH->Input.MasterPlate;
+    }
+
+    // RecordID
+    if(DH->hasOutputFields.RecordID)
+    {
+        if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+            Response["RecordID"] = DH->ProcessedInputData.MongoID;
+    }
+
+    // ReceivedTime
+    if(DH->hasOutputFields.ReceivedTime)
+    {
+        if(DH->hasInputFields.ReceivedTime)
+        {
+            Response["ReceivedTime"] = DH->Input.ReceivedTime;
+        }else
+        {
+            std::ostringstream oss;
+            std::time_t currentTime = std::time(nullptr);
+            std::tm* CurrenttimeInfo = std::gmtime(&currentTime);
+            oss << std::put_time(CurrenttimeInfo, "%Y-%m-%dT%H:%M:%SZ");
+            Response["ReceivedTime"] = oss.str();
+        }
+    }
+
+    // SHOW_IMPORTANTLOG2(crow::json::dump(Response));
+    this->OutputKafkaConnection->write({crow::json::dump(Response)});
 
     return true;
 }
+#endif // KAFKAOUTPUT

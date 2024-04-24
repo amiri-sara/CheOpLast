@@ -52,7 +52,7 @@ KafkaProsumer::~KafkaProsumer() noexcept
 // TODO: handle on error callback
 bool KafkaProsumer::write(DummyData data) noexcept
 {
-    RdKafka::ErrorCode produce_response = producer->produce(topic_string, /* partition */ 0,
+    RdKafka::ErrorCode produce_response = producer->produce(topic_string, /* partition */ RdKafka::Topic::PARTITION_UA,
                             RdKafka::Producer::RK_MSG_COPY /* Copy payload */,
                             /* Value */
                             const_cast<char *>(data.text.c_str()), data.text.size(),

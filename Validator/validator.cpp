@@ -1320,7 +1320,6 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
         DH->ProcessedInputData.MongoID = RecordID;
     }else
     {
-#ifdef INSERTDATABASE
         if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
         {
             std::string MOngoIdPlate = DH->hasInputFields.MasterPlate ? DH->Input.MasterPlate : DH->Input.PlateValue;
@@ -1328,7 +1327,6 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
 
             DH->ProcessedInputData.MongoID = CalculatedRecordID;
         }
-#endif // INSERTDATABASE
     }
 
     // ReceivedTime

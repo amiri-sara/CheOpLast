@@ -221,13 +221,13 @@ Configurate::Configurate()
             this->OutputFields.RecordID          = OutputFieldsJSON["RecordID"].b();
             this->OutputFields.ReceivedTime      = OutputFieldsJSON["ReceivedTime"].b();
 
-#ifdef STOREIMAGE
+
             crow::json::rvalue StoreImageConfigJSON = OutputConfigJSON["StoreImage"];
-            this->StoreImageConfig.StorePath = StoreImageConfigJSON["StorePath"].s();
             this->StoreImageConfig.ColorImageMaxSize = StoreImageConfigJSON["ColorImageMaxSize"].i();
             this->StoreImageConfig.PlateImageMaxSize = StoreImageConfigJSON["PlateImageMaxSize"].i();
             this->StoreImageConfig.PlateImagePercent = StoreImageConfigJSON["PlateImagePercent"].i();
-            
+#ifdef STOREIMAGE
+            this->StoreImageConfig.StorePath = StoreImageConfigJSON["StorePath"].s();
             crow::json::rvalue BannerJSON = StoreImageConfigJSON["Banner"];
             crow::json::wvalue WBannerJSON(BannerJSON);
             this->StoreImageConfig.AddBanner = BannerJSON["active"].b();
