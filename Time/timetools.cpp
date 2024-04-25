@@ -1,6 +1,6 @@
 #include "timetools.h"
 
-bool ConvertISO8601TimeToLocal(std::string ISOTime, std::tm& LocalTime)
+bool ConvertISO8601TimeToUnix(std::string ISOTime, std::time_t& UnixTime)
 {
     std::tm inputTimeInfo = {};
     std::istringstream iss(ISOTime);
@@ -8,7 +8,15 @@ bool ConvertISO8601TimeToLocal(std::string ISOTime, std::tm& LocalTime)
     if (iss.fail())
         return false;
 
-    std::time_t utcTime = timegm(&inputTimeInfo);
+    UnixTime = timegm(&inputTimeInfo);
+    return true;
+}
+
+bool ConvertISO8601TimeToLocal(std::string ISOTime, std::tm& LocalTime)
+{
+    std::time_t utcTime;
+    if(!ConvertISO8601TimeToUnix(ISOTime, utcTime))
+        return false;
     LocalTime = *std::localtime(&utcTime);
     return true;
 }

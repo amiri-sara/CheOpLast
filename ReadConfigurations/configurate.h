@@ -5,6 +5,7 @@
 #include "../Cryptography/cryptotools.h"
 #include "../Database/MongoDB.h"
 #include "../Logs/log.h"
+#include "../Time/timetools.h"
 
 #include "../crow.h"
 #include "../crow/json.h"
@@ -62,17 +63,27 @@ public:
         bool DebugMode;
     };
 
+    struct TokenStruct
+    {
+        int Counter;
+        std::time_t CreatedAt;
+        std::time_t ExpiryAt;
+        std::string Token;
+    };
+    
     struct CameraStruct
     {
         int DeviceID;
         std::string Username            = "";
         std::string Password            = "";
         std::string Location            = "";
+        std::string CompanyName         = "";
         int PoliceCode;
         int AllowedSpeed;
         std::string subMode             = "";
         bool addBanner                  = false;
         bool addCrop                    = false;
+        Configurate::TokenStruct TokenInfo;
     };
 
     struct FieldsStruct
@@ -142,6 +153,8 @@ public:
     FieldsStruct getOutputFields();
     std::vector<CameraStruct> getCameras();
     std::unordered_map<int, ViolationStruct> getViolationMap();
+
+    void SetNewToken(int CameraIndex, std::string Token, std::time_t TokenTime);
 
 private:
     InfoDatabaseStruct ConfigDatabaseInfo;

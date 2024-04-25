@@ -28,6 +28,7 @@ void KafkaService::run()
                 SHOW_IMPORTANTLOG("Partition: " << InputData.partition << " - Offset: " << InputData.offset);
                 
                 std::shared_ptr<DataHandler::DataHandlerStruct> DH = std::make_shared<DataHandler::DataHandlerStruct>();
+                DH->InsertRoute = true;
                 DH->Request.body = InputData.text;
                 crow::json::wvalue Response;
 

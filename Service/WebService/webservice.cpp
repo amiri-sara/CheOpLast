@@ -51,11 +51,12 @@ void WebService::InsertRoute()
         auto requstStartTime = std::chrono::high_resolution_clock::now();
         
         std::shared_ptr<DataHandler::DataHandlerStruct> DH = std::make_shared<DataHandler::DataHandlerStruct>();
+        DH->InsertRoute = true;
         DH->Request.body = req.body;
         crow::json::wvalue Response;
 
         DH->Request.remoteIP = req.ipAddress;
-        SHOW_IMPORTANTLOG("Recived request from IP -> " + DH->Request.remoteIP);
+        SHOW_IMPORTANTLOG("Recived Insert request from IP -> " + DH->Request.remoteIP);
 
         Configurate* ConfigurateObj = Configurate::getInstance();
 
@@ -184,11 +185,86 @@ void WebService::TokenRoute()
     Route += "token";
     
     this->app->route_dynamic(Route.c_str()).methods(crow::HTTPMethod::POST)([&](const crow::request& req ) {
-        SHOW_IMPORTANTLOG2(req.body);
+        //! "startTime" for Computing process time for this request
+        auto requstStartTime = std::chrono::high_resolution_clock::now();
         
-        auto Res    {crow::json::wvalue()};
-        Res["res"]  = "Token Route";
+        std::shared_ptr<DataHandler::DataHandlerStruct> DH = std::make_shared<DataHandler::DataHandlerStruct>();
+        DH->InsertRoute = false;
+        DH->Request.body = req.body;
+        crow::json::wvalue Response;
 
-        return crow::response{200 , "Token Route"};
+        DH->Request.remoteIP = req.ipAddress;
+        SHOW_IMPORTANTLOG("Recived Token request from IP -> " + DH->Request.remoteIP);
+
+        Configurate* ConfigurateObj = Configurate::getInstance();
+        DH->Cameras = ConfigurateObj->getCameras();
+        DH->InsertDatabase = ConfigurateObj->getInsertDatabase();
+        DH->InsertDatabaseInfo = ConfigurateObj->getInsertDatabaseInfo();
+        DH->DebugMode = this->WebServiceConfig.DebugMode;
+        
+        // 1- Validation Input data
+        auto validationStartTime = std::chrono::high_resolution_clock::now();
+        std::shared_ptr<Validator> Validatorobj = std::make_shared<Validator>();
+        if(!(Validatorobj->run(DH)))
+        {
+            Response["Status"] = DH->Response.errorCode;
+            Response["Description"] = DH->Response.Description;
+            if(DH->DebugMode)
+                SHOW_ERROR(crow::json::dump(Response));
+            return crow::response{DH->Response.HTTPCode , Response};
+        }
+        auto validationFinishTime = std::chrono::high_resolution_clock::now();
+        auto ValidationTime =  std::chrono::duration_cast<std::chrono::nanoseconds>(validationFinishTime - validationStartTime);
+
+        // 2- Generate Token
+        auto GenerateTokenStartTime = std::chrono::high_resolution_clock::now();
+        std::string Token = boost::lexical_cast<std::string>(boost::uuids::random_generator()());
+        
+        std::ostringstream oss;
+        std::time_t currentTime = std::time(nullptr);
+        SHOW_IMPORTANTLOG2(currentTime);
+        std::tm* CurrenttimeInfo = std::localtime(&currentTime);
+        oss << std::put_time(CurrenttimeInfo, "%Y-%m-%d %H:%M:%S");
+        std::string TokenTime = oss.str();
+
+        int TokenCounter = DH->Cameras[DH->CameraIndex].TokenInfo.Counter + 1;
+
+        std::vector<MongoDB::Field> filter = {
+            // equal
+            {"deviceId", std::to_string(DH->Cameras[DH->CameraIndex].DeviceID), MongoDB::FieldType::Integer, "$gte"},
+            {"deviceId", std::to_string(DH->Cameras[DH->CameraIndex].DeviceID), MongoDB::FieldType::Integer, "$lte"}
+        };
+
+        std::vector<MongoDB::Field> Update = {
+            {"token", Token, MongoDB::FieldType::String},
+            {"tokenCreatedAt", TokenTime, MongoDB::FieldType::Date},
+            {"tokenCounter", std::to_string(TokenCounter), MongoDB::FieldType::Integer}
+        };
+
+        auto UpdateReturn = DH->InsertDatabase->Update(DH->InsertDatabaseInfo.DatabaseName, "cameras", filter, Update);
+        if(UpdateReturn.Code != MongoDB::MongoStatus::UpdateSuccessful)
+        {
+            Response["Status"] = DATABASEERROR;
+            Response["Description"] = UpdateReturn.Description;
+            if(DH->DebugMode)
+                SHOW_ERROR(crow::json::dump(Response));
+            return crow::response{500 , Response};
+        }
+
+        ConfigurateObj->SetNewToken(DH->CameraIndex, Token, currentTime);
+
+        auto GenerateTokenFinishTime = std::chrono::high_resolution_clock::now();
+        auto GenerateTokenTime =  std::chrono::duration_cast<std::chrono::nanoseconds>(GenerateTokenFinishTime - GenerateTokenStartTime);
+
+        auto requestFinishTime = std::chrono::high_resolution_clock::now();
+        auto requestTime =  std::chrono::duration_cast<std::chrono::nanoseconds>(requestFinishTime - requstStartTime);
+
+        if(DH->DebugMode)
+            SHOW_IMPORTANTLOG3("ProccessTime(ns) = " << std::to_string(requestTime.count()) << std::endl << "1- Validation ProccessTime(ns) = " << std::to_string(ValidationTime.count()) << std::endl << "2- Generate Token ProccessTime(ns) = " << std::to_string(GenerateTokenTime.count()));
+
+        Response["Status"] = SUCCESSFUL;
+        Response["Description"] = "Successful";
+        SHOW_LOG(crow::json::dump(Response));
+        return crow::response{200 , Response};
     });
 }

@@ -49,6 +49,7 @@
 // Error Code
 #define SUCCESSFUL                                          0
 #define INVALIDJSON                                         600
+#define INVALIDUSERPASS                                     601
 #define INVALIDPLATEVALUE                                   604
 #define INVALIDPASSEDTIME                                   605
 #define OLDDATA                                             606
@@ -90,5 +91,7 @@
 #define CANNOTSAVETHUMBNAILIMAGE                            656
 #define CANNOTCREATEBANNER                                  657
 #define CANNOTADDPLATECROP                                  658
+
+#define INVALIDCOMPANYNAME                                  659
 
 #endif // LOG_H

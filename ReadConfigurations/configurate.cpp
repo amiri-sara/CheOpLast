@@ -270,6 +270,24 @@ void Configurate::ReadCamerasCollection()
     std::vector<MongoDB::Field> filter = {};
     MongoDB::FindOptionStruct Option;
 
+    std::map<std::string , std::string> CompaniesMap;
+    std::vector<std::string> CompaniesDoc;
+    MongoDB::ResponseStruct CompaniesFindReturn = this->InsertDatabase->Find(this->InsertDatabaseInfo.DatabaseName, "companies", filter, Option, CompaniesDoc);
+    if(CompaniesFindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
+    {
+        for(auto& doc : CompaniesDoc)
+        {
+            crow::json::rvalue CompaniesJSON = crow::json::load(doc);
+            std::string ID = CompaniesJSON["_id"]["$oid"].s();
+            std::string faName = CompaniesJSON["faName"].s();
+            CompaniesMap[ID] = faName;
+        }
+    } else
+    {
+        SHOW_ERROR(CompaniesFindReturn.Description);
+        throw;
+    }
+
     std::vector<std::string> SystemDoc;
     MongoDB::ResponseStruct FindReturn = this->InsertDatabase->Find(this->InsertDatabaseInfo.DatabaseName, "systems", filter, Option, SystemDoc);
     if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
@@ -295,15 +313,19 @@ void Configurate::ReadCamerasCollection()
                     crow::json::rvalue CameraJSON = crow::json::load(doc);
             
                     CameraStruct Camera;
-                    Camera.DeviceID     = CameraJSON["deviceId"].i();
-                    Camera.Username     = CameraJSON["username"].s();
-                    Camera.Password     = CameraJSON["password"].s();
-                    Camera.Location     = SystemJSON["location"].s();
-                    Camera.PoliceCode   = SystemJSON["policeCode"].i();
-                    Camera.AllowedSpeed = SystemJSON["allowedSpeed"].i();
-                    Camera.subMode      = SystemJSON["subMode"].s();
-                    Camera.addBanner    = SystemJSON["addBanner"].b();
-                    Camera.addCrop      = SystemJSON["addCrop"].b();
+                    Camera.DeviceID            = CameraJSON["deviceId"].i();
+                    Camera.Username            = CameraJSON["username"].s();
+                    Camera.Password            = CameraJSON["password"].s();
+                    Camera.TokenInfo.Counter   = CameraJSON["tokenCounter"].i();
+                    Camera.TokenInfo.Token     = CameraJSON["token"].s();
+                    Camera.Location            = SystemJSON["location"].s();
+                    Camera.PoliceCode          = SystemJSON["policeCode"].i();
+                    Camera.AllowedSpeed        = SystemJSON["allowedSpeed"].i();
+                    Camera.subMode             = SystemJSON["subMode"].s();
+                    Camera.addBanner           = SystemJSON["addBanner"].b();
+                    Camera.addCrop             = SystemJSON["addCrop"].b();
+                    Camera.CompanyName         = CompaniesMap[SystemJSON["companyId"]["$oid"].s()];
+                    ConvertISO8601TimeToUnix(CameraJSON["tokenCreatedAt"]["$date"].s(), Camera.TokenInfo.CreatedAt);
 
                     this->Cameras.push_back(Camera);
                 }
@@ -313,7 +335,7 @@ void Configurate::ReadCamerasCollection()
                 throw;
             }
         }
-    }else
+    } else
     {
         SHOW_ERROR(FindReturn.Description);
         throw;
@@ -375,6 +397,13 @@ void Configurate::UpdateRoute()
             return crow::response{200 , Res};
         }
     });
+}
+
+void Configurate::SetNewToken(int CameraIndex, std::string Token, std::time_t TokenTime)
+{
+    this->Cameras[CameraIndex].TokenInfo.Token = Token;
+    this->Cameras[CameraIndex].TokenInfo.CreatedAt = TokenTime;
+    this->Cameras[CameraIndex].TokenInfo.Counter += 1;
 }
 
 Configurate::InfoDatabaseStruct Configurate::getInsertDatabaseInfo()

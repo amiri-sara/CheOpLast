@@ -53,7 +53,6 @@ int Service::getKafkaConnectionIndex()
 
 void Service::releaseIndex(int Index)
 {
-    SHOW_IMPORTANTLOG2(Index);
     this->FreeKafkaMutex.lock();
     this->FreeKafkaVec[Index] = true;
     this->FreeKafkaMutex.unlock();

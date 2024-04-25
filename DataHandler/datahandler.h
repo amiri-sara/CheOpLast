@@ -82,6 +82,7 @@ namespace DataHandler
         Configurate::FieldsStruct hasInputFields;
         Configurate::FieldsStruct hasOutputFields;
         std::vector<Configurate::CameraStruct> Cameras;
+        int CameraIndex;
         Configurate::StoreImageConfigStruct StoreImageConfig;
         std::unordered_map<int, Configurate::ViolationStruct> ViolationMap;
         Configurate::ViolationStruct ViolationInfo;
@@ -94,6 +95,7 @@ namespace DataHandler
         std::shared_ptr<MongoDB> InsertDatabase;
         Configurate::InfoDatabaseStruct InsertDatabaseInfo;
         bool DebugMode;
+        bool InsertRoute;
     };
 }
 
