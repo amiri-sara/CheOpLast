@@ -50,12 +50,17 @@
 #define SUCCESSFUL                                          0
 #define INVALIDJSON                                         600
 #define INVALIDUSERPASS                                     601
+#define INVALIDTOKEN                                        602
+#define EXPIREDTOKEN                                        603
 #define INVALIDPLATEVALUE                                   604
 #define INVALIDPASSEDTIME                                   605
 #define OLDDATA                                             606
 #define INVALIDPLATEIMAGE                                   607
+#define INVALIDPLATEIMAGESIZE                               608
 #define INVALIDCOLORIMAGE                                   609
 #define INVALIDCOLORIMAGESIZE                               610
+#define INVALIDGRAYSCALEIMAGE                               611
+#define INVALIDGRAYSCALEIMAGESIZE                           612
 #define DUPLICATERECORD                                     613
 #define INVALIDPLATERECT                                    614
 #define INVALIDCARRECT                                      615
@@ -74,24 +79,22 @@
 #define INVALIDLATITUDE                                     628
 #define INVALIDLONGITUDE                                    629
 #define INVALIDACCURACY                                     630
+#define INVALIDRECORDID                                     631
 
-#define INVALIDGRAYSCALEIMAGE                               632
-#define INVALIDCODETYPE                                     633
-#define INVALIDMASTERPLATE                                  634
-#define INVALIDPROBABILITY                                  635
-#define INVALIDRECORDID                                     636
+#define INVALIDCOMPANYNAME                                  632
+#define INVALIDDATA                                         633
+#define INVALIDCODETYPE                                     634
+#define INVALIDMASTERPLATE                                  635
+#define INVALIDPROBABILITY                                  636
 #define INVALIDRECEIVEDTIME                                 637
 
 #define DATABASEERROR                                       651
 #define CANNOTFINDVIOLATIONID                               652
 #define CANNOTCREATETHUMBNAILIMAGE                          653
-
 #define CANNOTSAVECOLORIMAGE                                654
 #define CANNOTSAVEPLATEIMAGE                                655
 #define CANNOTSAVETHUMBNAILIMAGE                            656
 #define CANNOTCREATEBANNER                                  657
 #define CANNOTADDPLATECROP                                  658
-
-#define INVALIDCOMPANYNAME                                  659
 
 #endif // LOG_H

@@ -329,7 +329,7 @@ bool savedata::InsertDatabase(const std::shared_ptr<DataHandler::DataHandlerStru
     auto InsertReturn = DH->InsertDatabase->Insert(DH->InsertDatabaseInfo.DatabaseName, DH->InsertDatabaseInfo.CollectionName, fields);
     if(InsertReturn.Code != MongoDB::MongoStatus::InsertSuccessful)
     {
-        DH->Response.HTTPCode = 400;
+        DH->Response.HTTPCode = 500;
         DH->Response.errorCode = DATABASEERROR;
         DH->Response.Description = InsertReturn.Description;
         return false;

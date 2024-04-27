@@ -96,6 +96,8 @@ namespace DataHandler
         Configurate::InfoDatabaseStruct InsertDatabaseInfo;
         bool DebugMode;
         bool InsertRoute;
+        bool DecryptedData;
+        bool WebServiceAuthentication;
     };
 }
 

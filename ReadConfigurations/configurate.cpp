@@ -169,10 +169,24 @@ Configurate::Configurate()
                 Configurate::WebServiceConfigStruct WebServiceConf;
                 WebServiceConf.URI = WebserviceConfigJSON["URI"].s();
                 WebServiceConf.Port = WebserviceConfigJSON["Port"].i();
-                WebServiceConf.Authentication = WebserviceConfigJSON["Authentication"].b();
-                WebServiceConf.TokenTimeAllowed = WebserviceConfigJSON["TokenTimeAllowed"].i();
                 WebServiceConf.threadNumber = WebserviceConfigJSON["threadNumber"].i();
                 WebServiceConf.DaysforPassedTimeAcceptable = WebserviceConfigJSON["DaysforPassedTimeAcceptable"].i();
+                WebServiceConf.Authentication = WebserviceConfigJSON["Authentication"]["active"].b();
+                WebServiceConf.TokenTimeAllowed = WebserviceConfigJSON["Authentication"]["TokenTimeAllowed"].i();
+                WebServiceConf.NotifyingOtherServicesTokenUpdate = WebserviceConfigJSON["Authentication"]["NotifyingOtherServicesTokenUpdate"].b();
+                crow::json::rvalue OtherServiceArray = WebserviceConfigJSON["Authentication"]["OtherServices"];
+                std::size_t OtherServicearraySize = OtherServiceArray.size();
+                for(int j = 0; j < OtherServicearraySize; j++)
+                {
+                    crow::json::rvalue OtherserviceInfoJSON = OtherServiceArray[j];
+                    
+                    Configurate::WebServiceInfoStruct WebServiceInfo;
+                    WebServiceInfo.IP   = OtherserviceInfoJSON["IP"].s();
+                    WebServiceInfo.URI  = OtherserviceInfoJSON["URI"].s();
+                    WebServiceInfo.Port = OtherserviceInfoJSON["Port"].i();
+
+                    WebServiceConf.OtherService.push_back(WebServiceInfo);
+                }
                 this->WebServiceConfig.push_back(WebServiceConf);
             }
 #endif // WEBSERVICE 
@@ -324,7 +338,9 @@ void Configurate::ReadCamerasCollection()
                     Camera.subMode             = SystemJSON["subMode"].s();
                     Camera.addBanner           = SystemJSON["addBanner"].b();
                     Camera.addCrop             = SystemJSON["addCrop"].b();
+                    Camera.CompanyID           = SystemJSON["companyId"]["$oid"].s();
                     Camera.CompanyName         = CompaniesMap[SystemJSON["companyId"]["$oid"].s()];
+                    
                     ConvertISO8601TimeToUnix(CameraJSON["tokenCreatedAt"]["$date"].s(), Camera.TokenInfo.CreatedAt);
 
                     this->Cameras.push_back(Camera);
@@ -379,7 +395,8 @@ void Configurate::UpdateRoute()
 
     this->app->route_dynamic(Route.c_str()).methods(crow::HTTPMethod::POST)([&](const crow::request& req ) { 
         crow::json::rvalue Req = crow::json::load(req.body);
-        
+        SHOW_IMPORTANTLOG("Recived Read cameras collection Request from IP -> " + DH->Request.remoteIP);
+
         if(Req["collection"].s() == "cameras")
         {
             this->ReadCamerasCollection();

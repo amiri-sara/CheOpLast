@@ -51,15 +51,7 @@ void WebService::InsertRoute()
         auto requstStartTime = std::chrono::high_resolution_clock::now();
         
         std::shared_ptr<DataHandler::DataHandlerStruct> DH = std::make_shared<DataHandler::DataHandlerStruct>();
-        DH->InsertRoute = true;
-        DH->Request.body = req.body;
-        crow::json::wvalue Response;
-
-        DH->Request.remoteIP = req.ipAddress;
-        SHOW_IMPORTANTLOG("Recived Insert request from IP -> " + DH->Request.remoteIP);
-
         Configurate* ConfigurateObj = Configurate::getInstance();
-
         DH->hasInputFields = ConfigurateObj->getInputFields();
         DH->hasOutputFields = ConfigurateObj->getOutputFields();
         DH->StoreImageConfig = ConfigurateObj->getStoreImageConfig();
@@ -69,10 +61,77 @@ void WebService::InsertRoute()
         DH->InsertDatabase = ConfigurateObj->getInsertDatabase();
         DH->InsertDatabaseInfo = ConfigurateObj->getInsertDatabaseInfo();
         DH->DebugMode = this->WebServiceConfig.DebugMode;
+        DH->InsertRoute = true;
+        DH->WebServiceAuthentication = this->WebServiceConfig.Authentication;
+        
+        crow::json::wvalue Response;
 
+        DH->Request.remoteIP = req.ipAddress;
+        SHOW_IMPORTANTLOG("Recived Insert request from IP -> " + DH->Request.remoteIP);
+
+        std::shared_ptr<Validator> Validatorobj = std::make_shared<Validator>();
+        // 0- Check Authentication
+        auto AuthenticationStartTime = std::chrono::high_resolution_clock::now();
+        if(this->WebServiceConfig.Authentication)
+        {
+            DH->DecryptedData = false;
+            DH->Request.body = req.body;
+            // Validation Input data
+            if(!(Validatorobj->run(DH)))
+            {
+                Response["Status"] = DH->Response.errorCode;
+                Response["Description"] = DH->Response.Description;
+                if(DH->DebugMode)
+                    SHOW_ERROR(crow::json::dump(Response));
+                return crow::response{DH->Response.HTTPCode , Response};
+            }
+
+            // Check Token
+            bool TokenFind = false;
+            std::string Token = DH->Request.JsonRvalue["Token"].s();
+            for(int i = 0; i < DH->Cameras.size(); i++)
+            {
+                if(DH->Cameras[i].TokenInfo.Token == Token)
+                {
+                    TokenFind = true;
+                    DH->CameraIndex = i;
+                    std::time_t currentTime = std::time(nullptr);
+                    std::time_t TokenExpirationTime = DH->Cameras[i].TokenInfo.CreatedAt + this->WebServiceConfig.TokenTimeAllowed;
+                    if(currentTime > TokenExpirationTime)
+                    {
+                        Response["Status"] = EXPIREDTOKEN;
+                        Response["Description"] = "Expired Token.";
+                        if(DH->DebugMode)
+                            SHOW_ERROR(crow::json::dump(Response));
+                        return crow::response{401, Response};   
+                    }
+                    break;
+                }
+            }
+
+            if(!TokenFind)
+            {
+                Response["Status"] = INVALIDTOKEN;
+                Response["Description"] = "Invalid Token.";
+                if(DH->DebugMode)
+                    SHOW_ERROR(crow::json::dump(Response));
+                return crow::response{401, Response};
+            }
+
+            std::string EncryptedData = DH->Request.JsonRvalue["Data"].s();
+            std::string ClientPublicKeyAddress = (std::string)(KEYS_FILE_LOCATION) + "/" + DH->Cameras[DH->CameraIndex].CompanyID;
+            std::string DecryptedData = decryptString(EncryptedData, "ServerPri.pem",  ClientPublicKeyAddress).DecryptedMessage;
+            DH->Request.body = DecryptedData;
+        }else
+        {
+            DH->Request.body = req.body;
+        } 
+        auto AuthenticationFinishTime = std::chrono::high_resolution_clock::now();
+        auto AuthenticationTime =  std::chrono::duration_cast<std::chrono::nanoseconds>(AuthenticationFinishTime - AuthenticationStartTime);
+
+        DH->DecryptedData = true;
         // 1- Validation Input data
         auto validationStartTime = std::chrono::high_resolution_clock::now();
-        std::shared_ptr<Validator> Validatorobj = std::make_shared<Validator>();
         if(!(Validatorobj->run(DH)))
         {
             Response["Status"] = DH->Response.errorCode;
@@ -164,12 +223,14 @@ void WebService::InsertRoute()
         auto requestTime =  std::chrono::duration_cast<std::chrono::nanoseconds>(requestFinishTime - requstStartTime);
 
         if(DH->DebugMode)
-            SHOW_IMPORTANTLOG3("ProccessTime(ns) = " << std::to_string(requestTime.count()) << std::endl << "1- Validation ProccessTime(ns) = " << std::to_string(ValidationTime.count())
+            SHOW_IMPORTANTLOG3("ProccessTime(ns) = " << std::to_string(requestTime.count()) << std::endl << "0- Authentication ProccessTime(ns) = " << std::to_string(AuthenticationTime.count())
+                           << std::endl << "1- Validation ProccessTime(ns) = " << std::to_string(ValidationTime.count())
                            << std::endl << "2- Check RecordID ProccessTime(ns) = " << std::to_string(ChecRecordIDTime.count()) << std::endl << "3- Store image ProccessTime(ns) = " << std::to_string(storeImaheTime.count())
                            << std::endl << "4- Save data ProccessTime(ns) = " << std::to_string(saveDataTime.count()));
         
         Response["Status"] = SUCCESSFUL;
-        Response["Description"] = "Successful";
+        if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+            Response["RecordID"] = DH->ProcessedInputData.MongoID;
         SHOW_LOG(crow::json::dump(Response));
         return crow::response{200 , Response};
     });
@@ -222,7 +283,6 @@ void WebService::TokenRoute()
         
         std::ostringstream oss;
         std::time_t currentTime = std::time(nullptr);
-        SHOW_IMPORTANTLOG2(currentTime);
         std::tm* CurrenttimeInfo = std::localtime(&currentTime);
         oss << std::put_time(CurrenttimeInfo, "%Y-%m-%d %H:%M:%S");
         std::string TokenTime = oss.str();
@@ -253,6 +313,39 @@ void WebService::TokenRoute()
 
         ConfigurateObj->SetNewToken(DH->CameraIndex, Token, currentTime);
 
+        if(this->WebServiceConfig.NotifyingOtherServicesTokenUpdate)
+        {
+            for(auto& Service : this->WebServiceConfig.OtherService)
+            {
+                SHOW_IMPORTANTLOG2("Send Camera JSON to = " << Service.IP << ":" << Service.Port << "/" << Service.URI);
+                std::string URL = Service.IP + ":" + std::to_string(Service.Port) + "/" + Service.URI;
+                CURL *curl;
+                CURLcode res;
+                curl = curl_easy_init();
+                if(curl) {
+                    curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "POST");
+                    curl_easy_setopt(curl, CURLOPT_URL, URL.c_str());
+                    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+                    curl_easy_setopt(curl, CURLOPT_DEFAULT_PROTOCOL, "http");
+                    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 1);
+                    struct curl_slist *headers = NULL;
+                    headers = curl_slist_append(headers, "Content-Type: application/json");
+                    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+                    const char *data = "{\n    \"collection\": \"cameras\"\n}";
+                    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data);
+                    res = curl_easy_perform(curl);
+                    if(res != CURLE_OK)
+                    {
+                        if(DH->DebugMode)
+                            SHOW_ERROR("Send Token Update to = " << Service.IP << ":" << Service.Port << "/" << Service.URI 
+                                       << "  Error : " <<  curl_easy_strerror(res));
+                    }
+                    curl_slist_free_all(headers);
+                }
+                curl_easy_cleanup(curl);
+            }
+        }
+
         auto GenerateTokenFinishTime = std::chrono::high_resolution_clock::now();
         auto GenerateTokenTime =  std::chrono::duration_cast<std::chrono::nanoseconds>(GenerateTokenFinishTime - GenerateTokenStartTime);
 
@@ -263,7 +356,7 @@ void WebService::TokenRoute()
             SHOW_IMPORTANTLOG3("ProccessTime(ns) = " << std::to_string(requestTime.count()) << std::endl << "1- Validation ProccessTime(ns) = " << std::to_string(ValidationTime.count()) << std::endl << "2- Generate Token ProccessTime(ns) = " << std::to_string(GenerateTokenTime.count()));
 
         Response["Status"] = SUCCESSFUL;
-        Response["Description"] = "Successful";
+        Response["Token"] = Token;
         SHOW_LOG(crow::json::dump(Response));
         return crow::response{200 , Response};
     });

@@ -11,6 +11,7 @@
 #include "../crow/json.h"
 
 #define CONFIG_FILE_LOCATION        "/etc/Aggregation.conf"
+#define KEYS_FILE_LOCATION          "/etc/keys"
 
 class Configurate
 {
@@ -32,15 +33,24 @@ public:
         std::string Enable              = "";
     };
 
+    struct WebServiceInfoStruct
+    {
+        std::string URI                  = "";
+        std::string IP                   = "";
+        int Port;
+    };
+
     struct WebServiceConfigStruct
     {
         std::string URI                 = "";
         int Port;
         bool Authentication;
         int TokenTimeAllowed;
+        bool NotifyingOtherServicesTokenUpdate;
         int threadNumber;
         int DaysforPassedTimeAcceptable;
         bool DebugMode;
+        std::vector<Configurate::WebServiceInfoStruct> OtherService;
     };
 
     struct StoreImageConfigStruct
@@ -78,6 +88,7 @@ public:
         std::string Password            = "";
         std::string Location            = "";
         std::string CompanyName         = "";
+        std::string CompanyID           = "";
         int PoliceCode;
         int AllowedSpeed;
         std::string subMode             = "";

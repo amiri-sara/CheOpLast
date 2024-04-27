@@ -29,6 +29,8 @@ void KafkaService::run()
                 
                 std::shared_ptr<DataHandler::DataHandlerStruct> DH = std::make_shared<DataHandler::DataHandlerStruct>();
                 DH->InsertRoute = true;
+                DH->DecryptedData = true;
+                DH->WebServiceAuthentication = false;
                 DH->Request.body = InputData.text;
                 crow::json::wvalue Response;
 

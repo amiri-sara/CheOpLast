@@ -9,8 +9,15 @@ bool Validator::run(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH)
     // Check Input fields exist in request or not
     if(DH->InsertRoute)
     {
-        if(!(this->checkDataExistOrNo(DH)))
-            return false;
+        if(DH->DecryptedData)
+        {
+            if(!(this->checkDataExistOrNo(DH)))
+                return false;
+        }else
+        {
+            if(!(this->checkEncryptedDataExistOrNo(DH)))
+                return false;
+        }
     } else
     {
         if(!(this->checkTokenDataExistOrNo(DH)))
@@ -24,8 +31,15 @@ bool Validator::run(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH)
     // Check Request values
     if(DH->InsertRoute)
     {
-        if(!(this->CheckRequestValues(DH)))
-            return false;
+        if(DH->DecryptedData)
+        {
+            if(!(this->CheckRequestValues(DH)))
+                return false;
+        }else
+        {
+            if(!(this->CheckEncryptedRequestValues(DH)))
+                return false;
+        }
     } else
     {
         if(!(this->CheckTokenRequestValues(DH)))
@@ -386,6 +400,30 @@ bool Validator::checkDataExistOrNo(const std::shared_ptr<DataHandler::DataHandle
     return allDataExist;
 }
 
+bool Validator::checkEncryptedDataExistOrNo(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH)
+{
+    bool allDataExist = false;
+    DH->Request.NumberofInputFields = 2;
+
+    if(!(DH->Request.JsonRvalue.has("Token")))
+    {
+        DH->Response.HTTPCode = 401;
+        DH->Response.errorCode = INVALIDTOKEN;
+        DH->Response.Description = "Token Dont Exist In Body Of JSON.";
+        return allDataExist;
+    }
+
+    if(!(DH->Request.JsonRvalue.has("Data")))
+    {
+        DH->Response.HTTPCode = 400;
+        DH->Response.errorCode = INVALIDDATA;
+        DH->Response.Description = "Data Dont Exist In Body Of JSON";
+        return allDataExist;
+    }
+
+    return true;
+}
+
 bool Validator::checkTokenDataExistOrNo(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH)
 {
     bool allDataExist = false;
@@ -481,6 +519,17 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             DH->Response.errorCode = INVALIDDEVICEID;
             DH->Response.Description = "This DeviceID does not exist.";
             return false; 
+        }
+
+        if(DH->WebServiceAuthentication)
+        {
+            if(DH->Cameras[DH->CameraIndex].DeviceID != DeviceID)
+            {
+                DH->Response.HTTPCode = 401;
+                DH->Response.errorCode = INVALIDTOKEN;
+                DH->Response.Description = "Invalid Token.";
+                return false; 
+            }
         }
 #endif // VALUEVALIDATION
 
@@ -1049,7 +1098,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
         if(sizeInKb > DH->StoreImageConfig.PlateImageMaxSize)
         {
             DH->Response.HTTPCode = 400;
-            DH->Response.errorCode = INVALIDCOLORIMAGESIZE;
+            DH->Response.errorCode = INVALIDPLATEIMAGESIZE;
             DH->Response.Description = "The size of the ColorImage should not be more than " + std::to_string(DH->StoreImageConfig.PlateImageMaxSize) + "KB";
             return false;
         }
@@ -1420,6 +1469,30 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
 
         DH->Input.ReceivedTime = ReceivedTime;
         DH->ProcessedInputData.ReceivedTimeLocal = ReceivedTimeLocal;
+    }
+    return true;
+}
+
+bool Validator::CheckEncryptedRequestValues(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH)
+{
+    std::string Token;
+    try
+    {
+        Token = DH->Request.JsonRvalue["Token"].s();
+    }catch(...)
+    {
+        DH->Response.HTTPCode = 401;
+        DH->Response.errorCode = INVALIDTOKEN;
+        DH->Response.Description = "The type of Token is invalid.";
+        return false; 
+    }
+
+    if(Token.length() != 36)
+    {
+        DH->Response.HTTPCode = 401;
+        DH->Response.errorCode = INVALIDTOKEN;
+        DH->Response.Description = "Invalid Token.";
+        return false;    
     }
     return true;
 }
