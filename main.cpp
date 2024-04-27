@@ -25,8 +25,8 @@ int main(int argc, char *argv[])
     }
     
     Configurate* ConfigurateObj = Configurate::getInstance();
-    boost::thread UpdateRouteThread(&Configurate::RunUpdateService, ConfigurateObj);
-    UpdateRouteThread.detach();
+    boost::thread UpdateServiceThread(&Configurate::RunUpdateService, ConfigurateObj);
+    UpdateServiceThread.detach();
     
 #ifdef WEBSERVICE
     auto WebServicesConfig = ConfigurateObj->getWebServiceConfig();

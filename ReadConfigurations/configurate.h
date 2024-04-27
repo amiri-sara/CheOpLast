@@ -40,10 +40,16 @@ public:
         int Port;
     };
 
+    struct ReadConfigServiceStruct
+    {
+        WebServiceInfoStruct ReadCamerasCollectionServiceInfo;
+        WebServiceInfoStruct SetNewTokenServiceInfo;
+        int threadNumber;
+    };
+
     struct WebServiceConfigStruct
     {
-        std::string URI                 = "";
-        int Port;
+        WebServiceInfoStruct WebServiceInfo;
         bool Authentication;
         int TokenTimeAllowed;
         bool NotifyingOtherServicesTokenUpdate;
@@ -174,7 +180,7 @@ private:
     std::shared_ptr<MongoDB> ConfigDatabase;
     std::shared_ptr<MongoDB> InsertDatabase;
     std::shared_ptr<MongoDB> FailedDatabase;
-    WebServiceConfigStruct ReadConfigServiceConfig;
+    ReadConfigServiceStruct ReadConfigServiceConfig;
     std::vector<WebServiceConfigStruct> WebServiceConfig;
     StoreImageConfigStruct StoreImageConfig;
     KafkaConfigStruct InputKafkaConfig;
@@ -186,7 +192,8 @@ private:
 
     void ReadCamerasCollection();
 
-    void UpdateRoute();
+    void ReadCamerasCollectionRoute();
+    void SetNewTokenRoute();
 
     static Configurate* InstancePtr;
     Configurate();

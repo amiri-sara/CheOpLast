@@ -103,8 +103,10 @@ Configurate::Configurate()
         {
             crow::json::rvalue AggregationConfigJSON = crow::json::load(doc);
             
-            this->ReadConfigServiceConfig.URI = AggregationConfigJSON["ReadConfigService"]["URI"].s(); 
-            this->ReadConfigServiceConfig.Port = AggregationConfigJSON["ReadConfigService"]["Port"].i(); 
+            this->ReadConfigServiceConfig.ReadCamerasCollectionServiceInfo.URI = AggregationConfigJSON["ReadConfigService"]["ReadCamerasCollectionURI"].s(); 
+            this->ReadConfigServiceConfig.ReadCamerasCollectionServiceInfo.Port = AggregationConfigJSON["ReadConfigService"]["Port"].i(); 
+            this->ReadConfigServiceConfig.SetNewTokenServiceInfo.URI = AggregationConfigJSON["ReadConfigService"]["SetNewTokenURI"].s(); 
+            this->ReadConfigServiceConfig.SetNewTokenServiceInfo.Port = AggregationConfigJSON["ReadConfigService"]["Port"].i(); 
             this->ReadConfigServiceConfig.threadNumber = AggregationConfigJSON["ReadConfigService"]["threadNumber"].i();
         }
     }else
@@ -167,8 +169,8 @@ Configurate::Configurate()
                 crow::json::rvalue WebserviceConfigJSON = WebServiceArray[i];
 
                 Configurate::WebServiceConfigStruct WebServiceConf;
-                WebServiceConf.URI = WebserviceConfigJSON["URI"].s();
-                WebServiceConf.Port = WebserviceConfigJSON["Port"].i();
+                WebServiceConf.WebServiceInfo.URI = WebserviceConfigJSON["URI"].s();
+                WebServiceConf.WebServiceInfo.Port = WebserviceConfigJSON["Port"].i();
                 WebServiceConf.threadNumber = WebserviceConfigJSON["threadNumber"].i();
                 WebServiceConf.DaysforPassedTimeAcceptable = WebserviceConfigJSON["DaysforPassedTimeAcceptable"].i();
                 WebServiceConf.Authentication = WebserviceConfigJSON["Authentication"]["active"].b();
@@ -358,21 +360,29 @@ void Configurate::ReadCamerasCollection()
     }
 }
 
+void Configurate::SetNewToken(int CameraIndex, std::string Token, std::time_t TokenTime)
+{
+    this->Cameras[CameraIndex].TokenInfo.Token = Token;
+    this->Cameras[CameraIndex].TokenInfo.CreatedAt = TokenTime;
+    this->Cameras[CameraIndex].TokenInfo.Counter += 1;
+}
+
 void Configurate::RunUpdateService()
 {
     try 
     {   
         this->app = std::make_shared<crow::SimpleApp>();
         this->app->loglevel(crow::LogLevel::Error);
-        this->UpdateRoute();
+        this->ReadCamerasCollectionRoute();
+        this->SetNewTokenRoute();
 
-        SHOW_IMPORTANTLOG3("Runinng Update Config Service on port " + std::to_string(this->ReadConfigServiceConfig.Port));
+        SHOW_IMPORTANTLOG3("Runinng Update Config Service on port " + std::to_string(this->ReadConfigServiceConfig.ReadCamerasCollectionServiceInfo.Port));
         try{
             //! run object of crow by specific port and many rout in multithread status
-            this->app->port(this->ReadConfigServiceConfig.Port).concurrency(this->ReadConfigServiceConfig.threadNumber).run();
+            this->app->port(this->ReadConfigServiceConfig.ReadCamerasCollectionServiceInfo.Port).concurrency(this->ReadConfigServiceConfig.threadNumber).run();
 
         }  catch (...) {
-            SHOW_ERROR("port " + std::to_string(this->ReadConfigServiceConfig.Port) + " is busy . Check ports in server table in config database .");
+            SHOW_ERROR("port " + std::to_string(this->ReadConfigServiceConfig.ReadCamerasCollectionServiceInfo.Port) + " is busy . Check ports in server table in config database .");
             exit(0);
         }
 
@@ -382,20 +392,20 @@ void Configurate::RunUpdateService()
 
         SHOW_ERROR("Error Code 0x" + std::to_string(__LINE__) + "JBF_3K92XS543272" + e.what());
 
-        SHOW_ERROR("Can't Run Crow on port "  + std::to_string(this->ReadConfigServiceConfig.Port) + " please check this port ." );
+        SHOW_ERROR("Can't Run Crow on port "  + std::to_string(this->ReadConfigServiceConfig.ReadCamerasCollectionServiceInfo.Port) + " please check this port ." );
 
     }
 }
 
-void Configurate::UpdateRoute()
+void Configurate::ReadCamerasCollectionRoute()
 {
-    std::string Route = this->ReadConfigServiceConfig.URI;
+    std::string Route = this->ReadConfigServiceConfig.ReadCamerasCollectionServiceInfo.URI;
     if(Route[0] != '/')
         Route = "/" + Route;
 
     this->app->route_dynamic(Route.c_str()).methods(crow::HTTPMethod::POST)([&](const crow::request& req ) { 
         crow::json::rvalue Req = crow::json::load(req.body);
-        SHOW_IMPORTANTLOG("Recived Read cameras collection Request from IP -> " + DH->Request.remoteIP);
+        SHOW_IMPORTANTLOG("Recived Read cameras collection Request from IP -> " + req.ipAddress);
 
         if(Req["collection"].s() == "cameras")
         {
@@ -416,11 +426,27 @@ void Configurate::UpdateRoute()
     });
 }
 
-void Configurate::SetNewToken(int CameraIndex, std::string Token, std::time_t TokenTime)
+void Configurate::SetNewTokenRoute()
 {
-    this->Cameras[CameraIndex].TokenInfo.Token = Token;
-    this->Cameras[CameraIndex].TokenInfo.CreatedAt = TokenTime;
-    this->Cameras[CameraIndex].TokenInfo.Counter += 1;
+    std::string Route = this->ReadConfigServiceConfig.SetNewTokenServiceInfo.URI;
+    if(Route[0] != '/')
+        Route = "/" + Route;
+
+    this->app->route_dynamic(Route.c_str()).methods(crow::HTTPMethod::POST)([&](const crow::request& req ) { 
+        crow::json::rvalue Req = crow::json::load(req.body);
+        SHOW_IMPORTANTLOG("Recived Set New Token Request from IP -> " + req.ipAddress);
+
+        int CameraIndex = Req["CameraIndex"].i();
+        std::string Token = Req["Token"].s();
+        std::time_t TokenTime = Req["TokenTime"].i();
+
+        this->SetNewToken(CameraIndex, Token, TokenTime);
+        
+        auto Res    {crow::json::wvalue()};
+        Res["Code"]  = 0;
+        Res["Description"]  = "Set New Token value was successful";
+        return crow::response{200 , Res};
+    });
 }
 
 Configurate::InfoDatabaseStruct Configurate::getInsertDatabaseInfo()

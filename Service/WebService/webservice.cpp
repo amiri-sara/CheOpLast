@@ -15,13 +15,13 @@ void WebService::run()
         if(this->WebServiceConfig.Authentication)
             this->TokenRoute();
 
-        SHOW_IMPORTANTLOG3("Runinng Aggregation on port " + std::to_string(this->WebServiceConfig.Port));
+        SHOW_IMPORTANTLOG3("Runinng Aggregation on port " + std::to_string(this->WebServiceConfig.WebServiceInfo.Port));
         try{
             //! run object of crow by specific port and many rout in multithread status
-            this->app->port(this->WebServiceConfig.Port).concurrency(this->WebServiceConfig.threadNumber).run();
+            this->app->port(this->WebServiceConfig.WebServiceInfo.Port).concurrency(this->WebServiceConfig.threadNumber).run();
 
         }  catch (...) {
-            SHOW_ERROR("port " + std::to_string(this->WebServiceConfig.Port) + " is busy . Check ports in server table in config database .");
+            SHOW_ERROR("port " + std::to_string(this->WebServiceConfig.WebServiceInfo.Port) + " is busy . Check ports in server table in config database .");
             exit(0);
         }
 
@@ -31,14 +31,14 @@ void WebService::run()
 
         SHOW_ERROR("Error Code 0x" + std::to_string(__LINE__) + "JBF_3K92XS543272" + e.what());
 
-        SHOW_ERROR("Can't Run Crow on port "  + std::to_string(this->WebServiceConfig.Port) + " please check this port ." );
+        SHOW_ERROR("Can't Run Crow on port "  + std::to_string(this->WebServiceConfig.WebServiceInfo.Port) + " please check this port ." );
 
     }
 }
 
 void WebService::InsertRoute()
 {
-    std::string Route = this->WebServiceConfig.URI;
+    std::string Route = this->WebServiceConfig.WebServiceInfo.URI;
     if(Route.back() != '/')
         Route += "/";
     if(Route[0] != '/')
@@ -238,7 +238,7 @@ void WebService::InsertRoute()
 
 void WebService::TokenRoute()
 {
-    std::string Route = this->WebServiceConfig.URI;
+    std::string Route = this->WebServiceConfig.WebServiceInfo.URI;
     if(Route.back() != '/')
         Route += "/";
     if(Route[0] != '/')
@@ -312,7 +312,6 @@ void WebService::TokenRoute()
         }
 
         ConfigurateObj->SetNewToken(DH->CameraIndex, Token, currentTime);
-
         if(this->WebServiceConfig.NotifyingOtherServicesTokenUpdate)
         {
             for(auto& Service : this->WebServiceConfig.OtherService)
@@ -323,6 +322,13 @@ void WebService::TokenRoute()
                 CURLcode res;
                 curl = curl_easy_init();
                 if(curl) {
+                    
+                    crow::json::wvalue json;
+                    json["CameraIndex"] = DH->CameraIndex;
+                    json["Token"] = Token;
+                    json["TokenTime"] = currentTime;
+                    std::string jsonStr = crow::json::dump(json);
+
                     curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "POST");
                     curl_easy_setopt(curl, CURLOPT_URL, URL.c_str());
                     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
@@ -331,8 +337,7 @@ void WebService::TokenRoute()
                     struct curl_slist *headers = NULL;
                     headers = curl_slist_append(headers, "Content-Type: application/json");
                     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-                    const char *data = "{\n    \"collection\": \"cameras\"\n}";
-                    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data);
+                    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jsonStr.c_str());
                     res = curl_easy_perform(curl);
                     if(res != CURLE_OK)
                     {
