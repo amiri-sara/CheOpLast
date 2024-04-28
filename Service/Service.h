@@ -15,6 +15,8 @@
     #include "../Kafka/Utility.h"
 #endif // KAFKAOUTPUT || KAFKASERVICE
 
+#include "./checkop/checkop.h"
+
 class Service
 {
 public:
@@ -38,8 +40,15 @@ protected:
     Configurate::KafkaConfigStruct OutputKafkaConfig; 
     std::vector<bool> FreeKafkaVec;
     int getKafkaConnectionIndex();
-    void releaseIndex(int Index);
+    void releaseKafkaIndex(int Index);
     boost::mutex FreeKafkaMutex;
+
+    std::vector<std::shared_ptr<CheckOP>> CheckOPObjects;
+    std::vector<bool> FreeCheckOpVec;
+    int CheckOpNumberOfObjectPerService;
+    int getCheckOpIndex();
+    void releaseCheckOpIndex(int Index);
+    boost::mutex FreeCheckOpMutex;
 };
 
 #endif //SERVICE_H

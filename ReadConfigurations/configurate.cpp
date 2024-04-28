@@ -176,6 +176,7 @@ Configurate::Configurate()
                 WebServiceConf.Authentication = WebserviceConfigJSON["Authentication"]["active"].b();
                 WebServiceConf.TokenTimeAllowed = WebserviceConfigJSON["Authentication"]["TokenTimeAllowed"].i();
                 WebServiceConf.NotifyingOtherServicesTokenUpdate = WebserviceConfigJSON["Authentication"]["NotifyingOtherServicesTokenUpdate"].b();
+                WebServiceConf.KeysPath = WebserviceConfigJSON["Authentication"]["KeysPath"].s();
                 crow::json::rvalue OtherServiceArray = WebserviceConfigJSON["Authentication"]["OtherServices"];
                 std::size_t OtherServicearraySize = OtherServiceArray.size();
                 for(int j = 0; j < OtherServicearraySize; j++)
@@ -269,6 +270,153 @@ Configurate::Configurate()
             this->OutputKafkaConfig.GroupID = KafkaConfigJSON["GroupID"].s();
             this->OutputKafkaConfig.PartitionNumber = KafkaConfigJSON["PartitionNumber"].i();
 #endif // KAFKAOUTPUT
+        }
+    }else
+    {
+        SHOW_ERROR(FindReturn.Description);
+        throw;
+    }
+
+    std::vector<std::string> ModulesDoc;
+    FindReturn = this->ConfigDatabase->Find(this->ConfigDatabaseInfo.DatabaseName, "Modules", filter, Option, ModulesDoc);
+    if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
+    {
+        for(auto& doc : ModulesDoc)
+        {   
+            crow::json::rvalue ModulesConfigJSON = crow::json::load(doc);
+
+            crow::json::rvalue CheckOperatorJSON = ModulesConfigJSON["CheckOperator"];
+            this->Modules.CheckOperator.active = CheckOperatorJSON["active"].b();
+            this->Modules.CheckOperator.NumberOfObjectPerService = CheckOperatorJSON["NumberOfObjectPerService"].i();
+            this->Modules.CheckOperator.ModelsPath = CheckOperatorJSON["ModelsPath"].s();
+            if(this->Modules.CheckOperator.active)
+            {
+                MongoDB::FindOptionStruct Option;
+                
+                std::string PDid = CheckOperatorJSON["PD"]["$oid"].s();
+                std::vector<MongoDB::Field> Modelfilter = {
+                    // equal
+                    {"_id", PDid, MongoDB::FieldType::ObjectId, "$gte"},
+                    {"_id", PDid, MongoDB::FieldType::ObjectId, "$lte"}
+
+                };
+                std::vector<std::string> PDResultDoc;
+                FindReturn = this->ConfigDatabase->Find(this->ConfigDatabaseInfo.DatabaseName, "Models", Modelfilter, Option, PDResultDoc);
+                if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
+                {
+                    if(PDResultDoc.size() != 1)
+                    {
+                        SHOW_ERROR(PDid << " Model does not exist");
+                        throw;
+                    }
+                    for(auto& doc : PDResultDoc)
+                    {
+                        crow::json::rvalue ModelsConfigJSON = crow::json::load(doc);
+                        this->Modules.CheckOperator.PD.Name = ModelsConfigJSON["Name"].s();
+                        this->Modules.CheckOperator.PD.Width = ModelsConfigJSON["Width"].i();
+                        this->Modules.CheckOperator.PD.Height = ModelsConfigJSON["Height"].i();
+                        this->Modules.CheckOperator.PD.PrimaryThreshold = ModelsConfigJSON["PrimaryThreshold"].i();
+                        this->Modules.CheckOperator.PD.SecondaryThreshold = ModelsConfigJSON["SecondaryThreshold"].i();
+                    }
+                }else
+                {
+                    SHOW_ERROR(FindReturn.Description);
+                    throw;
+                }
+                
+                std::string PROCRid = CheckOperatorJSON["PROCR"]["$oid"].s();
+                Modelfilter = {
+                    // equal
+                    {"_id", PROCRid, MongoDB::FieldType::ObjectId, "$gte"},
+                    {"_id", PROCRid, MongoDB::FieldType::ObjectId, "$lte"}
+
+                };
+                std::vector<std::string> PROCRResultDoc;
+                FindReturn = this->ConfigDatabase->Find(this->ConfigDatabaseInfo.DatabaseName, "Models", Modelfilter, Option, PROCRResultDoc);
+                if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
+                {
+                    if(PROCRResultDoc.size() != 1)
+                    {
+                        SHOW_ERROR(PROCRid << " Model does not exist");
+                        throw;
+                    }
+                    for(auto& doc : PROCRResultDoc)
+                    {
+                        crow::json::rvalue ModelsConfigJSON = crow::json::load(doc);
+                        this->Modules.CheckOperator.PROCR.Name = ModelsConfigJSON["Name"].s();
+                        this->Modules.CheckOperator.PROCR.Width = ModelsConfigJSON["Width"].i();
+                        this->Modules.CheckOperator.PROCR.Height = ModelsConfigJSON["Height"].i();
+                        this->Modules.CheckOperator.PROCR.PrimaryThreshold = ModelsConfigJSON["PrimaryThreshold"].i();
+                        this->Modules.CheckOperator.PROCR.SecondaryThreshold = ModelsConfigJSON["SecondaryThreshold"].i();
+                    }
+                }else
+                {
+                    SHOW_ERROR(FindReturn.Description);
+                    throw;
+                }
+
+                std::string PCid = CheckOperatorJSON["PC"]["$oid"].s();
+                Modelfilter = {
+                    // equal
+                    {"_id", PCid, MongoDB::FieldType::ObjectId, "$gte"},
+                    {"_id", PCid, MongoDB::FieldType::ObjectId, "$lte"}
+
+                };
+                std::vector<std::string> PCResultDoc;
+                FindReturn = this->ConfigDatabase->Find(this->ConfigDatabaseInfo.DatabaseName, "Models", Modelfilter, Option, PCResultDoc);
+                if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
+                {
+                    if(PCResultDoc.size() != 1)
+                    {
+                        SHOW_ERROR(PCid << " Model does not exist");
+                        throw;
+                    }
+                    for(auto& doc : PCResultDoc)
+                    {
+                        crow::json::rvalue ModelsConfigJSON = crow::json::load(doc);
+                        this->Modules.CheckOperator.PC.Name = ModelsConfigJSON["Name"].s();
+                        this->Modules.CheckOperator.PC.Width = ModelsConfigJSON["Width"].i();
+                        this->Modules.CheckOperator.PC.Height = ModelsConfigJSON["Height"].i();
+                        this->Modules.CheckOperator.PC.PrimaryThreshold = ModelsConfigJSON["PrimaryThreshold"].i();
+                        this->Modules.CheckOperator.PC.SecondaryThreshold = ModelsConfigJSON["SecondaryThreshold"].i();
+                    }
+                }else
+                {
+                    SHOW_ERROR(FindReturn.Description);
+                    throw;
+                }
+
+                std::string MBOCRid = CheckOperatorJSON["MBOCR"]["$oid"].s();
+                Modelfilter = {
+                    // equal
+                    {"_id", MBOCRid, MongoDB::FieldType::ObjectId, "$gte"},
+                    {"_id", MBOCRid, MongoDB::FieldType::ObjectId, "$lte"}
+
+                };
+                std::vector<std::string> MBOCRResultDoc;
+                FindReturn = this->ConfigDatabase->Find(this->ConfigDatabaseInfo.DatabaseName, "Models", Modelfilter, Option, MBOCRResultDoc);
+                if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
+                {
+                    if(PCResultDoc.size() != 1)
+                    {
+                        SHOW_ERROR(MBOCRid << " Model does not exist");
+                        throw;
+                    }
+                    for(auto& doc : MBOCRResultDoc)
+                    {
+                        crow::json::rvalue ModelsConfigJSON = crow::json::load(doc);
+                        this->Modules.CheckOperator.MBOCR.Name = ModelsConfigJSON["Name"].s();
+                        this->Modules.CheckOperator.MBOCR.Width = ModelsConfigJSON["Width"].i();
+                        this->Modules.CheckOperator.MBOCR.Height = ModelsConfigJSON["Height"].i();
+                        this->Modules.CheckOperator.MBOCR.PrimaryThreshold = ModelsConfigJSON["PrimaryThreshold"].i();
+                        this->Modules.CheckOperator.MBOCR.SecondaryThreshold = ModelsConfigJSON["SecondaryThreshold"].i();
+                    }
+                }else
+                {
+                    SHOW_ERROR(FindReturn.Description);
+                    throw;
+                }
+            }
         }
     }else
     {
@@ -508,4 +656,9 @@ Configurate::FieldsStruct Configurate::getOutputFields()
 std::unordered_map<int, Configurate::ViolationStruct> Configurate::getViolationMap()
 {
     return this->ViolationMap;
+}
+
+Configurate::ModulesStruct Configurate::getModules()
+{
+    return this->Modules;
 }

@@ -262,7 +262,7 @@ bool savedata::InsertDatabase(const std::shared_ptr<DataHandler::DataHandlerStru
     // CodeType
     if(DH->hasOutputFields.CodeType)
     {
-        if(DH->hasInputFields.CodeType)
+        if(DH->Modules.CheckOperator.active || DH->hasInputFields.CodeType)
         {  
             MongoDB::Field CodeTypeField = {"CodeType", std::to_string(DH->Input.CodeType), MongoDB::FieldType::Integer};
             fields.push_back(CodeTypeField);
@@ -272,7 +272,7 @@ bool savedata::InsertDatabase(const std::shared_ptr<DataHandler::DataHandlerStru
     // Probability
     if(DH->hasOutputFields.Probability)
     {
-        if(DH->hasInputFields.Probability)
+        if(DH->Modules.CheckOperator.active || DH->hasInputFields.Probability)
         {  
             MongoDB::Field ProbabilityField = {"Probability", std::to_string(DH->Input.Probability), MongoDB::FieldType::Integer};
             fields.push_back(ProbabilityField);
@@ -282,7 +282,7 @@ bool savedata::InsertDatabase(const std::shared_ptr<DataHandler::DataHandlerStru
     // MasterPlate
     if(DH->hasOutputFields.MasterPlate)
     {
-        if(DH->hasInputFields.MasterPlate)
+        if(DH->Modules.CheckOperator.active || DH->hasInputFields.MasterPlate)
         {  
             MongoDB::Field MasterPlateField = {"MasterPlateValue", DH->Input.MasterPlate, MongoDB::FieldType::String};
             fields.push_back(MasterPlateField);
@@ -512,21 +512,21 @@ bool savedata::InsertKafka(const std::shared_ptr<DataHandler::DataHandlerStruct>
     // CodeType
     if(DH->hasOutputFields.CodeType)
     {
-        if(DH->hasInputFields.CodeType)
+        if(DH->Modules.CheckOperator.active || DH->hasInputFields.CodeType)
             Response["CodeType"] = DH->Input.CodeType;
     }
 
     // Probability
     if(DH->hasOutputFields.Probability)
     {
-        if(DH->hasInputFields.Probability)
+        if(DH->Modules.CheckOperator.active || DH->hasInputFields.Probability)
             Response["Probability"] = DH->Input.Probability;
     }
 
     // MasterPlate
     if(DH->hasOutputFields.MasterPlate)
     {
-        if(DH->hasInputFields.MasterPlate)
+        if(DH->Modules.CheckOperator.active || DH->hasInputFields.MasterPlate)
             Response["MasterPlateValue"] = DH->Input.MasterPlate;
     }
 

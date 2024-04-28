@@ -44,6 +44,7 @@ void KafkaService::run()
                 DH->DaysforPassedTimeAcceptable = this->InputKafkaConfig.DaysforPassedTimeAcceptable;
                 DH->InsertDatabase = ConfigurateObj->getInsertDatabase();
                 DH->InsertDatabaseInfo = ConfigurateObj->getInsertDatabaseInfo();
+                DH->Modules = ConfigurateObj->getModules();
                 DH->DebugMode = this->InputKafkaConfig.DebugMode;
 
                 // 1- Validation Input data
@@ -94,9 +95,23 @@ void KafkaService::run()
                 auto ChecRecordIDFinishTime = std::chrono::high_resolution_clock::now();
                 auto ChecRecordIDTime =  std::chrono::duration_cast<std::chrono::nanoseconds>(ChecRecordIDFinishTime - ChecRecordIDStartTime);
 
+                auto CheckOpStartTime = std::chrono::high_resolution_clock::now();
+                // 3- Run Check Operator Module
+                if(DH->Modules.CheckOperator.active && DH->hasInputFields.PlateImage)
+                {
+                    int CheckOpObjectIndex = this->getCheckOpIndex();
+                    auto CheckOpResult = this->CheckOPObjects[CheckOpObjectIndex]->run(DH->ProcessedInputData.PlateImageMat, DH->Input.PlateValue);
+                    DH->Input.MasterPlate = DH->Input.PlateValue;
+                    DH->Input.PlateValue = CheckOpResult.NewPlateValue;
+                    DH->Input.CodeType = CheckOpResult.CodeType;
+                    DH->Input.Probability = CheckOpResult.Probability;
+                }
+                auto CheckOpFinishTime = std::chrono::high_resolution_clock::now();
+                auto CheckOpTime =  std::chrono::duration_cast<std::chrono::nanoseconds>(CheckOpFinishTime - CheckOpStartTime);
+
                 auto storeImageStartTime = std::chrono::high_resolution_clock::now();
 #ifdef STOREIMAGE
-                // 3- Store Image
+                // 4- Store Image
                 std::shared_ptr<storeimage> storeimageobj = std::make_shared<storeimage>();
                 if(!(storeimageobj->run(DH)))
                 {
@@ -112,7 +127,7 @@ void KafkaService::run()
 
                 auto saveDataStartTime = std::chrono::high_resolution_clock::now();
 #if defined KAFKAOUTPUT || defined INSERTDATABASE
-                // 4- Save Data
+                // 5- Save Data
                 std::shared_ptr<savedata> savedataobj = std::make_shared<savedata>();
 #ifdef KAFKAOUTPUT
                 int OutputKafkaConnectionIndex = this->getKafkaConnectionIndex();
@@ -127,7 +142,7 @@ void KafkaService::run()
                     continue;
                 }
 #ifdef KAFKAOUTPUT
-                this->releaseIndex(OutputKafkaConnectionIndex);
+                this->releaseKafkaIndex(OutputKafkaConnectionIndex);
 #endif // KAFKAOUTPUT
 #endif // KAFKAOUTPUT || INSERTDATABASE
                 auto saveDataFinishTime = std::chrono::high_resolution_clock::now();
@@ -137,9 +152,11 @@ void KafkaService::run()
                 auto requestTime =  std::chrono::duration_cast<std::chrono::nanoseconds>(requestFinishTime - requstStartTime);
                 
                 if(DH->DebugMode)
-                    SHOW_IMPORTANTLOG3("ProccessTime(ns) = " << std::to_string(requestTime.count()) << std::endl << "1- Validation ProccessTime(ns) = " << std::to_string(ValidationTime.count())
-                                << std::endl << "2- Check RecordID ProccessTime(ns) = " << std::to_string(ChecRecordIDTime.count()) << std::endl << "3- Store image ProccessTime(ns) = " << std::to_string(storeImaheTime.count())
-                                << std::endl << "4- Save data ProccessTime(ns) = " << std::to_string(saveDataTime.count()));
+                    SHOW_IMPORTANTLOG3("ProccessTime(ns) = " << std::to_string(requestTime.count()) << std::endl << "0- Authentication ProccessTime(ns) = " << std::to_string(AuthenticationTime.count())
+                           << std::endl << "1- Validation ProccessTime(ns) = " << std::to_string(ValidationTime.count())
+                           << std::endl << "2- Check RecordID ProccessTime(ns) = " << std::to_string(ChecRecordIDTime.count()) << std::endl << "3- CheckOp ProccessTime(ns) = " << std::to_string(CheckOpTime.count())
+                           << std::endl << "4- Store image ProccessTime(ns) = " << std::to_string(storeImaheTime.count())
+                           << std::endl << "5- Save data ProccessTime(ns) = " << std::to_string(saveDataTime.count()));
 
                 Response["Status"] = SUCCESSFUL;
                 Response["Description"] = "Successful";

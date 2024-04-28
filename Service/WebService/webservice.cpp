@@ -60,6 +60,7 @@ void WebService::InsertRoute()
         DH->DaysforPassedTimeAcceptable = this->WebServiceConfig.DaysforPassedTimeAcceptable;
         DH->InsertDatabase = ConfigurateObj->getInsertDatabase();
         DH->InsertDatabaseInfo = ConfigurateObj->getInsertDatabaseInfo();
+        DH->Modules = ConfigurateObj->getModules();
         DH->DebugMode = this->WebServiceConfig.DebugMode;
         DH->InsertRoute = true;
         DH->WebServiceAuthentication = this->WebServiceConfig.Authentication;
@@ -119,7 +120,7 @@ void WebService::InsertRoute()
             }
 
             std::string EncryptedData = DH->Request.JsonRvalue["Data"].s();
-            std::string ClientPublicKeyAddress = (std::string)(KEYS_FILE_LOCATION) + "/" + DH->Cameras[DH->CameraIndex].CompanyID;
+            std::string ClientPublicKeyAddress = this->WebServiceConfig.KeysPath + "/" + DH->Cameras[DH->CameraIndex].CompanyID;
             std::string DecryptedData = decryptString(EncryptedData, "ServerPri.pem",  ClientPublicKeyAddress).DecryptedMessage;
             DH->Request.body = DecryptedData;
         }else
@@ -179,9 +180,23 @@ void WebService::InsertRoute()
         auto ChecRecordIDFinishTime = std::chrono::high_resolution_clock::now();
         auto ChecRecordIDTime =  std::chrono::duration_cast<std::chrono::nanoseconds>(ChecRecordIDFinishTime - ChecRecordIDStartTime);
 
+        auto CheckOpStartTime = std::chrono::high_resolution_clock::now();
+        // 3- Run Check Operator Module
+        if(DH->Modules.CheckOperator.active && DH->hasInputFields.PlateImage)
+        {
+            int CheckOpObjectIndex = this->getCheckOpIndex();
+            auto CheckOpResult = this->CheckOPObjects[CheckOpObjectIndex]->run(DH->ProcessedInputData.PlateImageMat, DH->Input.PlateValue);
+            DH->Input.MasterPlate = DH->Input.PlateValue;
+            DH->Input.PlateValue = CheckOpResult.NewPlateValue;
+            DH->Input.CodeType = CheckOpResult.CodeType;
+            DH->Input.Probability = CheckOpResult.Probability;
+        }
+        auto CheckOpFinishTime = std::chrono::high_resolution_clock::now();
+        auto CheckOpTime =  std::chrono::duration_cast<std::chrono::nanoseconds>(CheckOpFinishTime - CheckOpStartTime);
+
         auto storeImageStartTime = std::chrono::high_resolution_clock::now();
 #ifdef STOREIMAGE
-        // 3- Store Image
+        // 4- Store Image
         std::shared_ptr<storeimage> storeimageobj = std::make_shared<storeimage>();
         if(!(storeimageobj->run(DH)))
         {
@@ -197,7 +212,7 @@ void WebService::InsertRoute()
 
         auto saveDataStartTime = std::chrono::high_resolution_clock::now();
 #if defined KAFKAOUTPUT || defined INSERTDATABASE
-        // 4- Save Data
+        // 5- Save Data
         std::shared_ptr<savedata> savedataobj = std::make_shared<savedata>();
 #ifdef KAFKAOUTPUT
         int OutputKafkaConnectionIndex = this->getKafkaConnectionIndex();
@@ -213,7 +228,7 @@ void WebService::InsertRoute()
             return crow::response{DH->Response.HTTPCode , Response};
         }
 #ifdef KAFKAOUTPUT
-        this->releaseIndex(OutputKafkaConnectionIndex);
+        this->releaseKafkaIndex(OutputKafkaConnectionIndex);
 #endif // KAFKAOUTPUT
 #endif // KAFKAOUTPUT || INSERTDATABASE
         auto saveDataFinishTime = std::chrono::high_resolution_clock::now();
@@ -225,8 +240,9 @@ void WebService::InsertRoute()
         if(DH->DebugMode)
             SHOW_IMPORTANTLOG3("ProccessTime(ns) = " << std::to_string(requestTime.count()) << std::endl << "0- Authentication ProccessTime(ns) = " << std::to_string(AuthenticationTime.count())
                            << std::endl << "1- Validation ProccessTime(ns) = " << std::to_string(ValidationTime.count())
-                           << std::endl << "2- Check RecordID ProccessTime(ns) = " << std::to_string(ChecRecordIDTime.count()) << std::endl << "3- Store image ProccessTime(ns) = " << std::to_string(storeImaheTime.count())
-                           << std::endl << "4- Save data ProccessTime(ns) = " << std::to_string(saveDataTime.count()));
+                           << std::endl << "2- Check RecordID ProccessTime(ns) = " << std::to_string(ChecRecordIDTime.count()) << std::endl << "3- CheckOp ProccessTime(ns) = " << std::to_string(CheckOpTime.count())
+                           << std::endl << "4- Store image ProccessTime(ns) = " << std::to_string(storeImaheTime.count())
+                           << std::endl << "5- Save data ProccessTime(ns) = " << std::to_string(saveDataTime.count()));
         
         Response["Status"] = SUCCESSFUL;
         if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)

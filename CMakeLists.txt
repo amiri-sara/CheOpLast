@@ -50,13 +50,13 @@ endif()
 
 include_directories(.)
 
+set(inc_dir /usr/local/include)
 if(BUILDUBUNTU20)
     include_directories(/home/mohammad/opencv/4.2.0/include/opencv4)
     set(OPENCVLIB_dir /usr/local/lib)
 elseif(BUILDUBUNTU22)
-    set(inc_dir /usr/local/include)
-    include_directories(${inc_dir}/opencv/4.7/opencv4)
-    set(OPENCVLIB_dir /usr/local/lib/opencv/4.7)
+    include_directories(${inc_dir}/opencv/4.7.0/opencv4)
+    set(OPENCVLIB_dir /usr/local/lib/opencv/4.7.0)
 endif()
 
 include_directories(.
@@ -64,7 +64,8 @@ include_directories(.
                     /usr/local/include/bsoncxx/v_noabi
                     /usr/local/include/bsoncxx/v_noabi/bsoncxx/third_party/mnmlstc
                     /usr/local/include/libmongoc-1.0
-                    /usr/local/include/libbson-1.0)
+                    /usr/local/include/libbson-1.0
+                    ${inc_dir}/onnx/1.17.1)
 
 set(OPENCVLIB       ${OPENCVLIB_dir}/libopencv_imgcodecs.so
                     ${OPENCVLIB_dir}/libopencv_core.so
@@ -198,6 +199,14 @@ endif()
 
 add_executable(${PROJECT_NAME} ${SRC_LIST})
 
+set(onnxlib_dir /usr/local/lib/onnx/1.17.1)
+
+set(IDLMLIB_dir /usr/local/lib/kmodules)
+set(IDLMLIB     ${IDLMLIB_dir}/libIDLM.so)
+
+set(CHOPLIB_dir /usr/local/lib/kmodules)
+set(CHOPLIB     ${CHOPLIB_dir}/libCheckOP.so)
+
 target_link_libraries(${PROJECT_NAME} 
                       curl
                       pthread 
@@ -205,7 +214,10 @@ target_link_libraries(${PROJECT_NAME}
                       boost_thread 
                       boost_chrono
                       boost_filesystem 
-                      ${OPENCVLIB})
+                      ${OPENCVLIB}
+                      ${IDLMLIB}
+                      ${CHOPLIB}
+                      ${onnxlib_dir}/libonnxruntime.so)
 
 if(KAFKASERVICE OR KAFKAOUTPUT)
     target_link_libraries(${PROJECT_NAME} 

@@ -2,9 +2,8 @@
 
 Service::Service()
 {
-#ifdef KAFKAOUTPUT
     Configurate* ConfigurateObj = Configurate::getInstance();
-    
+#ifdef KAFKAOUTPUT
     std::shared_ptr<RdKafka::Conf> OutputKafkaconfiguration = std::shared_ptr<RdKafka::Conf>(RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL));
     std::string error;
     this->OutputKafkaConfig = ConfigurateObj->getOutputKafkaConfig();
@@ -22,6 +21,48 @@ Service::Service()
     }
     
 #endif // KAFKAOUTPUT
+    
+    auto Modules = ConfigurateObj->getModules();
+    if(Modules.CheckOperator.active)
+    {
+        this->CheckOpNumberOfObjectPerService = Modules.CheckOperator.NumberOfObjectPerService;
+        auto SysKeys {std::make_shared<SystemKeys>()};
+        std::string ServerKey = SysKeys->GetKey17().Key + SysKeys->GetKey18().Key;
+        std::string ClientKey = SysKeys->GetKey19().Key + SysKeys->GetKey20().Key;
+
+        std::string PDModel = decryptFile(Modules.CheckOperator.ModelsPath + "/" + Modules.CheckOperator.PD.Name, ServerKey, ClientKey).DecryptedMessage;
+        std::string PROCRModel = decryptFile(Modules.CheckOperator.ModelsPath + "/" + Modules.CheckOperator.PROCR.Name, ServerKey, ClientKey).DecryptedMessage;
+        std::string PCModel = decryptFile(Modules.CheckOperator.ModelsPath + "/" + Modules.CheckOperator.PC.Name, ServerKey, ClientKey).DecryptedMessage;
+        std::string MBOCRModel = decryptFile(Modules.CheckOperator.ModelsPath + "/" + Modules.CheckOperator.MBOCR.Name, ServerKey, ClientKey).DecryptedMessage;
+        
+        CheckOP::CheckOPConfigStruct conf;
+        conf.PDModelValue = PDModel;
+        conf.PDInputSize = cv::Size(Modules.CheckOperator.PD.Width, Modules.CheckOperator.PD.Height);
+        conf.PDPrimaryThreshold = Modules.CheckOperator.PD.PrimaryThreshold;
+        conf.PDSecondaryThreshold = Modules.CheckOperator.PD.SecondaryThreshold;
+
+        conf.PCModelValue = PCModel;
+        conf.PCInputSize = cv::Size(Modules.CheckOperator.PC.Width, Modules.CheckOperator.PC.Height);
+        conf.PCPrimaryThreshold = Modules.CheckOperator.PC.PrimaryThreshold;
+        conf.PCSecondaryThreshold = Modules.CheckOperator.PC.SecondaryThreshold;
+
+        conf.PROCRModelValue = PROCRModel;
+        conf.PROCRInputSize = cv::Size(Modules.CheckOperator.PROCR.Width, Modules.CheckOperator.PROCR.Height);
+        conf.PROCRPrimaryThreshold = Modules.CheckOperator.PROCR.PrimaryThreshold;
+        conf.PROCRSecondaryThreshold = Modules.CheckOperator.PROCR.SecondaryThreshold;
+
+        conf.MBOCRModelValue = MBOCRModel;
+        conf.MBOCRInputSize = cv::Size(Modules.CheckOperator.MBOCR.Width, Modules.CheckOperator.MBOCR.Height);
+        conf.MBOCRPrimaryThreshold = Modules.CheckOperator.MBOCR.PrimaryThreshold;
+        conf.MBOCRSecondaryThreshold = Modules.CheckOperator.MBOCR.SecondaryThreshold;
+
+        for(int i = 0; i < this->CheckOpNumberOfObjectPerService; i++)
+        {
+            this->CheckOPObjects.push_back(std::make_shared<CheckOP>(conf));
+            this->FreeCheckOpVec.push_back(true);
+        }
+    }
+
 }
 
 int Service::getKafkaConnectionIndex()
@@ -51,9 +92,43 @@ int Service::getKafkaConnectionIndex()
     return FreeKafkaIndex;
 }
 
-void Service::releaseIndex(int Index)
+void Service::releaseKafkaIndex(int Index)
 {
     this->FreeKafkaMutex.lock();
     this->FreeKafkaVec[Index] = true;
     this->FreeKafkaMutex.unlock();
+}
+
+int Service::getCheckOpIndex()
+{
+    int FreeCheckOpIndex = -1;
+    while(FreeCheckOpIndex < 0)
+    {
+        bool Found = false;
+        this->FreeCheckOpMutex.lock();
+        for(int i = 0; i < this->CheckOpNumberOfObjectPerService; i++)
+        {
+            if(this->FreeCheckOpVec[i])
+            {
+                FreeCheckOpIndex = i;
+                this->FreeCheckOpVec[i] = false;
+                Found = true;
+                break;
+            }
+        }
+        this->FreeCheckOpMutex.unlock();
+        
+        if(Found)
+            break;
+        
+        crow::this_thread::sleep_for(crow::chrono::milliseconds(10));
+    }
+    return FreeCheckOpIndex;
+}
+    
+void Service::releaseCheckOpIndex(int Index)
+{
+    this->FreeCheckOpMutex.lock();
+    this->FreeCheckOpVec[Index] = true;
+    this->FreeCheckOpMutex.unlock();
 }

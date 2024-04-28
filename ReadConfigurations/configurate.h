@@ -11,7 +11,6 @@
 #include "../crow/json.h"
 
 #define CONFIG_FILE_LOCATION        "/etc/Aggregation.conf"
-#define KEYS_FILE_LOCATION          "/etc/keys"
 
 class Configurate
 {
@@ -57,6 +56,7 @@ public:
         int DaysforPassedTimeAcceptable;
         bool DebugMode;
         std::vector<Configurate::WebServiceInfoStruct> OtherService;
+        std::string KeysPath;
     };
 
     struct StoreImageConfigStruct
@@ -141,6 +141,31 @@ public:
         std::string ImageSuffix;
     };
 
+    struct ModelConfigStruct
+    {
+        std::string Name;
+        int Width;
+        int Height;
+        int PrimaryThreshold;
+        int SecondaryThreshold;
+    };
+
+    struct CheckOperatorStruct
+    {
+        bool active;
+        int NumberOfObjectPerService;
+        std::string ModelsPath;
+        Configurate::ModelConfigStruct PD;
+        Configurate::ModelConfigStruct PROCR;
+        Configurate::ModelConfigStruct PC;
+        Configurate::ModelConfigStruct MBOCR;
+    };
+
+    struct ModulesStruct
+    {
+        Configurate::CheckOperatorStruct CheckOperator;
+    };
+
     Configurate(const Configurate& Obj) = delete;
 
     static Configurate* getInstance()
@@ -170,6 +195,7 @@ public:
     FieldsStruct getOutputFields();
     std::vector<CameraStruct> getCameras();
     std::unordered_map<int, ViolationStruct> getViolationMap();
+    Configurate::ModulesStruct getModules();
 
     void SetNewToken(int CameraIndex, std::string Token, std::time_t TokenTime);
 
@@ -189,6 +215,7 @@ private:
     FieldsStruct OutputFields;
     std::vector<CameraStruct> Cameras;
     std::unordered_map<int, ViolationStruct> ViolationMap;
+    Configurate::ModulesStruct Modules;
 
     void ReadCamerasCollection();
 
