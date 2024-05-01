@@ -190,6 +190,7 @@ void WebService::InsertRoute()
             DH->Input.PlateValue = CheckOpResult.NewPlateValue;
             DH->Input.CodeType = CheckOpResult.CodeType;
             DH->Input.Probability = CheckOpResult.Probability;
+            this->releaseCheckOpIndex(CheckOpObjectIndex);
         }
         auto CheckOpFinishTime = std::chrono::high_resolution_clock::now();
         auto CheckOpTime =  std::chrono::duration_cast<std::chrono::nanoseconds>(CheckOpFinishTime - CheckOpStartTime);

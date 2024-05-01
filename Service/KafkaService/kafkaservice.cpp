@@ -14,7 +14,7 @@ KafkaService::KafkaService(Configurate::KafkaConfigStruct ServiceConfig)
 void KafkaService::run()
 {
     std::shared_ptr<KafkaProsumer> kp = std::make_shared<KafkaProsumer>(this->configuration.get(), this->InputKafkaConfig.Topic);
-    
+    SHOW_IMPORTANTLOG3("Runinng Aggregation(Kafka Service)");
     while(true)
     {
         try 
@@ -105,6 +105,7 @@ void KafkaService::run()
                     DH->Input.PlateValue = CheckOpResult.NewPlateValue;
                     DH->Input.CodeType = CheckOpResult.CodeType;
                     DH->Input.Probability = CheckOpResult.Probability;
+                    this->releaseCheckOpIndex(CheckOpObjectIndex);
                 }
                 auto CheckOpFinishTime = std::chrono::high_resolution_clock::now();
                 auto CheckOpTime =  std::chrono::duration_cast<std::chrono::nanoseconds>(CheckOpFinishTime - CheckOpStartTime);
@@ -152,14 +153,14 @@ void KafkaService::run()
                 auto requestTime =  std::chrono::duration_cast<std::chrono::nanoseconds>(requestFinishTime - requstStartTime);
                 
                 if(DH->DebugMode)
-                    SHOW_IMPORTANTLOG3("ProccessTime(ns) = " << std::to_string(requestTime.count()) << std::endl << "0- Authentication ProccessTime(ns) = " << std::to_string(AuthenticationTime.count())
-                           << std::endl << "1- Validation ProccessTime(ns) = " << std::to_string(ValidationTime.count())
+                    SHOW_IMPORTANTLOG3("ProccessTime(ns) = " << std::to_string(requestTime.count()) << std::endl << "1- Validation ProccessTime(ns) = " << std::to_string(ValidationTime.count())
                            << std::endl << "2- Check RecordID ProccessTime(ns) = " << std::to_string(ChecRecordIDTime.count()) << std::endl << "3- CheckOp ProccessTime(ns) = " << std::to_string(CheckOpTime.count())
                            << std::endl << "4- Store image ProccessTime(ns) = " << std::to_string(storeImaheTime.count())
                            << std::endl << "5- Save data ProccessTime(ns) = " << std::to_string(saveDataTime.count()));
 
                 Response["Status"] = SUCCESSFUL;
-                Response["Description"] = "Successful";
+                if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+                    Response["RecordID"] = DH->ProcessedInputData.MongoID;
                 SHOW_LOG(crow::json::dump(Response));
             }
 

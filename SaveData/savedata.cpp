@@ -527,7 +527,7 @@ bool savedata::InsertKafka(const std::shared_ptr<DataHandler::DataHandlerStruct>
     if(DH->hasOutputFields.MasterPlate)
     {
         if(DH->Modules.CheckOperator.active || DH->hasInputFields.MasterPlate)
-            Response["MasterPlateValue"] = DH->Input.MasterPlate;
+            Response["MasterPlate"] = DH->Input.MasterPlate;
     }
 
     // RecordID
@@ -550,6 +550,18 @@ bool savedata::InsertKafka(const std::shared_ptr<DataHandler::DataHandlerStruct>
             std::tm* CurrenttimeInfo = std::gmtime(&currentTime);
             oss << std::put_time(CurrenttimeInfo, "%Y-%m-%dT%H:%M:%SZ");
             Response["ReceivedTime"] = oss.str();
+        }
+    }
+
+    // UUID
+    if(DH->Request.JsonRvalue.has("UUID"))
+    {
+        if(DH->Request.JsonRvalue["UUID"].t() == crow::json::type::String)
+        {
+            Response["UUID"] = DH->Request.JsonRvalue["UUID"].s();
+        }else
+        {
+            Response["UUID"] = DH->Request.JsonRvalue["UUID"].i();
         }
     }
 

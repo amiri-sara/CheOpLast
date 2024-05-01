@@ -74,49 +74,7 @@ set(OPENCVLIB       ${OPENCVLIB_dir}/libopencv_imgcodecs.so
                     ${OPENCVLIB_dir}/libopencv_highgui.so
                     ${OPENCVLIB_dir}/libopencv_dnn.so
                     ${OPENCVLIB_dir}/libopencv_freetype.so
-    
-                    ${OPENCVLIB_dir}/libopencv_aruco.so 
-                    ${OPENCVLIB_dir}/libopencv_bgsegm.so
-                    ${OPENCVLIB_dir}/libopencv_bioinspired.so
-                    ${OPENCVLIB_dir}/libopencv_calib3d.so
-                    ${OPENCVLIB_dir}/libopencv_ccalib.so
-                    ${OPENCVLIB_dir}/libopencv_datasets.so
-                    ${OPENCVLIB_dir}/libopencv_dnn_objdetect.so
-                    ${OPENCVLIB_dir}/libopencv_dnn.so
-                    ${OPENCVLIB_dir}/libopencv_dnn_superres.so
-                    ${OPENCVLIB_dir}/libopencv_dpm.so
-                    ${OPENCVLIB_dir}/libopencv_face.so
-                    ${OPENCVLIB_dir}/libopencv_features2d.so
-                    ${OPENCVLIB_dir}/libopencv_flann.so
-                    ${OPENCVLIB_dir}/libopencv_fuzzy.so
-                    ${OPENCVLIB_dir}/libopencv_gapi.so
-                    ${OPENCVLIB_dir}/libopencv_hfs.so
-                    ${OPENCVLIB_dir}/libopencv_img_hash.so
-                    ${OPENCVLIB_dir}/libopencv_line_descriptor.so
-                    ${OPENCVLIB_dir}/libopencv_ml.so
-                    ${OPENCVLIB_dir}/libopencv_objdetect.so
-                    ${OPENCVLIB_dir}/libopencv_optflow.so
-                    ${OPENCVLIB_dir}/libopencv_phase_unwrapping.so
-                    ${OPENCVLIB_dir}/libopencv_photo.so
-                    ${OPENCVLIB_dir}/libopencv_plot.so
-                    ${OPENCVLIB_dir}/libopencv_quality.so
-                    ${OPENCVLIB_dir}/libopencv_reg.so
-                    ${OPENCVLIB_dir}/libopencv_rgbd.so
-                    ${OPENCVLIB_dir}/libopencv_saliency.so
-                    ${OPENCVLIB_dir}/libopencv_shape.so
-                    ${OPENCVLIB_dir}/libopencv_stereo.so
-                    ${OPENCVLIB_dir}/libopencv_stitching.so
-                    ${OPENCVLIB_dir}/libopencv_structured_light.so
-                    ${OPENCVLIB_dir}/libopencv_superres.so
-                    ${OPENCVLIB_dir}/libopencv_surface_matching.so
-                    ${OPENCVLIB_dir}/libopencv_text.so
-                    ${OPENCVLIB_dir}/libopencv_tracking.so
-                    ${OPENCVLIB_dir}/libopencv_video.so
-                    ${OPENCVLIB_dir}/libopencv_videostab.so
-                    ${OPENCVLIB_dir}/libopencv_xfeatures2d.so
-                    ${OPENCVLIB_dir}/libopencv_ximgproc.so
-                    ${OPENCVLIB_dir}/libopencv_xobjdetect.so
-                    ${OPENCVLIB_dir}/libopencv_xphoto.so)
+                    ${OPENCVLIB_dir}/libopencv_dnn.so)
 
 if(KAFKASERVICE OR KAFKAOUTPUT)
     if (DEFINED ENV{LIBRDKAFKA_INCLUDE_DIR})

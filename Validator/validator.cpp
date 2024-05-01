@@ -393,8 +393,11 @@ bool Validator::checkDataExistOrNo(const std::shared_ptr<DataHandler::DataHandle
         }
     }
 
-    // for UUID
-    DH->Request.NumberofInputFields++;
+    // UUID
+    if(DH->Request.JsonRvalue.has("UUID"))
+    {
+        DH->Request.NumberofInputFields++;
+    }
 
     allDataExist = true;
     return allDataExist;
@@ -1105,8 +1108,12 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
 #endif // VALUEVALIDATION
 
         DH->Input.PlateImage = PlateImage;
+
 #ifdef STOREIMAGE
         DH->ProcessedInputData.PlateImageMat = PlateImageMat;
+#else
+        if(DH->Modules.CheckOperator.active)
+            DH->ProcessedInputData.PlateImageMat = PlateImageMat;
 #endif // STOREIMAGE
     }
 

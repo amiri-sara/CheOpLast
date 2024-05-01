@@ -5,6 +5,8 @@
 #include "../IDLM/classifier.h"
 #include <opencv2/imgproc/types_c.h>
 
+#define CHECK_OP_VERSION "0.0.0"
+
 class CheckOP
 {
 public:
