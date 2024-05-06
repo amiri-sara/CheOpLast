@@ -1102,7 +1102,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
         {
             DH->Response.HTTPCode = 400;
             DH->Response.errorCode = INVALIDPLATEIMAGESIZE;
-            DH->Response.Description = "The size of the ColorImage should not be more than " + std::to_string(DH->StoreImageConfig.PlateImageMaxSize) + "KB";
+            DH->Response.Description = "The size of the Plate Image should not be more than " + std::to_string(DH->StoreImageConfig.PlateImageMaxSize) + "KB";
             return false;
         }
 #endif // VALUEVALIDATION

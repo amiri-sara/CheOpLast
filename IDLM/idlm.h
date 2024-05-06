@@ -23,7 +23,7 @@
 #define SHOW_IMPORTANTLOG3(X)     std::cout<<"\033[1;36m"<<X<<"\033[0m"<<std::endl
 #define SHOW_IMPORTANTLOG4(X)     std::cout<<"\033[1;37m"<<X<<"\033[0m"<<std::endl
 
-#define IDLM_VERSION "0.1.0"
+#define IDLM_VERSION "0.2.0"
 #define ONNX_RUNTIME_VERSION std::to_string(ORT_API_VERSION)
 
 class IDLM

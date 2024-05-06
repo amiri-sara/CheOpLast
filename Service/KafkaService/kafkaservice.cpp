@@ -14,7 +14,7 @@ KafkaService::KafkaService(Configurate::KafkaConfigStruct ServiceConfig)
 void KafkaService::run()
 {
     std::shared_ptr<KafkaProsumer> kp = std::make_shared<KafkaProsumer>(this->configuration.get(), this->InputKafkaConfig.Topic);
-    SHOW_IMPORTANTLOG3("Runinng Aggregation(Kafka Service)");
+    SHOW_IMPORTANTLOG3("Runinng Aggregation(Kafka Service) : " << this->InputKafkaConfig.BootstrapServers << " - " << this->InputKafkaConfig.GroupID);
     while(true)
     {
         try 
@@ -54,8 +54,7 @@ void KafkaService::run()
                 {
                     Response["Status"] = DH->Response.errorCode;
                     Response["Description"] = DH->Response.Description;
-                    if(DH->DebugMode)
-                        SHOW_ERROR(crow::json::dump(Response));
+                    SHOW_ERROR(crow::json::dump(Response));
                     continue;
                 }
                 auto validationFinishTime = std::chrono::high_resolution_clock::now();
@@ -79,16 +78,14 @@ void KafkaService::run()
                     {
                         Response["Status"] = DUPLICATERECORD;
                         Response["Description"] = "Duplicate Record.";
-                        if(DH->DebugMode)
-                            SHOW_ERROR(crow::json::dump(Response));
+                        SHOW_ERROR(crow::json::dump(Response));
                         continue;
                     }
                 }else
                 {
                     Response["Status"] = DATABASEERROR;
                     Response["Description"] = "Network Internal Service Error.";
-                    if(DH->DebugMode)
-                        SHOW_ERROR(crow::json::dump(Response));
+                    SHOW_ERROR(crow::json::dump(Response));
                     continue;
                 }
 #endif // INSERTDATABASE
@@ -101,11 +98,22 @@ void KafkaService::run()
                 {
                     int CheckOpObjectIndex = this->getCheckOpIndex();
                     auto CheckOpResult = this->CheckOPObjects[CheckOpObjectIndex]->run(DH->ProcessedInputData.PlateImageMat, DH->Input.PlateValue);
-                    DH->Input.MasterPlate = DH->Input.PlateValue;
-                    DH->Input.PlateValue = CheckOpResult.NewPlateValue;
-                    DH->Input.CodeType = CheckOpResult.CodeType;
-                    DH->Input.Probability = CheckOpResult.Probability;
-                    this->releaseCheckOpIndex(CheckOpObjectIndex);
+                    if(CheckOpResult.Code == 0)
+                    {
+                        auto ChOpOutput = this->CheckOPObjects[CheckOpObjectIndex]->getCheckOpOutput();
+                        this->releaseCheckOpIndex(CheckOpObjectIndex);
+                        DH->Input.MasterPlate = DH->Input.PlateValue;
+                        DH->Input.PlateValue = ChOpOutput.NewPlateValue;
+                        DH->Input.CodeType = ChOpOutput.CodeType;
+                        DH->Input.Probability = ChOpOutput.Probability;
+                    }else
+                    {                        
+                        Response["Status"] = CHECKOPERROR;
+                        Response["Description"] = CheckOpResult.Description;
+                        SHOW_ERROR(crow::json::dump(Response));
+                        this->releaseCheckOpIndex(CheckOpObjectIndex);
+                        continue;
+                    }
                 }
                 auto CheckOpFinishTime = std::chrono::high_resolution_clock::now();
                 auto CheckOpTime =  std::chrono::duration_cast<std::chrono::nanoseconds>(CheckOpFinishTime - CheckOpStartTime);
@@ -118,8 +126,7 @@ void KafkaService::run()
                 {
                     Response["Status"] = DH->Response.errorCode;
                     Response["Description"] = DH->Response.Description;
-                    if(DH->DebugMode)
-                        SHOW_ERROR(crow::json::dump(Response));
+                    SHOW_ERROR(crow::json::dump(Response));
                     continue;
                 }
 #endif // STOREIMAGE        
@@ -138,8 +145,7 @@ void KafkaService::run()
                 {
                     Response["Status"] = DH->Response.errorCode;
                     Response["Description"] = DH->Response.Description;
-                    if(DH->DebugMode)
-                        SHOW_ERROR(crow::json::dump(Response));
+                    SHOW_ERROR(crow::json::dump(Response));
                     continue;
                 }
 #ifdef KAFKAOUTPUT

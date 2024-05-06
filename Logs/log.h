@@ -88,6 +88,8 @@
 #define INVALIDPROBABILITY                                  636
 #define INVALIDRECEIVEDTIME                                 637
 
+#define CHECKOPERROR                                        638
+
 #define DATABASEERROR                                       651
 #define CANNOTFINDVIOLATIONID                               652
 #define CANNOTCREATETHUMBNAILIMAGE                          653

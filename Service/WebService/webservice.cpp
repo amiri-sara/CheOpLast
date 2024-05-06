@@ -82,8 +82,7 @@ void WebService::InsertRoute()
             {
                 Response["Status"] = DH->Response.errorCode;
                 Response["Description"] = DH->Response.Description;
-                if(DH->DebugMode)
-                    SHOW_ERROR(crow::json::dump(Response));
+                SHOW_ERROR(crow::json::dump(Response));
                 return crow::response{DH->Response.HTTPCode , Response};
             }
 
@@ -102,8 +101,7 @@ void WebService::InsertRoute()
                     {
                         Response["Status"] = EXPIREDTOKEN;
                         Response["Description"] = "Expired Token.";
-                        if(DH->DebugMode)
-                            SHOW_ERROR(crow::json::dump(Response));
+                        SHOW_ERROR(crow::json::dump(Response));
                         return crow::response{401, Response};   
                     }
                     break;
@@ -114,8 +112,7 @@ void WebService::InsertRoute()
             {
                 Response["Status"] = INVALIDTOKEN;
                 Response["Description"] = "Invalid Token.";
-                if(DH->DebugMode)
-                    SHOW_ERROR(crow::json::dump(Response));
+                SHOW_ERROR(crow::json::dump(Response));
                 return crow::response{401, Response};
             }
 
@@ -137,8 +134,7 @@ void WebService::InsertRoute()
         {
             Response["Status"] = DH->Response.errorCode;
             Response["Description"] = DH->Response.Description;
-            if(DH->DebugMode)
-                SHOW_ERROR(crow::json::dump(Response));
+            SHOW_ERROR(crow::json::dump(Response));
             return crow::response{DH->Response.HTTPCode , Response};
         }
         auto validationFinishTime = std::chrono::high_resolution_clock::now();
@@ -163,8 +159,7 @@ void WebService::InsertRoute()
             {
                 Response["Status"] = DUPLICATERECORD;
                 Response["Description"] = "Duplicate Record.";
-                if(DH->DebugMode)
-                    SHOW_ERROR(crow::json::dump(Response));
+                SHOW_ERROR(crow::json::dump(Response));
                 return crow::response{400 , Response};
             }
         }else
@@ -172,8 +167,7 @@ void WebService::InsertRoute()
             SHOW_ERROR(FindReturn.Description);
             Response["Status"] = DATABASEERROR;
             Response["Description"] = "Network Internal Service Error.";
-            if(DH->DebugMode)
-                SHOW_ERROR(crow::json::dump(Response));
+            SHOW_ERROR(crow::json::dump(Response));
             return crow::response{500 , Response};
         }
 #endif // INSERTDATABASE
@@ -186,10 +180,21 @@ void WebService::InsertRoute()
         {
             int CheckOpObjectIndex = this->getCheckOpIndex();
             auto CheckOpResult = this->CheckOPObjects[CheckOpObjectIndex]->run(DH->ProcessedInputData.PlateImageMat, DH->Input.PlateValue);
-            DH->Input.MasterPlate = DH->Input.PlateValue;
-            DH->Input.PlateValue = CheckOpResult.NewPlateValue;
-            DH->Input.CodeType = CheckOpResult.CodeType;
-            DH->Input.Probability = CheckOpResult.Probability;
+            if(CheckOpResult.Code == 0)
+            {
+                auto ChOpOutput = this->CheckOPObjects[CheckOpObjectIndex]->getCheckOpOutput();
+                DH->Input.MasterPlate = DH->Input.PlateValue;
+                DH->Input.PlateValue = ChOpOutput.NewPlateValue;
+                DH->Input.CodeType = ChOpOutput.CodeType;
+                DH->Input.Probability = ChOpOutput.Probability;
+            }else
+            {                        
+                Response["Status"] = CHECKOPERROR;
+                Response["Description"] = "Internal Service Error.";
+                if(DH->DebugMode)
+                    SHOW_ERROR(crow::json::dump(Response));
+                continue;
+            }
             this->releaseCheckOpIndex(CheckOpObjectIndex);
         }
         auto CheckOpFinishTime = std::chrono::high_resolution_clock::now();
@@ -203,8 +208,7 @@ void WebService::InsertRoute()
         {
             Response["Status"] = DH->Response.errorCode;
             Response["Description"] = DH->Response.Description;
-            if(DH->DebugMode)
-                SHOW_ERROR(crow::json::dump(Response));
+            SHOW_ERROR(crow::json::dump(Response));
             return crow::response{DH->Response.HTTPCode , Response};
         }
 #endif // STOREIMAGE
@@ -224,8 +228,7 @@ void WebService::InsertRoute()
         {
             Response["Status"] = DH->Response.errorCode;
             Response["Description"] = DH->Response.Description;
-            if(DH->DebugMode)
-                SHOW_ERROR(crow::json::dump(Response));
+            SHOW_ERROR(crow::json::dump(Response));
             return crow::response{DH->Response.HTTPCode , Response};
         }
 #ifdef KAFKAOUTPUT
@@ -322,7 +325,7 @@ void WebService::TokenRoute()
         if(UpdateReturn.Code != MongoDB::MongoStatus::UpdateSuccessful)
         {
             Response["Status"] = DATABASEERROR;
-            Response["Description"] = UpdateReturn.Description;
+            Response["Description"] = "Internal Server Error.";
             if(DH->DebugMode)
                 SHOW_ERROR(crow::json::dump(Response));
             return crow::response{500 , Response};

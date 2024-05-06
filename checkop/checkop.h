@@ -76,17 +76,17 @@ public:
         cv::Rect PlateRect = cv::Rect(0,0,0,0);
         cv::Mat PlateImage;
     };
+
     CheckOP(CheckOPConfigStruct CheckOPConfig);
-    CheckOPOutputStruct run(cv::Mat PlateImage, std::string PlateValue);
+    IDLM::ResponseStruct run(cv::Mat PlateImage, std::string PlateValue);
+    CheckOP::CheckOPOutputStruct getCheckOpOutput();
 
 private:
     CheckOPConfigStruct Config;
-    //std::shared_ptr<Detection> PDObj;
     std::map<IDLM::ModelType, std::shared_ptr<Detection>> DetectionObjMap;
     std::map<IDLM::ModelType, std::shared_ptr<Classifier>> ClassifierObjMap;
-    //std::shared_ptr<Classifier> PCObj;
-    //std::shared_ptr<Classifier> PROCRObj;
-    //std::shared_ptr<Classifier> MBOCRObj;
+
+    CheckOP::CheckOPOutputStruct CheckOpOutput;
 
     void fixRectDimension(cv::Rect *Cand_Rect, int Col, int Row)
     {
