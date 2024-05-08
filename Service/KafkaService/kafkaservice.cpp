@@ -44,6 +44,8 @@ void KafkaService::run()
                 DH->DaysforPassedTimeAcceptable = this->InputKafkaConfig.DaysforPassedTimeAcceptable;
                 DH->InsertDatabase = ConfigurateObj->getInsertDatabase();
                 DH->InsertDatabaseInfo = ConfigurateObj->getInsertDatabaseInfo();
+                DH->FailedDatabase = ConfigurateObj->getFailedDatabase();
+                DH->FailedDatabaseInfo = ConfigurateObj->getFailedDatabaseInfo();
                 DH->Modules = ConfigurateObj->getModules();
                 DH->DebugMode = this->InputKafkaConfig.DebugMode;
 
@@ -54,6 +56,27 @@ void KafkaService::run()
                 {
                     Response["Status"] = DH->Response.errorCode;
                     Response["Description"] = DH->Response.Description;
+                    if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+                        Response["RecordID"] = DH->ProcessedInputData.MongoID;
+                    Response["Partition"] = InputData.partition;
+                    Response["Offset"] = InputData.offset;
+                    if(DH->FailedDatabaseInfo.Enable)
+                    {
+                        std::vector<MongoDB::Field> fields = {
+                            {"Status", std::to_string(DH->Response.errorCode), MongoDB::FieldType::Integer},
+                            {"Description", DH->Response.Description, MongoDB::FieldType::String},
+                            {"Partition", std::to_string(InputData.partition), MongoDB::FieldType::Integer},
+                            {"Offset", std::to_string(InputData.offset), MongoDB::FieldType::Integer}
+                        };
+
+                        if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+                        {
+                            MongoDB::Field RecordIDField = {"RecordID", DH->ProcessedInputData.MongoID, MongoDB::FieldType::ObjectId};
+                            fields.push_back(RecordIDField);
+                        }
+
+                        DH->FailedDatabase ->Insert(DH->FailedDatabaseInfo.DatabaseName, DH->FailedDatabaseInfo.CollectionName, fields);
+                    }
                     SHOW_ERROR(crow::json::dump(Response));
                     continue;
                 }
@@ -78,6 +101,27 @@ void KafkaService::run()
                     {
                         Response["Status"] = DUPLICATERECORD;
                         Response["Description"] = "Duplicate Record.";
+                        if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+                            Response["RecordID"] = DH->ProcessedInputData.MongoID;
+                        Response["Partition"] = InputData.partition;
+                        Response["Offset"] = InputData.offset;
+                        if(DH->FailedDatabaseInfo.Enable)
+                        {
+                            std::vector<MongoDB::Field> fields = {
+                                {"Status", std::to_string(DUPLICATERECORD), MongoDB::FieldType::Integer},
+                                {"Description", "Duplicate Record.", MongoDB::FieldType::String},
+                                {"Partition", std::to_string(InputData.partition), MongoDB::FieldType::Integer},
+                                {"Offset", std::to_string(InputData.offset), MongoDB::FieldType::Integer}
+                            };
+
+                            if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+                            {
+                                MongoDB::Field RecordIDField = {"RecordID", DH->ProcessedInputData.MongoID, MongoDB::FieldType::ObjectId};
+                                fields.push_back(RecordIDField);
+                            }
+
+                            DH->FailedDatabase ->Insert(DH->FailedDatabaseInfo.DatabaseName, DH->FailedDatabaseInfo.CollectionName, fields);
+                        }
                         SHOW_ERROR(crow::json::dump(Response));
                         continue;
                     }
@@ -85,6 +129,27 @@ void KafkaService::run()
                 {
                     Response["Status"] = DATABASEERROR;
                     Response["Description"] = "Network Internal Service Error.";
+                    if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+                        Response["RecordID"] = DH->ProcessedInputData.MongoID;
+                    Response["Partition"] = InputData.partition;
+                    Response["Offset"] = InputData.offset;
+                    if(DH->FailedDatabaseInfo.Enable)
+                    {
+                        std::vector<MongoDB::Field> fields = {
+                            {"Status", std::to_string(DATABASEERROR), MongoDB::FieldType::Integer},
+                            {"Description", "Network Internal Service Error.", MongoDB::FieldType::String},
+                            {"Partition", std::to_string(InputData.partition), MongoDB::FieldType::Integer},
+                            {"Offset", std::to_string(InputData.offset), MongoDB::FieldType::Integer}
+                        };
+
+                        if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+                        {
+                            MongoDB::Field RecordIDField = {"RecordID", DH->ProcessedInputData.MongoID, MongoDB::FieldType::ObjectId};
+                            fields.push_back(RecordIDField);
+                        }
+
+                        DH->FailedDatabase ->Insert(DH->FailedDatabaseInfo.DatabaseName, DH->FailedDatabaseInfo.CollectionName, fields);
+                    }
                     SHOW_ERROR(crow::json::dump(Response));
                     continue;
                 }
@@ -110,6 +175,27 @@ void KafkaService::run()
                     {                        
                         Response["Status"] = CHECKOPERROR;
                         Response["Description"] = CheckOpResult.Description;
+                        if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+                            Response["RecordID"] = DH->ProcessedInputData.MongoID;
+                        Response["Partition"] = InputData.partition;
+                        Response["Offset"] = InputData.offset;
+                        if(DH->FailedDatabaseInfo.Enable)
+                        {
+                            std::vector<MongoDB::Field> fields = {
+                                {"Status", std::to_string(CHECKOPERROR), MongoDB::FieldType::Integer},
+                                {"Description", CheckOpResult.Description, MongoDB::FieldType::String},
+                                {"Partition", std::to_string(InputData.partition), MongoDB::FieldType::Integer},
+                                {"Offset", std::to_string(InputData.offset), MongoDB::FieldType::Integer}
+                            };
+
+                            if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+                            {
+                                MongoDB::Field RecordIDField = {"RecordID", DH->ProcessedInputData.MongoID, MongoDB::FieldType::ObjectId};
+                                fields.push_back(RecordIDField);
+                            }
+
+                            DH->FailedDatabase ->Insert(DH->FailedDatabaseInfo.DatabaseName, DH->FailedDatabaseInfo.CollectionName, fields);
+                        }
                         SHOW_ERROR(crow::json::dump(Response));
                         this->releaseCheckOpIndex(CheckOpObjectIndex);
                         continue;
@@ -126,6 +212,27 @@ void KafkaService::run()
                 {
                     Response["Status"] = DH->Response.errorCode;
                     Response["Description"] = DH->Response.Description;
+                    if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+                        Response["RecordID"] = DH->ProcessedInputData.MongoID;
+                    Response["Partition"] = InputData.partition;
+                    Response["Offset"] = InputData.offset;
+                    if(DH->FailedDatabaseInfo.Enable)
+                    {
+                        std::vector<MongoDB::Field> fields = {
+                            {"Status", std::to_string(DH->Response.errorCode), MongoDB::FieldType::Integer},
+                            {"Description", DH->Response.Description, MongoDB::FieldType::String},
+                            {"Partition", std::to_string(InputData.partition), MongoDB::FieldType::Integer},
+                            {"Offset", std::to_string(InputData.offset), MongoDB::FieldType::Integer}
+                        };
+
+                        if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+                        {
+                            MongoDB::Field RecordIDField = {"RecordID", DH->ProcessedInputData.MongoID, MongoDB::FieldType::ObjectId};
+                            fields.push_back(RecordIDField);
+                        }
+
+                        DH->FailedDatabase ->Insert(DH->FailedDatabaseInfo.DatabaseName, DH->FailedDatabaseInfo.CollectionName, fields);
+                    }
                     SHOW_ERROR(crow::json::dump(Response));
                     continue;
                 }
@@ -145,6 +252,27 @@ void KafkaService::run()
                 {
                     Response["Status"] = DH->Response.errorCode;
                     Response["Description"] = DH->Response.Description;
+                    if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+                        Response["RecordID"] = DH->ProcessedInputData.MongoID;
+                    Response["Partition"] = InputData.partition;
+                    Response["Offset"] = InputData.offset;
+                    if(DH->FailedDatabaseInfo.Enable)
+                    {
+                        std::vector<MongoDB::Field> fields = {
+                            {"Status", std::to_string(DH->Response.errorCode), MongoDB::FieldType::Integer},
+                            {"Description", DH->Response.Description, MongoDB::FieldType::String},
+                            {"Partition", std::to_string(InputData.partition), MongoDB::FieldType::Integer},
+                            {"Offset", std::to_string(InputData.offset), MongoDB::FieldType::Integer}
+                        };
+
+                        if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+                        {
+                            MongoDB::Field RecordIDField = {"RecordID", DH->ProcessedInputData.MongoID, MongoDB::FieldType::ObjectId};
+                            fields.push_back(RecordIDField);
+                        }
+
+                        DH->FailedDatabase ->Insert(DH->FailedDatabaseInfo.DatabaseName, DH->FailedDatabaseInfo.CollectionName, fields);
+                    }
                     SHOW_ERROR(crow::json::dump(Response));
                     continue;
                 }

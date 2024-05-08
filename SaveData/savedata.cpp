@@ -566,7 +566,7 @@ bool savedata::InsertKafka(const std::shared_ptr<DataHandler::DataHandlerStruct>
     }
 
     // SHOW_IMPORTANTLOG2(crow::json::dump(Response));
-    this->OutputKafkaConnection->write({crow::json::dump(Response)});
+    this->OutputKafkaConnection->write({crow::json::dump(Response), DH->ProcessedInputData.MongoID});
 
     return true;
 }

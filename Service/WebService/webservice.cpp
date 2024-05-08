@@ -193,7 +193,7 @@ void WebService::InsertRoute()
                 Response["Description"] = "Internal Service Error.";
                 if(DH->DebugMode)
                     SHOW_ERROR(crow::json::dump(Response));
-                continue;
+                return crow::response{DH->Response.HTTPCode , Response};
             }
             this->releaseCheckOpIndex(CheckOpObjectIndex);
         }

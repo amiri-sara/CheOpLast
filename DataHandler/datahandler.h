@@ -94,6 +94,8 @@ namespace DataHandler
         int DaysforPassedTimeAcceptable;
         std::shared_ptr<MongoDB> InsertDatabase;
         Configurate::InfoDatabaseStruct InsertDatabaseInfo;
+        std::shared_ptr<MongoDB> FailedDatabase;
+        Configurate::InfoDatabaseStruct FailedDatabaseInfo;
         Configurate::ModulesStruct Modules;
         bool DebugMode;
         bool InsertRoute;
