@@ -60,12 +60,15 @@ void WebService::InsertRoute()
         DH->DaysforPassedTimeAcceptable = this->WebServiceConfig.DaysforPassedTimeAcceptable;
         DH->InsertDatabase = ConfigurateObj->getInsertDatabase();
         DH->InsertDatabaseInfo = ConfigurateObj->getInsertDatabaseInfo();
+        DH->FailedDatabase = ConfigurateObj->getFailedDatabase();
+        DH->FailedDatabaseInfo = ConfigurateObj->getFailedDatabaseInfo();
         DH->Modules = ConfigurateObj->getModules();
         DH->DebugMode = this->WebServiceConfig.DebugMode;
         DH->InsertRoute = true;
         DH->WebServiceAuthentication = this->WebServiceConfig.Authentication;
         
         crow::json::wvalue Response;
+        crow::json::wvalue ClientResponse;
 
         DH->Request.remoteIP = req.ipAddress;
         SHOW_IMPORTANTLOG("Recived Insert request from IP -> " + DH->Request.remoteIP);
@@ -118,7 +121,8 @@ void WebService::InsertRoute()
 
             std::string EncryptedData = DH->Request.JsonRvalue["Data"].s();
             std::string ClientPublicKeyAddress = this->WebServiceConfig.KeysPath + "/" + DH->Cameras[DH->CameraIndex].CompanyID;
-            std::string DecryptedData = decryptString(EncryptedData, "ServerPri.pem",  ClientPublicKeyAddress).DecryptedMessage;
+            std::string ServerPrivateKeyAddress = this->WebServiceConfig.KeysPath + "/ServerPri.pem";
+            std::string DecryptedData = decryptString(EncryptedData, ServerPrivateKeyAddress,  ClientPublicKeyAddress).DecryptedMessage;
             DH->Request.body = DecryptedData;
         }else
         {
@@ -134,8 +138,34 @@ void WebService::InsertRoute()
         {
             Response["Status"] = DH->Response.errorCode;
             Response["Description"] = DH->Response.Description;
+            if(DH->hasInputFields.DeviceID && DH->hasInputFields.PlateValue)
+            {
+                Response["DevicedID"] = DH->Input.DeviceID;
+                Response["PlateValue"] = DH->Input.PlateValue;
+            }
+            Response["IP"] = DH->Request.remoteIP;
+            if(DH->FailedDatabaseInfo.Enable)
+            {
+                std::vector<MongoDB::Field> fields = {
+                    {"Status", std::to_string(DH->Response.errorCode), MongoDB::FieldType::Integer},
+                    {"Description", DH->Response.Description, MongoDB::FieldType::String},
+                    {"IP", DH->Request.remoteIP, MongoDB::FieldType::String}
+                };
+
+                if(DH->hasInputFields.DeviceID && DH->hasInputFields.PlateValue)
+                {
+                    MongoDB::Field DeviceIDField = {"DeviceID", std::to_string(DH->Input.DeviceID), MongoDB::FieldType::Integer};
+                    MongoDB::Field PlateValueField = {"PlateValue", DH->Input.PlateValue, MongoDB::FieldType::String};
+                    fields.push_back(DeviceIDField);
+                    fields.push_back(PlateValueField);
+                }
+
+                DH->FailedDatabase ->Insert(DH->FailedDatabaseInfo.DatabaseName, DH->FailedDatabaseInfo.CollectionName, fields);
+            }
             SHOW_ERROR(crow::json::dump(Response));
-            return crow::response{DH->Response.HTTPCode , Response};
+            ClientResponse["Status"] = DH->Response.errorCode;
+            ClientResponse["Description"] = DH->Response.Description;
+            return crow::response{DH->Response.HTTPCode , ClientResponse};
         }
         auto validationFinishTime = std::chrono::high_resolution_clock::now();
         auto ValidationTime =  std::chrono::duration_cast<std::chrono::nanoseconds>(validationFinishTime - validationStartTime);
@@ -159,16 +189,59 @@ void WebService::InsertRoute()
             {
                 Response["Status"] = DUPLICATERECORD;
                 Response["Description"] = "Duplicate Record.";
+                
+                if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+                    Response["RecordID"] = DH->ProcessedInputData.MongoID;
+                Response["IP"] = DH->Request.remoteIP;
+                if(DH->FailedDatabaseInfo.Enable)
+                {
+                    std::vector<MongoDB::Field> fields = {
+                        {"Status", std::to_string(DUPLICATERECORD), MongoDB::FieldType::Integer},
+                        {"Description", "Duplicate Record.", MongoDB::FieldType::String},
+                        {"IP", DH->Request.remoteIP, MongoDB::FieldType::String}
+                    };
+
+                    if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+                    {
+                        MongoDB::Field RecordIDField = {"RecordID", DH->ProcessedInputData.MongoID, MongoDB::FieldType::ObjectId};
+                        fields.push_back(RecordIDField);
+                    }
+
+                    DH->FailedDatabase ->Insert(DH->FailedDatabaseInfo.DatabaseName, DH->FailedDatabaseInfo.CollectionName, fields);
+                }
                 SHOW_ERROR(crow::json::dump(Response));
-                return crow::response{400 , Response};
+                ClientResponse["Status"] = DUPLICATERECORD;
+                ClientResponse["Description"] = "Duplicate Record.";
+                return crow::response{400 , ClientResponse};
             }
         }else
         {
             SHOW_ERROR(FindReturn.Description);
             Response["Status"] = DATABASEERROR;
             Response["Description"] = "Network Internal Service Error.";
+            if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+                Response["RecordID"] = DH->ProcessedInputData.MongoID;
+            Response["IP"] = DH->Request.remoteIP;
+            if(DH->FailedDatabaseInfo.Enable)
+            {
+                std::vector<MongoDB::Field> fields = {
+                    {"Status", std::to_string(DATABASEERROR), MongoDB::FieldType::Integer},
+                    {"Description", "Network Internal Service Error.", MongoDB::FieldType::String},
+                    {"IP", DH->Request.remoteIP, MongoDB::FieldType::String}
+                };
+
+                if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+                {
+                    MongoDB::Field RecordIDField = {"RecordID", DH->ProcessedInputData.MongoID, MongoDB::FieldType::ObjectId};
+                    fields.push_back(RecordIDField);
+                }
+
+                DH->FailedDatabase ->Insert(DH->FailedDatabaseInfo.DatabaseName, DH->FailedDatabaseInfo.CollectionName, fields);
+            }
             SHOW_ERROR(crow::json::dump(Response));
-            return crow::response{500 , Response};
+            ClientResponse["Status"] = DATABASEERROR;
+            ClientResponse["Description"] = "Network Internal Service Error.";
+            return crow::response{500 , ClientResponse};
         }
 #endif // INSERTDATABASE
         auto ChecRecordIDFinishTime = std::chrono::high_resolution_clock::now();
@@ -183,6 +256,7 @@ void WebService::InsertRoute()
             if(CheckOpResult.Code == 0)
             {
                 auto ChOpOutput = this->CheckOPObjects[CheckOpObjectIndex]->getCheckOpOutput();
+                this->releaseCheckOpIndex(CheckOpObjectIndex);
                 DH->Input.MasterPlate = DH->Input.PlateValue;
                 DH->Input.PlateValue = ChOpOutput.NewPlateValue;
                 DH->Input.CodeType = ChOpOutput.CodeType;
@@ -190,12 +264,33 @@ void WebService::InsertRoute()
             }else
             {                        
                 Response["Status"] = CHECKOPERROR;
-                Response["Description"] = "Internal Service Error.";
+                Response["Description"] = CheckOpResult.Description;
+                if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+                    Response["RecordID"] = DH->ProcessedInputData.MongoID;
+                Response["IP"] = DH->Request.remoteIP;
+                if(DH->FailedDatabaseInfo.Enable)
+                {
+                    std::vector<MongoDB::Field> fields = {
+                        {"Status", std::to_string(CHECKOPERROR), MongoDB::FieldType::Integer},
+                        {"Description", CheckOpResult.Description, MongoDB::FieldType::String},
+                        {"IP", DH->Request.remoteIP, MongoDB::FieldType::String}
+                    };
+
+                    if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+                    {
+                        MongoDB::Field RecordIDField = {"RecordID", DH->ProcessedInputData.MongoID, MongoDB::FieldType::ObjectId};
+                        fields.push_back(RecordIDField);
+                    }
+
+                    DH->FailedDatabase ->Insert(DH->FailedDatabaseInfo.DatabaseName, DH->FailedDatabaseInfo.CollectionName, fields);
+                }
                 if(DH->DebugMode)
                     SHOW_ERROR(crow::json::dump(Response));
-                return crow::response{DH->Response.HTTPCode , Response};
+                this->releaseCheckOpIndex(CheckOpObjectIndex);
+                ClientResponse["Status"] = CHECKOPERROR;
+                ClientResponse["Description"] = "Internal Service Error.";
+                return crow::response{DH->Response.HTTPCode , ClientResponse};
             }
-            this->releaseCheckOpIndex(CheckOpObjectIndex);
         }
         auto CheckOpFinishTime = std::chrono::high_resolution_clock::now();
         auto CheckOpTime =  std::chrono::duration_cast<std::chrono::nanoseconds>(CheckOpFinishTime - CheckOpStartTime);
@@ -208,8 +303,29 @@ void WebService::InsertRoute()
         {
             Response["Status"] = DH->Response.errorCode;
             Response["Description"] = DH->Response.Description;
+            if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+                Response["RecordID"] = DH->ProcessedInputData.MongoID;
+            Response["IP"] = DH->Request.remoteIP;
+            if(DH->FailedDatabaseInfo.Enable)
+            {
+                std::vector<MongoDB::Field> fields = {
+                    {"Status", std::to_string(DH->Response.errorCode), MongoDB::FieldType::Integer},
+                    {"Description", DH->Response.Description, MongoDB::FieldType::String},
+                    {"IP", DH->Request.remoteIP, MongoDB::FieldType::String}
+                };
+
+                if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+                {
+                    MongoDB::Field RecordIDField = {"RecordID", DH->ProcessedInputData.MongoID, MongoDB::FieldType::ObjectId};
+                    fields.push_back(RecordIDField);
+                }
+
+                DH->FailedDatabase ->Insert(DH->FailedDatabaseInfo.DatabaseName, DH->FailedDatabaseInfo.CollectionName, fields);
+            }
             SHOW_ERROR(crow::json::dump(Response));
-            return crow::response{DH->Response.HTTPCode , Response};
+            ClientResponse["Status"] = DH->Response.errorCode;
+            ClientResponse["Description"] = DH->Response.Description;
+            return crow::response{DH->Response.HTTPCode , ClientResponse};
         }
 #endif // STOREIMAGE
         auto storeImageFinishTime = std::chrono::high_resolution_clock::now();
@@ -228,8 +344,29 @@ void WebService::InsertRoute()
         {
             Response["Status"] = DH->Response.errorCode;
             Response["Description"] = DH->Response.Description;
+            if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+                Response["RecordID"] = DH->ProcessedInputData.MongoID;
+            Response["IP"] = DH->Request.remoteIP;
+            if(DH->FailedDatabaseInfo.Enable)
+            {
+                std::vector<MongoDB::Field> fields = {
+                    {"Status", std::to_string(DH->Response.errorCode), MongoDB::FieldType::Integer},
+                    {"Description", DH->Response.Description, MongoDB::FieldType::String},
+                    {"IP", DH->Request.remoteIP, MongoDB::FieldType::String}
+                };
+
+                if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+                {
+                    MongoDB::Field RecordIDField = {"RecordID", DH->ProcessedInputData.MongoID, MongoDB::FieldType::ObjectId};
+                    fields.push_back(RecordIDField);
+                }
+
+                DH->FailedDatabase ->Insert(DH->FailedDatabaseInfo.DatabaseName, DH->FailedDatabaseInfo.CollectionName, fields);
+            }
             SHOW_ERROR(crow::json::dump(Response));
-            return crow::response{DH->Response.HTTPCode , Response};
+            ClientResponse["Status"] = DH->Response.errorCode;
+            ClientResponse["Description"] = DH->Response.Description;
+            return crow::response{DH->Response.HTTPCode , ClientResponse};
         }
 #ifdef KAFKAOUTPUT
         this->releaseKafkaIndex(OutputKafkaConnectionIndex);
@@ -336,7 +473,7 @@ void WebService::TokenRoute()
         {
             for(auto& Service : this->WebServiceConfig.OtherService)
             {
-                SHOW_IMPORTANTLOG2("Send Camera JSON to = " << Service.IP << ":" << Service.Port << "/" << Service.URI);
+                SHOW_IMPORTANTLOG2("Send Token Update to = " << Service.IP << ":" << Service.Port << "/" << Service.URI);
                 std::string URL = Service.IP + ":" + std::to_string(Service.Port) + "/" + Service.URI;
                 CURL *curl;
                 CURLcode res;

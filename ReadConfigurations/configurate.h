@@ -29,7 +29,7 @@ public:
     {
         std::string DatabaseName        = "";
         std::string CollectionName      = "";
-        bool Enable;
+        bool Enable                     = false;
     };
 
     struct WebServiceInfoStruct
