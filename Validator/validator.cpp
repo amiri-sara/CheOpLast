@@ -705,7 +705,10 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             return false;
         }
 
-        if(DH->Input.PlateType == 1)
+        if(PlateValue == "0")
+        {
+            // Just to not validate the plate value and accept zero value
+        }else if(DH->Input.PlateType == 1)
         {
             if(PlateValue.length() != 9 || !(std::all_of(PlateValue.begin(), PlateValue.end(),[](char c) { return std::isdigit(static_cast<unsigned char>(c));})))
             {
@@ -940,11 +943,11 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
         }
 
 #ifdef VALUEVALIDATION
-        if(PassedTime.empty() || PassedTime.length() != 20)
+        if(PassedTime.empty() || (PassedTime.length() != 20 && PassedTime.length() != 24))
         {
             DH->Response.HTTPCode = 400;
             DH->Response.errorCode = INVALIDPASSEDTIME;
-            DH->Response.Description = "The value of PassedTime must not be empty and its number of characters must be equal to 20(YYYY-MM-DDTHH:MM:SSZ).";
+            DH->Response.Description = "The value of PassedTime must not be empty and its number of characters must be equal to 20 or 24(YYYY-MM-DDTHH:MM:SSZ or YYYY-MM-DDTHH:MM:SS.sssZ).";
             return false;
         }
 #endif // VALUEVALIDATION
@@ -1339,7 +1342,10 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             return false;
         }
 
-        if(DH->Input.PlateType == 1)
+        if(MasterPlate == "0")
+        {
+            // Just to not validate the plate value and accept zero value
+        }else if(DH->Input.PlateType == 1)
         {
             if(MasterPlate.length() != 9 || !(std::all_of(MasterPlate.begin(), MasterPlate.end(),[](char c) { return std::isdigit(static_cast<unsigned char>(c));})))
             {

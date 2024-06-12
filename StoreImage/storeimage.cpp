@@ -140,6 +140,11 @@ bool storeimage::AddPlateCrop(const std::shared_ptr<DataHandler::DataHandlerStru
         cv::Mat largerImg;
         float plateToColorImage = DH->StoreImageConfig.PlateImagePercent / 100.0 + 1;
         cv::resize(DH->ProcessedInputData.PlateImageMat, largerImg, cv::Size(), plateToColorImage, plateToColorImage);
+        if((largerImg.cols > DH->ProcessedInputData.ColorImageMat.cols) || (largerImg.rows > DH->ProcessedInputData.ColorImageMat.rows))
+        {
+            SHOW_WARNING("Plate Crop cannot be added to the Color Image because its size is not appropriate. ColorImage Size = " << DH->ProcessedInputData.ColorImageMat.size() << " - PlateImage Size = " << DH->ProcessedInputData.PlateImageMat.size() << " - IP : " << DH->Request.remoteIP);
+            return true;
+        }
         cv::Rect roi(0, 0, largerImg.cols, largerImg.rows);
         cv::Mat target = DH->ProcessedInputData.ColorImageMat(roi);
         largerImg.copyTo(target);
