@@ -289,11 +289,13 @@ Configurate::Configurate()
             this->Modules.CheckOperator.active = CheckOperatorJSON["active"].b();
             this->Modules.CheckOperator.NumberOfObjectPerService = CheckOperatorJSON["NumberOfObjectPerService"].i();
             this->Modules.CheckOperator.ModelsPath = CheckOperatorJSON["ModelsPath"].s();
+            this->Modules.CheckOperator.IgnoreInputPlateType = CheckOperatorJSON["IgnoreInputPlateType"].b();
             if(this->Modules.CheckOperator.active)
             {
                 MongoDB::FindOptionStruct Option;
                 
-                std::string PDid = CheckOperatorJSON["PD"]["$oid"].s();
+                crow::json::rvalue PDConfig = CheckOperatorJSON["PD"];
+                std::string PDid = PDConfig["model"]["$oid"].s();
                 std::vector<MongoDB::Field> Modelfilter = {
                     // equal
                     {"_id", PDid, MongoDB::FieldType::ObjectId, "$gte"},
@@ -312,42 +314,9 @@ Configurate::Configurate()
                     for(auto& doc : PDResultDoc)
                     {
                         crow::json::rvalue ModelsConfigJSON = crow::json::load(doc);
-                        this->Modules.CheckOperator.PD.Name = ModelsConfigJSON["Name"].s();
-                        this->Modules.CheckOperator.PD.Width = ModelsConfigJSON["Width"].i();
-                        this->Modules.CheckOperator.PD.Height = ModelsConfigJSON["Height"].i();
-                        this->Modules.CheckOperator.PD.PrimaryThreshold = ModelsConfigJSON["PrimaryThreshold"].i();
-                        this->Modules.CheckOperator.PD.SecondaryThreshold = ModelsConfigJSON["SecondaryThreshold"].i();
-                    }
-                }else
-                {
-                    SHOW_ERROR(FindReturn.Description);
-                    throw;
-                }
-                
-                std::string PROCRid = CheckOperatorJSON["PROCR"]["$oid"].s();
-                Modelfilter = {
-                    // equal
-                    {"_id", PROCRid, MongoDB::FieldType::ObjectId, "$gte"},
-                    {"_id", PROCRid, MongoDB::FieldType::ObjectId, "$lte"}
-
-                };
-                std::vector<std::string> PROCRResultDoc;
-                FindReturn = this->ConfigDatabase->Find(this->ConfigDatabaseInfo.DatabaseName, "Models", Modelfilter, Option, PROCRResultDoc);
-                if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
-                {
-                    if(PROCRResultDoc.size() != 1)
-                    {
-                        SHOW_ERROR(PROCRid << " Model does not exist");
-                        throw;
-                    }
-                    for(auto& doc : PROCRResultDoc)
-                    {
-                        crow::json::rvalue ModelsConfigJSON = crow::json::load(doc);
-                        this->Modules.CheckOperator.PROCR.Name = ModelsConfigJSON["Name"].s();
-                        this->Modules.CheckOperator.PROCR.Width = ModelsConfigJSON["Width"].i();
-                        this->Modules.CheckOperator.PROCR.Height = ModelsConfigJSON["Height"].i();
-                        this->Modules.CheckOperator.PROCR.PrimaryThreshold = ModelsConfigJSON["PrimaryThreshold"].i();
-                        this->Modules.CheckOperator.PROCR.SecondaryThreshold = ModelsConfigJSON["SecondaryThreshold"].i();
+                        this->Modules.CheckOperator.PD.model = ModelsConfigJSON["Name"].s();
+                        this->Modules.CheckOperator.PD.modelConfigPath = ModelsConfigJSON["Config"].s(); 
+                        this->Modules.CheckOperator.PD.active = PDConfig["active"].b();
                     }
                 }else
                 {
@@ -355,7 +324,8 @@ Configurate::Configurate()
                     throw;
                 }
 
-                std::string PCid = CheckOperatorJSON["PC"]["$oid"].s();
+                crow::json::rvalue PCConfig = CheckOperatorJSON["PC"];
+                std::string PCid = PCConfig["model"]["$oid"].s();
                 Modelfilter = {
                     // equal
                     {"_id", PCid, MongoDB::FieldType::ObjectId, "$gte"},
@@ -368,17 +338,15 @@ Configurate::Configurate()
                 {
                     if(PCResultDoc.size() != 1)
                     {
-                        SHOW_ERROR(PCid << " Model does not exist");
+                        SHOW_ERROR(PDid << " Model does not exist");
                         throw;
                     }
                     for(auto& doc : PCResultDoc)
                     {
                         crow::json::rvalue ModelsConfigJSON = crow::json::load(doc);
-                        this->Modules.CheckOperator.PC.Name = ModelsConfigJSON["Name"].s();
-                        this->Modules.CheckOperator.PC.Width = ModelsConfigJSON["Width"].i();
-                        this->Modules.CheckOperator.PC.Height = ModelsConfigJSON["Height"].i();
-                        this->Modules.CheckOperator.PC.PrimaryThreshold = ModelsConfigJSON["PrimaryThreshold"].i();
-                        this->Modules.CheckOperator.PC.SecondaryThreshold = ModelsConfigJSON["SecondaryThreshold"].i();
+                        this->Modules.CheckOperator.PC.model = ModelsConfigJSON["Name"].s();
+                        this->Modules.CheckOperator.PC.modelConfigPath = ModelsConfigJSON["Config"].s(); 
+                        this->Modules.CheckOperator.PC.active = PCConfig["active"].b();
                     }
                 }else
                 {
@@ -386,30 +354,144 @@ Configurate::Configurate()
                     throw;
                 }
 
-                std::string MBOCRid = CheckOperatorJSON["MBOCR"]["$oid"].s();
+                crow::json::rvalue IROCRConfig = CheckOperatorJSON["IROCR"];
+                std::string IROCRid = IROCRConfig["model"]["$oid"].s();
+                Modelfilter = {
+                    // equal
+                    {"_id", IROCRid, MongoDB::FieldType::ObjectId, "$gte"},
+                    {"_id", IROCRid, MongoDB::FieldType::ObjectId, "$lte"}
+                };
+                std::vector<std::string> IROCRResultDoc;
+                FindReturn = this->ConfigDatabase->Find(this->ConfigDatabaseInfo.DatabaseName, "Models", Modelfilter, Option, IROCRResultDoc);
+                if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
+                {
+                    if(IROCRResultDoc.size() != 1)
+                    {
+                        SHOW_ERROR(PDid << " Model does not exist");
+                        throw;
+                    }
+                    for(auto& doc : IROCRResultDoc)
+                    {
+                        crow::json::rvalue ModelsConfigJSON = crow::json::load(doc);
+                        this->Modules.CheckOperator.IROCR.model = ModelsConfigJSON["Name"].s();
+                        this->Modules.CheckOperator.IROCR.modelConfigPath = ModelsConfigJSON["Config"].s(); 
+                        this->Modules.CheckOperator.IROCR.active = IROCRConfig["active"].b();
+                    }
+                }else
+                {
+                    SHOW_ERROR(FindReturn.Description);
+                    throw;
+                }
+
+                crow::json::rvalue MBOCRConfig = CheckOperatorJSON["MBOCR"];
+                std::string MBOCRid = MBOCRConfig["model"]["$oid"].s();
                 Modelfilter = {
                     // equal
                     {"_id", MBOCRid, MongoDB::FieldType::ObjectId, "$gte"},
                     {"_id", MBOCRid, MongoDB::FieldType::ObjectId, "$lte"}
-
                 };
                 std::vector<std::string> MBOCRResultDoc;
                 FindReturn = this->ConfigDatabase->Find(this->ConfigDatabaseInfo.DatabaseName, "Models", Modelfilter, Option, MBOCRResultDoc);
                 if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
                 {
-                    if(PCResultDoc.size() != 1)
+                    if(MBOCRResultDoc.size() != 1)
                     {
-                        SHOW_ERROR(MBOCRid << " Model does not exist");
+                        SHOW_ERROR(PDid << " Model does not exist");
                         throw;
                     }
                     for(auto& doc : MBOCRResultDoc)
                     {
                         crow::json::rvalue ModelsConfigJSON = crow::json::load(doc);
-                        this->Modules.CheckOperator.MBOCR.Name = ModelsConfigJSON["Name"].s();
-                        this->Modules.CheckOperator.MBOCR.Width = ModelsConfigJSON["Width"].i();
-                        this->Modules.CheckOperator.MBOCR.Height = ModelsConfigJSON["Height"].i();
-                        this->Modules.CheckOperator.MBOCR.PrimaryThreshold = ModelsConfigJSON["PrimaryThreshold"].i();
-                        this->Modules.CheckOperator.MBOCR.SecondaryThreshold = ModelsConfigJSON["SecondaryThreshold"].i();
+                        this->Modules.CheckOperator.MBOCR.model = ModelsConfigJSON["Name"].s();
+                        this->Modules.CheckOperator.MBOCR.modelConfigPath = ModelsConfigJSON["Config"].s(); 
+                        this->Modules.CheckOperator.MBOCR.active = MBOCRConfig["active"].b();
+                    }
+                }else
+                {
+                    SHOW_ERROR(FindReturn.Description);
+                    throw;
+                }
+
+                crow::json::rvalue TZOCRConfig = CheckOperatorJSON["TZOCR"];
+                std::string TZOCRid = TZOCRConfig["model"]["$oid"].s();
+                Modelfilter = {
+                    // equal
+                    {"_id", TZOCRid, MongoDB::FieldType::ObjectId, "$gte"},
+                    {"_id", TZOCRid, MongoDB::FieldType::ObjectId, "$lte"}
+                };
+                std::vector<std::string> TZOCRResultDoc;
+                FindReturn = this->ConfigDatabase->Find(this->ConfigDatabaseInfo.DatabaseName, "Models", Modelfilter, Option, TZOCRResultDoc);
+                if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
+                {
+                    if(TZOCRResultDoc.size() != 1)
+                    {
+                        SHOW_ERROR(PDid << " Model does not exist");
+                        throw;
+                    }
+                    for(auto& doc : TZOCRResultDoc)
+                    {
+                        crow::json::rvalue ModelsConfigJSON = crow::json::load(doc);
+                        this->Modules.CheckOperator.TZOCR.model = ModelsConfigJSON["Name"].s();
+                        this->Modules.CheckOperator.TZOCR.modelConfigPath = ModelsConfigJSON["Config"].s(); 
+                        this->Modules.CheckOperator.TZOCR.active = TZOCRConfig["active"].b();
+                    }
+                }else
+                {
+                    SHOW_ERROR(FindReturn.Description);
+                    throw;
+                }
+
+                crow::json::rvalue FZOCRConfig = CheckOperatorJSON["FZOCR"];
+                std::string FZOCRid = FZOCRConfig["model"]["$oid"].s();
+                Modelfilter = {
+                    // equal
+                    {"_id", FZOCRid, MongoDB::FieldType::ObjectId, "$gte"},
+                    {"_id", FZOCRid, MongoDB::FieldType::ObjectId, "$lte"}
+                };
+                std::vector<std::string> FZOCRResultDoc;
+                FindReturn = this->ConfigDatabase->Find(this->ConfigDatabaseInfo.DatabaseName, "Models", Modelfilter, Option, FZOCRResultDoc);
+                if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
+                {
+                    if(FZOCRResultDoc.size() != 1)
+                    {
+                        SHOW_ERROR(PDid << " Model does not exist");
+                        throw;
+                    }
+                    for(auto& doc : FZOCRResultDoc)
+                    {
+                        crow::json::rvalue ModelsConfigJSON = crow::json::load(doc);
+                        this->Modules.CheckOperator.FZOCR.model = ModelsConfigJSON["Name"].s();
+                        this->Modules.CheckOperator.FZOCR.modelConfigPath = ModelsConfigJSON["Config"].s(); 
+                        this->Modules.CheckOperator.FZOCR.active = FZOCRConfig["active"].b();
+                    }
+                }else
+                {
+                    SHOW_ERROR(FindReturn.Description);
+                    throw;
+                }
+
+                crow::json::rvalue FROCRConfig = CheckOperatorJSON["FROCR"];
+                std::string FROCRid = FROCRConfig["model"]["$oid"].s();
+                Modelfilter = {
+                    // equal
+                    {"_id", FROCRid, MongoDB::FieldType::ObjectId, "$gte"},
+                    {"_id", FROCRid, MongoDB::FieldType::ObjectId, "$lte"}
+                };
+                std::vector<std::string> FROCRResultDoc;
+                FindReturn = this->ConfigDatabase->Find(this->ConfigDatabaseInfo.DatabaseName, "Models", Modelfilter, Option, FROCRResultDoc);
+                if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
+                {
+                    if(FROCRResultDoc.size() != 1)
+                    {
+                        SHOW_ERROR(PDid << " Model does not exist");
+                        throw;
+                    }
+                    for(auto& doc : FROCRResultDoc)
+                    {
+                        crow::json::rvalue ModelsConfigJSON = crow::json::load(doc);
+                        this->Modules.CheckOperator.FROCR.model = ModelsConfigJSON["Name"].s();
+                        this->Modules.CheckOperator.FROCR.modelConfigPath = ModelsConfigJSON["Config"].s(); 
+                        this->Modules.CheckOperator.FROCR.active = FROCRConfig["active"].b();
                     }
                 }else
                 {

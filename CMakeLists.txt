@@ -48,7 +48,14 @@ if(VALUEVALIDATION)
     add_definitions(-DVALUEVALIDATION)
 endif()
 
-include_directories(.)
+file(GLOB_RECURSE HEADER_FILES "./*.h")
+set(HEADER_DIRS "")
+foreach(header ${HEADER_FILES})
+    get_filename_component(HEADER_DIR ${header} PATH)
+    list(APPEND HEADER_DIRS ${HEADER_DIR})
+endforeach()
+list(REMOVE_DUPLICATES HEADER_DIRS)
+include_directories(${HEADER_DIRS})
 
 set(inc_dir /usr/local/include)
 if(BUILDUBUNTU20)
@@ -159,11 +166,11 @@ add_executable(${PROJECT_NAME} ${SRC_LIST})
 
 set(onnxlib_dir /usr/local/lib/onnx/1.17.1)
 
-set(IDLMLIB_dir /usr/local/lib/kmodules)
-set(IDLMLIB     ${IDLMLIB_dir}/libIDLM.so)
+set(INFERENCELIB_dir /usr/local/lib/kmodules)
+set(INFERENCELIB     ${INFERENCELIB_dir}/libInference.so)
 
 set(CHOPLIB_dir /usr/local/lib/kmodules)
-set(CHOPLIB     ${CHOPLIB_dir}/libCheckOP.so)
+set(CHOPLIB     ${CHOPLIB_dir}/libchop.so)
 
 target_link_libraries(${PROJECT_NAME} 
                       curl
@@ -173,7 +180,7 @@ target_link_libraries(${PROJECT_NAME}
                       boost_chrono
                       boost_filesystem 
                       ${OPENCVLIB}
-                      ${IDLMLIB}
+                      ${INFERENCELIB}
                       ${CHOPLIB}
                       ${onnxlib_dir}/libonnxruntime.so)
 

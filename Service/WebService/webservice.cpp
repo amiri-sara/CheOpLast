@@ -251,20 +251,25 @@ void WebService::InsertRoute()
         // 3- Run Check Operator Module
         if(DH->Modules.CheckOperator.active && DH->hasInputFields.PlateImage)
         {
+            ChOp::InputStruct inputChOp;
+            inputChOp.plateImage = DH->ProcessedInputData.PlateImageMat;
+            inputChOp.plateValue = DH->hasInputFields.PlateValue ? DH->Input.PlateValue : "";
+            inputChOp.plateType = DH->hasInputFields.PlateType ? DH->Input.PlateType : static_cast<int>(inference::standards::PlateType::UNKNOWN);
+
             int CheckOpObjectIndex = this->getCheckOpIndex();
-            auto CheckOpResult = this->CheckOPObjects[CheckOpObjectIndex]->run(DH->ProcessedInputData.PlateImageMat, DH->Input.PlateValue);
-            if(CheckOpResult.Code == 0)
+            ChOp::OutputStruct ChOpOutput;
+            try
             {
-                auto ChOpOutput = this->CheckOPObjects[CheckOpObjectIndex]->getCheckOpOutput();
+                ChOpOutput = this->m_pChOpObjects[CheckOpObjectIndex]->run(inputChOp);
                 this->releaseCheckOpIndex(CheckOpObjectIndex);
                 DH->Input.MasterPlate = DH->Input.PlateValue;
-                DH->Input.PlateValue = ChOpOutput.NewPlateValue;
-                DH->Input.CodeType = ChOpOutput.CodeType;
-                DH->Input.Probability = ChOpOutput.Probability;
-            }else
-            {                        
+                DH->Input.PlateValue = ChOpOutput.newPlateValue;
+                DH->Input.CodeType = ChOpOutput.codeType;
+                DH->Input.Probability = ChOpOutput.probability;
+            } catch (const std::exception& e)
+            {
                 Response["Status"] = CHECKOPERROR;
-                Response["Description"] = CheckOpResult.Description;
+                Response["Description"] = e.what();
                 if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
                     Response["RecordID"] = DH->ProcessedInputData.MongoID;
                 Response["IP"] = DH->Request.remoteIP;
@@ -272,7 +277,7 @@ void WebService::InsertRoute()
                 {
                     std::vector<MongoDB::Field> fields = {
                         {"Status", std::to_string(CHECKOPERROR), MongoDB::FieldType::Integer},
-                        {"Description", CheckOpResult.Description, MongoDB::FieldType::String},
+                        {"Description", e.what(), MongoDB::FieldType::String},
                         {"IP", DH->Request.remoteIP, MongoDB::FieldType::String}
                     };
 

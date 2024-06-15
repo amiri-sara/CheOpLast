@@ -30,39 +30,79 @@ Service::Service()
         std::string ServerKey = SysKeys->GetKey17().Key + SysKeys->GetKey18().Key;
         std::string ClientKey = SysKeys->GetKey19().Key + SysKeys->GetKey20().Key;
 
-        std::string PDModel = decryptFile(Modules.CheckOperator.ModelsPath + "/" + Modules.CheckOperator.PD.Name, ServerKey, ClientKey).DecryptedMessage;
-        std::string PROCRModel = decryptFile(Modules.CheckOperator.ModelsPath + "/" + Modules.CheckOperator.PROCR.Name, ServerKey, ClientKey).DecryptedMessage;
-        std::string PCModel = decryptFile(Modules.CheckOperator.ModelsPath + "/" + Modules.CheckOperator.PC.Name, ServerKey, ClientKey).DecryptedMessage;
-        std::string MBOCRModel = decryptFile(Modules.CheckOperator.ModelsPath + "/" + Modules.CheckOperator.MBOCR.Name, ServerKey, ClientKey).DecryptedMessage;
+        ChOp::ConfigStruct chopConf;
+
+        if(Modules.CheckOperator.PD.active)
+        {
+            chopConf.PDConfig.model = decryptFile(Modules.CheckOperator.ModelsPath + "/" + Modules.CheckOperator.PD.model, ServerKey, ClientKey).DecryptedMessage;
+            chopConf.PDConfig.modelConfig = decryptFile(Modules.CheckOperator.ModelsPath + "/" + Modules.CheckOperator.PD.modelConfigPath, ServerKey, ClientKey).DecryptedMessage;
+        } else
+        {
+            chopConf.PDConfig.active = Modules.CheckOperator.PD.active;
+        }
+
+        if(Modules.CheckOperator.PC.active)
+        {
+            chopConf.PCConfig.model = decryptFile(Modules.CheckOperator.ModelsPath + "/" + Modules.CheckOperator.PC.model, ServerKey, ClientKey).DecryptedMessage;
+            chopConf.PCConfig.modelConfig = decryptFile(Modules.CheckOperator.ModelsPath + "/" + Modules.CheckOperator.PC.modelConfigPath, ServerKey, ClientKey).DecryptedMessage;
+        } else
+        {
+            chopConf.PCConfig.active = Modules.CheckOperator.PC.active;
+        }
         
-        CheckOP::CheckOPConfigStruct conf;
-        conf.PDModelValue = PDModel;
-        conf.PDInputSize = cv::Size(Modules.CheckOperator.PD.Width, Modules.CheckOperator.PD.Height);
-        conf.PDPrimaryThreshold = Modules.CheckOperator.PD.PrimaryThreshold;
-        conf.PDSecondaryThreshold = Modules.CheckOperator.PD.SecondaryThreshold;
+        if(Modules.CheckOperator.IROCR.active)
+        {
+            chopConf.IROCRConfig.model = decryptFile(Modules.CheckOperator.ModelsPath + "/" + Modules.CheckOperator.IROCR.model, ServerKey, ClientKey).DecryptedMessage;
+            chopConf.IROCRConfig.modelConfig = decryptFile(Modules.CheckOperator.ModelsPath + "/" + Modules.CheckOperator.IROCR.modelConfigPath, ServerKey, ClientKey).DecryptedMessage;
+        } else
+        {
+            chopConf.IROCRConfig.active = Modules.CheckOperator.IROCR.active;
+        }
 
-        conf.PCModelValue = PCModel;
-        conf.PCInputSize = cv::Size(Modules.CheckOperator.PC.Width, Modules.CheckOperator.PC.Height);
-        conf.PCPrimaryThreshold = Modules.CheckOperator.PC.PrimaryThreshold;
-        conf.PCSecondaryThreshold = Modules.CheckOperator.PC.SecondaryThreshold;
+        if(Modules.CheckOperator.MBOCR.active)
+        {
+            chopConf.MBOCRConfig.model = decryptFile(Modules.CheckOperator.ModelsPath + "/" + Modules.CheckOperator.MBOCR.model, ServerKey, ClientKey).DecryptedMessage;
+            chopConf.MBOCRConfig.modelConfig = decryptFile(Modules.CheckOperator.ModelsPath + "/" + Modules.CheckOperator.MBOCR.modelConfigPath, ServerKey, ClientKey).DecryptedMessage;
+        } else
+        {
+            chopConf.MBOCRConfig.active = Modules.CheckOperator.MBOCR.active;
+        }
 
-        conf.PROCRModelValue = PROCRModel;
-        conf.PROCRInputSize = cv::Size(Modules.CheckOperator.PROCR.Width, Modules.CheckOperator.PROCR.Height);
-        conf.PROCRPrimaryThreshold = Modules.CheckOperator.PROCR.PrimaryThreshold;
-        conf.PROCRSecondaryThreshold = Modules.CheckOperator.PROCR.SecondaryThreshold;
+        if(Modules.CheckOperator.TZOCR.active)
+        {
+            chopConf.TZOCRConfig.model = decryptFile(Modules.CheckOperator.ModelsPath + "/" + Modules.CheckOperator.TZOCR.model, ServerKey, ClientKey).DecryptedMessage;
+            chopConf.TZOCRConfig.modelConfig = decryptFile(Modules.CheckOperator.ModelsPath + "/" + Modules.CheckOperator.TZOCR.modelConfigPath, ServerKey, ClientKey).DecryptedMessage;
+        } else
+        {
+            chopConf.TZOCRConfig.active = Modules.CheckOperator.TZOCR.active;
+        }
 
-        conf.MBOCRModelValue = MBOCRModel;
-        conf.MBOCRInputSize = cv::Size(Modules.CheckOperator.MBOCR.Width, Modules.CheckOperator.MBOCR.Height);
-        conf.MBOCRPrimaryThreshold = Modules.CheckOperator.MBOCR.PrimaryThreshold;
-        conf.MBOCRSecondaryThreshold = Modules.CheckOperator.MBOCR.SecondaryThreshold;
+        if(Modules.CheckOperator.FZOCR.active)
+        {
+            chopConf.FZOCRConfig.model = decryptFile(Modules.CheckOperator.ModelsPath + "/" + Modules.CheckOperator.FZOCR.model, ServerKey, ClientKey).DecryptedMessage;
+            chopConf.FZOCRConfig.modelConfig = decryptFile(Modules.CheckOperator.ModelsPath + "/" + Modules.CheckOperator.FZOCR.modelConfigPath, ServerKey, ClientKey).DecryptedMessage;
+        } else
+        {
+            chopConf.FZOCRConfig.active = Modules.CheckOperator.FZOCR.active;
+        }
+
+        if(Modules.CheckOperator.FROCR.active)
+        {
+            chopConf.FROCRConfig.model = decryptFile(Modules.CheckOperator.ModelsPath + "/" + Modules.CheckOperator.FROCR.model, ServerKey, ClientKey).DecryptedMessage;
+            chopConf.FROCRConfig.modelConfig = decryptFile(Modules.CheckOperator.ModelsPath + "/" + Modules.CheckOperator.FROCR.modelConfigPath, ServerKey, ClientKey).DecryptedMessage;
+        } else
+        {
+            chopConf.FROCRConfig.active = Modules.CheckOperator.FROCR.active;
+        }
+
+        chopConf.ignoreInputPlateType = Modules.CheckOperator.IgnoreInputPlateType;
 
         for(int i = 0; i < this->CheckOpNumberOfObjectPerService; i++)
         {
-            this->CheckOPObjects.push_back(std::make_shared<CheckOP>(conf));
+            this->m_pChOpObjects.push_back(std::make_shared<ChOp>(chopConf));
             this->FreeCheckOpVec.push_back(true);
         }
     }
-
 }
 
 int Service::getKafkaConnectionIndex()

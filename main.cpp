@@ -20,9 +20,9 @@ int main(int argc, char *argv[])
         }else if((argc == 2) && ((!strcmp(argv[1], "vv")) || (!strcmp(argv[1], "V")) || (!strcmp(argv[1], "-vv")) || (!strcmp(argv[1], "-VV"))))
         {
             SHOW_IMPORTANTLOG2("Aggregation Version = " << AGGREGATION_VERSION);
-            SHOW_IMPORTANTLOG2("IDLM Version = " << IDLM_VERSION << " Using ONNX Runtime " << ONNX_RUNTIME_VERSION);
+            SHOW_IMPORTANTLOG2("Inference Version = " << inference::getVersion() << " Using ONNX Runtime " << std::to_string(ORT_API_VERSION));
             SHOW_IMPORTANTLOG2("Database Version = " << DATABASEVERSION);
-            SHOW_IMPORTANTLOG2("Check Operator Version = " << CHECK_OP_VERSION);
+            SHOW_IMPORTANTLOG2("Check Operator Version = " << ChOp::getVersion());
             return 0;
         }else
         {
