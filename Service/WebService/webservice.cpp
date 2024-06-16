@@ -300,9 +300,100 @@ void WebService::InsertRoute()
         auto CheckOpFinishTime = std::chrono::high_resolution_clock::now();
         auto CheckOpTime =  std::chrono::duration_cast<std::chrono::nanoseconds>(CheckOpFinishTime - CheckOpStartTime);
 
+        auto ClassifierStartTime = std::chrono::high_resolution_clock::now();
+        // 4- Run Classifier Module
+        if(DH->Modules.Classifier.active)
+        {   
+            std::vector<Classifier::InputStruct> classifierModelsInput;
+            for(int i = 0; i < DH->Modules.Classifier.Models.size(); i++)
+            {
+                Classifier::InputStruct input;
+                input.useRect = DH->Modules.Classifier.Models[i].UseRect;
+
+                switch(DH->Modules.Classifier.Models[i].InputImageType) 
+                {
+                    case 0:
+                    {
+                        input.Image = DH->hasInputFields.ColorImage ? DH->ProcessedInputData.ColorImageMat : cv::Mat(0, 0, CV_8UC3);
+                        break;
+                    }
+                    case 1:
+                    {
+                        input.Image = DH->hasInputFields.PlateImage ? DH->ProcessedInputData.PlateImageMat : cv::Mat(0, 0, CV_8UC3);
+                        break;
+                    }
+                }
+
+                switch(DH->Modules.Classifier.Models[i].InputRectField) 
+                {
+                    case 0:
+                    {
+                        input.desiredRect = cv::Rect(0,0,0,0);
+                        break;
+                    }
+                    case 1:
+                    {
+                        input.desiredRect = DH->hasInputFields.CarRect ? DH->ProcessedInputData.CarRect : cv::Rect(0,0,0,0);
+                        break;
+                    }
+                    case 2:
+                    {
+                        input.desiredRect = DH->hasInputFields.PlateRect ? DH->ProcessedInputData.PlateRect : cv::Rect(0,0,0,0);
+                        break;
+                    }
+                }
+
+                classifierModelsInput.push_back(input);
+            }
+
+            int ClassifierObjectIndex = this->getClassifierIndex();
+            Classifier::OutputStruct ClassifierOutput;
+
+            try
+            {
+                ClassifierOutput = this->m_pClassifierObjects[ClassifierObjectIndex]->run(classifierModelsInput);
+                this->releaseClassifierIndex(ClassifierObjectIndex);
+                DH->ProcessedInputData.ClassifierModuleOutput = ClassifierOutput.keyLabels;
+                // for(const auto& keyLabel : ClassifierOutput.keyLabels)
+                //     SHOW_IMPORTANTLOG2(keyLabel.first << " = " << keyLabel.second);
+            } catch (const std::exception& e)
+            {
+                Response["Status"] = CLASSIFIERERROR;
+                Response["Description"] = e.what();
+                if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+                    Response["RecordID"] = DH->ProcessedInputData.MongoID;
+                Response["IP"] = DH->Request.remoteIP;
+                if(DH->FailedDatabaseInfo.Enable)
+                {
+                    std::vector<MongoDB::Field> fields = {
+                        {"Status", std::to_string(CLASSIFIERERROR), MongoDB::FieldType::Integer},
+                        {"Description", e.what(), MongoDB::FieldType::String},
+                        {"IP", DH->Request.remoteIP, MongoDB::FieldType::String}
+                    };
+
+                    if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+                    {
+                        MongoDB::Field RecordIDField = {"RecordID", DH->ProcessedInputData.MongoID, MongoDB::FieldType::ObjectId};
+                        fields.push_back(RecordIDField);
+                    }
+
+                    DH->FailedDatabase ->Insert(DH->FailedDatabaseInfo.DatabaseName, DH->FailedDatabaseInfo.CollectionName, fields);
+                }
+                if(DH->DebugMode)
+                    SHOW_ERROR(crow::json::dump(Response));
+                this->releaseClassifierIndex(ClassifierObjectIndex);
+                ClientResponse["Status"] = CLASSIFIERERROR;
+                ClientResponse["Description"] = "Internal Service Error.";
+                return crow::response{DH->Response.HTTPCode , ClientResponse};
+            }
+        }
+
+        auto ClassifierFinishTime = std::chrono::high_resolution_clock::now();
+        auto ClassifierTime =  std::chrono::duration_cast<std::chrono::nanoseconds>(ClassifierFinishTime - ClassifierStartTime);
+
         auto storeImageStartTime = std::chrono::high_resolution_clock::now();
 #ifdef STOREIMAGE
-        // 4- Store Image
+        // 5- Store Image
         std::shared_ptr<storeimage> storeimageobj = std::make_shared<storeimage>();
         if(!(storeimageobj->run(DH)))
         {
@@ -338,7 +429,7 @@ void WebService::InsertRoute()
 
         auto saveDataStartTime = std::chrono::high_resolution_clock::now();
 #if defined KAFKAOUTPUT || defined INSERTDATABASE
-        // 5- Save Data
+        // 6- Save Data
         std::shared_ptr<savedata> savedataobj = std::make_shared<savedata>();
 #ifdef KAFKAOUTPUT
         int OutputKafkaConnectionIndex = this->getKafkaConnectionIndex();
@@ -387,8 +478,9 @@ void WebService::InsertRoute()
             SHOW_IMPORTANTLOG3("ProccessTime(ns) = " << std::to_string(requestTime.count()) << std::endl << "0- Authentication ProccessTime(ns) = " << std::to_string(AuthenticationTime.count())
                            << std::endl << "1- Validation ProccessTime(ns) = " << std::to_string(ValidationTime.count())
                            << std::endl << "2- Check RecordID ProccessTime(ns) = " << std::to_string(ChecRecordIDTime.count()) << std::endl << "3- CheckOp ProccessTime(ns) = " << std::to_string(CheckOpTime.count())
-                           << std::endl << "4- Store image ProccessTime(ns) = " << std::to_string(storeImaheTime.count())
-                           << std::endl << "5- Save data ProccessTime(ns) = " << std::to_string(saveDataTime.count()));
+                           << std::endl << "4- Classifier ProccessTime(ns) = " << std::to_string(ClassifierTime.count())
+                           << std::endl << "5- Store image ProccessTime(ns) = " << std::to_string(storeImaheTime.count())
+                           << std::endl << "6- Save data ProccessTime(ns) = " << std::to_string(saveDataTime.count()));
         
         Response["Status"] = SUCCESSFUL;
         if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)

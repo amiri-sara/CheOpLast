@@ -172,6 +172,9 @@ set(INFERENCELIB     ${INFERENCELIB_dir}/libInference.so)
 set(CHOPLIB_dir /usr/local/lib/kmodules)
 set(CHOPLIB     ${CHOPLIB_dir}/libchop.so)
 
+set(CLASSIFIERLIB_dir /usr/local/lib/kmodules)
+set(CLASSIFIERLIB     ${CLASSIFIERLIB_dir}/libclassifier.so)
+
 target_link_libraries(${PROJECT_NAME} 
                       curl
                       pthread 
@@ -182,6 +185,7 @@ target_link_libraries(${PROJECT_NAME}
                       ${OPENCVLIB}
                       ${INFERENCELIB}
                       ${CHOPLIB}
+                      ${CLASSIFIERLIB}
                       ${onnxlib_dir}/libonnxruntime.so)
 
 if(KAFKASERVICE OR KAFKAOUTPUT)

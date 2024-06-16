@@ -163,9 +163,25 @@ public:
         Configurate::ModelConfigStruct FROCR;
     };
 
+    struct ClassifierModelConfigStruct : public ModelConfigStruct
+    {
+        int InputRectField         = 0;
+        int InputImageType         = 0;
+        bool UseRect               = false;
+    };
+
+    struct ClassifierStruct
+    {
+        bool active;
+        int NumberOfObjectPerService;
+        std::string ModelsPath;
+        std::vector<Configurate::ClassifierModelConfigStruct> Models;
+    };
+
     struct ModulesStruct
     {
         Configurate::CheckOperatorStruct CheckOperator;
+        Configurate::ClassifierStruct Classifier;
     };
 
     Configurate(const Configurate& Obj) = delete;

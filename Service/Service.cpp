@@ -22,14 +22,14 @@ Service::Service()
     
 #endif // KAFKAOUTPUT
     
+    auto SysKeys {std::make_shared<SystemKeys>()};
+    std::string ServerKey = SysKeys->GetKey17().Key + SysKeys->GetKey18().Key;
+    std::string ClientKey = SysKeys->GetKey19().Key + SysKeys->GetKey20().Key;
+
     auto Modules = ConfigurateObj->getModules();
     if(Modules.CheckOperator.active)
     {
         this->CheckOpNumberOfObjectPerService = Modules.CheckOperator.NumberOfObjectPerService;
-        auto SysKeys {std::make_shared<SystemKeys>()};
-        std::string ServerKey = SysKeys->GetKey17().Key + SysKeys->GetKey18().Key;
-        std::string ClientKey = SysKeys->GetKey19().Key + SysKeys->GetKey20().Key;
-
         ChOp::ConfigStruct chopConf;
 
         if(Modules.CheckOperator.PD.active)
@@ -103,6 +103,25 @@ Service::Service()
             this->FreeCheckOpVec.push_back(true);
         }
     }
+
+    if(Modules.Classifier.active)
+    {
+        this->ClassifierNumberOfObjectPerService = Modules.Classifier.NumberOfObjectPerService;
+        std::vector<Classifier::ConfigStruct> classifierModelsConfig;
+        for(int i = 0; i < Modules.Classifier.Models.size(); i++)
+        {   
+            Classifier::ConfigStruct conf;
+            conf.model = decryptFile(Modules.Classifier.ModelsPath + "/" + Modules.Classifier.Models[i].model, ServerKey, ClientKey).DecryptedMessage;
+            conf.modelConfig = decryptFile(Modules.Classifier.ModelsPath + "/" + Modules.Classifier.Models[i].modelConfigPath, ServerKey, ClientKey).DecryptedMessage;
+            classifierModelsConfig.push_back(conf);
+        }
+        
+        for(int i = 0; i < this->ClassifierNumberOfObjectPerService; i++)
+        {
+            this->m_pClassifierObjects.push_back(std::make_shared<Classifier>(classifierModelsConfig));
+            this->FreeClassifierVec.push_back(true);
+        }
+    }
 }
 
 int Service::getKafkaConnectionIndex()
@@ -171,4 +190,38 @@ void Service::releaseCheckOpIndex(int Index)
     this->FreeCheckOpMutex.lock();
     this->FreeCheckOpVec[Index] = true;
     this->FreeCheckOpMutex.unlock();
+}
+
+int Service::getClassifierIndex()
+{
+    int FreeClassifierIndex = -1;
+    while(FreeClassifierIndex < 0)
+    {
+        bool Found = false;
+        this->FreeClassifierMutex.lock();
+        for(int i = 0; i < this->ClassifierNumberOfObjectPerService; i++)
+        {
+            if(this->FreeClassifierVec[i])
+            {
+                FreeClassifierIndex = i;
+                this->FreeClassifierVec[i] = false;
+                Found = true;
+                break;
+            }
+        }
+        this->FreeClassifierMutex.unlock();
+        
+        if(Found)
+            break;
+        
+        crow::this_thread::sleep_for(crow::chrono::milliseconds(10));
+    }
+    return FreeClassifierIndex;
+}
+
+void Service::releaseClassifierIndex(int Index)
+{
+    this->FreeClassifierMutex.lock();
+    this->FreeClassifierVec[Index] = true;
+    this->FreeClassifierMutex.unlock();
 }

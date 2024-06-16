@@ -585,11 +585,11 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
 
 #ifdef VALUEVALIDATION
         std::string StreetIDStr = std::to_string(StreetID);
-        if(StreetID != 0 && (StreetIDStr.length() < 8 || StreetIDStr.length() > 12))
+        if(StreetID != 0 && (StreetIDStr.length() < 1 || StreetIDStr.length() > 12))
         {
             DH->Response.HTTPCode = 400;
             DH->Response.errorCode = INVALIDSTREETID;
-            DH->Response.Description = "The number of digits of the StreetID value must be a value between 8 and 12.";
+            DH->Response.Description = "The number of digits of the StreetID value must be a value between 1 and 12.";
             return false;
         }
 #endif // VALUEVALIDATION
@@ -1232,6 +1232,11 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
 #endif // VALUEVALIDATION
 
         DH->Input.PlateRect = PlateRect;
+        int x = 0, y = 0, width = 0, height = 0;
+        char delimiter;
+        std::stringstream ss(PlateRect);
+        ss >> x >> delimiter >> y >> delimiter >> width >> delimiter >> height;
+        DH->ProcessedInputData.PlateRect = cv::Rect(x, y, width, height);
     }
 
     // CarRect
@@ -1260,6 +1265,11 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
 #endif // VALUEVALIDATION
 
         DH->Input.CarRect = CarRect;
+        int x = 0, y = 0, width = 0, height = 0;
+        char delimiter;
+        std::stringstream ss(CarRect);
+        ss >> x >> delimiter >> y >> delimiter >> width >> delimiter >> height;
+        DH->ProcessedInputData.CarRect = cv::Rect(x, y, width, height);
     }
 
     // CodeType

@@ -53,6 +53,9 @@ namespace DataHandler
         std::tm PassedTimeLocal;
         std::tm ReceivedTimeLocal;
         std::string MongoID;
+        cv::Rect CarRect;
+        cv::Rect PlateRect;
+        std::unordered_map<std::string,int> ClassifierModuleOutput;
     };
 
     struct StoreImageAddressStruct

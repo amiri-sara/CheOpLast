@@ -89,6 +89,7 @@
 #define INVALIDRECEIVEDTIME                                 637
 
 #define CHECKOPERROR                                        638
+#define CLASSIFIERERROR                                     639
 
 #define DATABASEERROR                                       651
 #define CANNOTFINDVIOLATIONID                               652
