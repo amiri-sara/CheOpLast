@@ -23,7 +23,7 @@ public:
     Classifier() = delete;
     Classifier(const std::vector<Classifier::ConfigStruct>& configs);
     Classifier::OutputStruct run(const std::vector<Classifier::InputStruct>& inputs);
-    static std::string getVersion(){return "1.0.0";}
+    static std::string getVersion();
 private:
     std::vector<std::shared_ptr<inference::Handler>> m_pIHs;
 };

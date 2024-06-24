@@ -401,7 +401,7 @@ namespace inference
         void initModel();
     };
 
-    inline std::string getVersion(){return "1.0.0";}
+    std::string getVersion();
 }
 
 #endif // !INFERENCE_H

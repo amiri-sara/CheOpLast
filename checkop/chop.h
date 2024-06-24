@@ -62,7 +62,7 @@ public:
     ChOp() = delete;
     ChOp(const ChOp::ConfigStruct& conf);
     ChOp::OutputStruct run(const ChOp::InputStruct& input);
-    static std::string getVersion(){return "1.0.0";}
+    static std::string getVersion();
 private:
 
     struct ModelsStruct
