@@ -389,6 +389,7 @@ namespace inference
         Handler(const inference::ConfigStruct& conf);
         void run(const inference::InputStruct& input);
         inference::OutputStruct getOutput();
+        std::vector<std::string> getOutputKeys();
     private:
         std::shared_ptr<inference::engine::IEngine> m_pEngine;
         std::shared_ptr<inference::algorithm::ocr::DetectedCharOCR> m_pDCOcr;
