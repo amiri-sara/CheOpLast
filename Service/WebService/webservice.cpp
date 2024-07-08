@@ -60,12 +60,15 @@ void WebService::InsertRoute()
         DH->DaysforPassedTimeAcceptable = this->WebServiceConfig.DaysforPassedTimeAcceptable;
         DH->InsertDatabase = ConfigurateObj->getInsertDatabase();
         DH->InsertDatabaseInfo = ConfigurateObj->getInsertDatabaseInfo();
+        DH->FailedDatabase = ConfigurateObj->getFailedDatabase();
+        DH->FailedDatabaseInfo = ConfigurateObj->getFailedDatabaseInfo();
         DH->Modules = ConfigurateObj->getModules();
         DH->DebugMode = this->WebServiceConfig.DebugMode;
         DH->InsertRoute = true;
         DH->WebServiceAuthentication = this->WebServiceConfig.Authentication;
         
         crow::json::wvalue Response;
+        crow::json::wvalue ClientResponse;
 
         DH->Request.remoteIP = req.ipAddress;
         SHOW_IMPORTANTLOG("Recived Insert request from IP -> " + DH->Request.remoteIP);
@@ -82,14 +85,13 @@ void WebService::InsertRoute()
             {
                 Response["Status"] = DH->Response.errorCode;
                 Response["Description"] = DH->Response.Description;
-                if(DH->DebugMode)
-                    SHOW_ERROR(crow::json::dump(Response));
+                SHOW_ERROR(crow::json::dump(Response));
                 return crow::response{DH->Response.HTTPCode , Response};
             }
-
+            
             // Check Token
             bool TokenFind = false;
-            std::string Token = DH->Request.JsonRvalue["Token"].s();
+            std::string Token = DH->Request.enJsonRvalue["Token"].s();
             for(int i = 0; i < DH->Cameras.size(); i++)
             {
                 if(DH->Cameras[i].TokenInfo.Token == Token)
@@ -102,8 +104,7 @@ void WebService::InsertRoute()
                     {
                         Response["Status"] = EXPIREDTOKEN;
                         Response["Description"] = "Expired Token.";
-                        if(DH->DebugMode)
-                            SHOW_ERROR(crow::json::dump(Response));
+                        SHOW_ERROR(crow::json::dump(Response));
                         return crow::response{401, Response};   
                     }
                     break;
@@ -114,14 +115,14 @@ void WebService::InsertRoute()
             {
                 Response["Status"] = INVALIDTOKEN;
                 Response["Description"] = "Invalid Token.";
-                if(DH->DebugMode)
-                    SHOW_ERROR(crow::json::dump(Response));
+                SHOW_ERROR(crow::json::dump(Response));
                 return crow::response{401, Response};
             }
 
-            std::string EncryptedData = DH->Request.JsonRvalue["Data"].s();
+            std::string EncryptedData = DH->Request.enJsonRvalue["Data"].s();
             std::string ClientPublicKeyAddress = this->WebServiceConfig.KeysPath + "/" + DH->Cameras[DH->CameraIndex].CompanyID;
-            std::string DecryptedData = decryptString(EncryptedData, "ServerPri.pem",  ClientPublicKeyAddress).DecryptedMessage;
+            std::string ServerPrivateKeyAddress = this->WebServiceConfig.KeysPath + "/ServerPri.pem";
+            std::string DecryptedData = decryptString(EncryptedData, ServerPrivateKeyAddress,  ClientPublicKeyAddress).DecryptedMessage;
             DH->Request.body = DecryptedData;
         }else
         {
@@ -137,9 +138,34 @@ void WebService::InsertRoute()
         {
             Response["Status"] = DH->Response.errorCode;
             Response["Description"] = DH->Response.Description;
-            if(DH->DebugMode)
-                SHOW_ERROR(crow::json::dump(Response));
-            return crow::response{DH->Response.HTTPCode , Response};
+            if(DH->hasInputFields.DeviceID && DH->hasInputFields.PlateValue)
+            {
+                Response["DevicedID"] = DH->Input.DeviceID;
+                Response["PlateValue"] = DH->Input.PlateValue;
+            }
+            Response["IP"] = DH->Request.remoteIP;
+            if(DH->FailedDatabaseInfo.Enable)
+            {
+                std::vector<MongoDB::Field> fields = {
+                    {"Status", std::to_string(DH->Response.errorCode), MongoDB::FieldType::Integer},
+                    {"Description", DH->Response.Description, MongoDB::FieldType::String},
+                    {"IP", DH->Request.remoteIP, MongoDB::FieldType::String}
+                };
+
+                if(DH->hasInputFields.DeviceID && DH->hasInputFields.PlateValue)
+                {
+                    MongoDB::Field DeviceIDField = {"DeviceID", std::to_string(DH->Input.DeviceID), MongoDB::FieldType::Integer};
+                    MongoDB::Field PlateValueField = {"PlateValue", DH->Input.PlateValue, MongoDB::FieldType::String};
+                    fields.push_back(DeviceIDField);
+                    fields.push_back(PlateValueField);
+                }
+
+                DH->FailedDatabase ->Insert(DH->FailedDatabaseInfo.DatabaseName, DH->FailedDatabaseInfo.CollectionName, fields);
+            }
+            SHOW_ERROR(crow::json::dump(Response));
+            ClientResponse["Status"] = DH->Response.errorCode;
+            ClientResponse["Description"] = DH->Response.Description;
+            return crow::response{DH->Response.HTTPCode , ClientResponse};
         }
         auto validationFinishTime = std::chrono::high_resolution_clock::now();
         auto ValidationTime =  std::chrono::duration_cast<std::chrono::nanoseconds>(validationFinishTime - validationStartTime);
@@ -163,18 +189,59 @@ void WebService::InsertRoute()
             {
                 Response["Status"] = DUPLICATERECORD;
                 Response["Description"] = "Duplicate Record.";
-                if(DH->DebugMode)
-                    SHOW_ERROR(crow::json::dump(Response));
-                return crow::response{400 , Response};
+                
+                if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+                    Response["RecordID"] = DH->ProcessedInputData.MongoID;
+                Response["IP"] = DH->Request.remoteIP;
+                if(DH->FailedDatabaseInfo.Enable)
+                {
+                    std::vector<MongoDB::Field> fields = {
+                        {"Status", std::to_string(DUPLICATERECORD), MongoDB::FieldType::Integer},
+                        {"Description", "Duplicate Record.", MongoDB::FieldType::String},
+                        {"IP", DH->Request.remoteIP, MongoDB::FieldType::String}
+                    };
+
+                    if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+                    {
+                        MongoDB::Field RecordIDField = {"RecordID", DH->ProcessedInputData.MongoID, MongoDB::FieldType::ObjectId};
+                        fields.push_back(RecordIDField);
+                    }
+
+                    DH->FailedDatabase ->Insert(DH->FailedDatabaseInfo.DatabaseName, DH->FailedDatabaseInfo.CollectionName, fields);
+                }
+                SHOW_ERROR(crow::json::dump(Response));
+                ClientResponse["Status"] = DUPLICATERECORD;
+                ClientResponse["Description"] = "Duplicate Record.";
+                return crow::response{400 , ClientResponse};
             }
         }else
         {
             SHOW_ERROR(FindReturn.Description);
             Response["Status"] = DATABASEERROR;
             Response["Description"] = "Network Internal Service Error.";
-            if(DH->DebugMode)
-                SHOW_ERROR(crow::json::dump(Response));
-            return crow::response{500 , Response};
+            if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+                Response["RecordID"] = DH->ProcessedInputData.MongoID;
+            Response["IP"] = DH->Request.remoteIP;
+            if(DH->FailedDatabaseInfo.Enable)
+            {
+                std::vector<MongoDB::Field> fields = {
+                    {"Status", std::to_string(DATABASEERROR), MongoDB::FieldType::Integer},
+                    {"Description", "Network Internal Service Error.", MongoDB::FieldType::String},
+                    {"IP", DH->Request.remoteIP, MongoDB::FieldType::String}
+                };
+
+                if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+                {
+                    MongoDB::Field RecordIDField = {"RecordID", DH->ProcessedInputData.MongoID, MongoDB::FieldType::ObjectId};
+                    fields.push_back(RecordIDField);
+                }
+
+                DH->FailedDatabase ->Insert(DH->FailedDatabaseInfo.DatabaseName, DH->FailedDatabaseInfo.CollectionName, fields);
+            }
+            SHOW_ERROR(crow::json::dump(Response));
+            ClientResponse["Status"] = DATABASEERROR;
+            ClientResponse["Description"] = "Network Internal Service Error.";
+            return crow::response{500 , ClientResponse};
         }
 #endif // INSERTDATABASE
         auto ChecRecordIDFinishTime = std::chrono::high_resolution_clock::now();
@@ -184,27 +251,178 @@ void WebService::InsertRoute()
         // 3- Run Check Operator Module
         if(DH->Modules.CheckOperator.active && DH->hasInputFields.PlateImage)
         {
+            ChOp::InputStruct inputChOp;
+            inputChOp.plateImage = DH->ProcessedInputData.PlateImageMat;
+            inputChOp.plateValue = DH->hasInputFields.PlateValue ? DH->Input.PlateValue : "";
+            inputChOp.plateType = DH->hasInputFields.PlateType ? DH->Input.PlateType : static_cast<int>(inference::standards::PlateType::UNKNOWN);
+
             int CheckOpObjectIndex = this->getCheckOpIndex();
-            auto CheckOpResult = this->CheckOPObjects[CheckOpObjectIndex]->run(DH->ProcessedInputData.PlateImageMat, DH->Input.PlateValue);
-            DH->Input.MasterPlate = DH->Input.PlateValue;
-            DH->Input.PlateValue = CheckOpResult.NewPlateValue;
-            DH->Input.CodeType = CheckOpResult.CodeType;
-            DH->Input.Probability = CheckOpResult.Probability;
+            ChOp::OutputStruct ChOpOutput;
+            try
+            {
+                ChOpOutput = this->m_pChOpObjects[CheckOpObjectIndex]->run(inputChOp);
+                this->releaseCheckOpIndex(CheckOpObjectIndex);
+                DH->Input.MasterPlate = DH->Input.PlateValue;
+                DH->Input.PlateValue = ChOpOutput.newPlateValue;
+                DH->Input.CodeType = ChOpOutput.codeType;
+                DH->Input.Probability = ChOpOutput.probability;
+                DH->Input.PlateType = ChOpOutput.newPlateType;
+            } catch (const std::exception& e)
+            {
+                Response["Status"] = CHECKOPERROR;
+                Response["Description"] = e.what();
+                if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+                    Response["RecordID"] = DH->ProcessedInputData.MongoID;
+                Response["IP"] = DH->Request.remoteIP;
+                if(DH->FailedDatabaseInfo.Enable)
+                {
+                    std::vector<MongoDB::Field> fields = {
+                        {"Status", std::to_string(CHECKOPERROR), MongoDB::FieldType::Integer},
+                        {"Description", e.what(), MongoDB::FieldType::String},
+                        {"IP", DH->Request.remoteIP, MongoDB::FieldType::String}
+                    };
+
+                    if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+                    {
+                        MongoDB::Field RecordIDField = {"RecordID", DH->ProcessedInputData.MongoID, MongoDB::FieldType::ObjectId};
+                        fields.push_back(RecordIDField);
+                    }
+
+                    DH->FailedDatabase ->Insert(DH->FailedDatabaseInfo.DatabaseName, DH->FailedDatabaseInfo.CollectionName, fields);
+                }
+                if(DH->DebugMode)
+                    SHOW_ERROR(crow::json::dump(Response));
+                this->releaseCheckOpIndex(CheckOpObjectIndex);
+                ClientResponse["Status"] = CHECKOPERROR;
+                ClientResponse["Description"] = "Internal Service Error.";
+                return crow::response{DH->Response.HTTPCode , ClientResponse};
+            }
         }
         auto CheckOpFinishTime = std::chrono::high_resolution_clock::now();
         auto CheckOpTime =  std::chrono::duration_cast<std::chrono::nanoseconds>(CheckOpFinishTime - CheckOpStartTime);
 
+        auto ClassifierStartTime = std::chrono::high_resolution_clock::now();
+        // 4- Run Classifier Module
+        if(DH->Modules.Classifier.active)
+        {   
+            std::vector<Classifier::InputStruct> classifierModelsInput;
+            for(int i = 0; i < DH->Modules.Classifier.Models.size(); i++)
+            {
+                Classifier::InputStruct input;
+                input.useRect = DH->Modules.Classifier.Models[i].UseRect;
+
+                switch(DH->Modules.Classifier.Models[i].InputImageType) 
+                {
+                    case 0:
+                    {
+                        input.Image = DH->hasInputFields.ColorImage ? DH->ProcessedInputData.ColorImageMat : cv::Mat(0, 0, CV_8UC3);
+                        break;
+                    }
+                    case 1:
+                    {
+                        input.Image = DH->hasInputFields.PlateImage ? DH->ProcessedInputData.PlateImageMat : cv::Mat(0, 0, CV_8UC3);
+                        break;
+                    }
+                }
+
+                switch(DH->Modules.Classifier.Models[i].InputRectField) 
+                {
+                    case 0:
+                    {
+                        input.desiredRect = cv::Rect(0,0,0,0);
+                        break;
+                    }
+                    case 1:
+                    {
+                        input.desiredRect = DH->hasInputFields.CarRect ? DH->ProcessedInputData.CarRect : cv::Rect(0,0,0,0);
+                        break;
+                    }
+                    case 2:
+                    {
+                        input.desiredRect = DH->hasInputFields.PlateRect ? DH->ProcessedInputData.PlateRect : cv::Rect(0,0,0,0);
+                        break;
+                    }
+                }
+
+                classifierModelsInput.push_back(input);
+            }
+
+            int ClassifierObjectIndex = this->getClassifierIndex();
+            Classifier::OutputStruct ClassifierOutput;
+
+            try
+            {
+                ClassifierOutput = this->m_pClassifierObjects[ClassifierObjectIndex]->run(classifierModelsInput);
+                this->releaseClassifierIndex(ClassifierObjectIndex);
+                DH->ProcessedInputData.ClassifierModuleOutput = ClassifierOutput.keyLabels;
+                // for(const auto& keyLabel : ClassifierOutput.keyLabels)
+                //     SHOW_IMPORTANTLOG2(keyLabel.first << " = " << keyLabel.second);
+            } catch (const std::exception& e)
+            {
+                Response["Status"] = CLASSIFIERERROR;
+                Response["Description"] = e.what();
+                if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+                    Response["RecordID"] = DH->ProcessedInputData.MongoID;
+                Response["IP"] = DH->Request.remoteIP;
+                if(DH->FailedDatabaseInfo.Enable)
+                {
+                    std::vector<MongoDB::Field> fields = {
+                        {"Status", std::to_string(CLASSIFIERERROR), MongoDB::FieldType::Integer},
+                        {"Description", e.what(), MongoDB::FieldType::String},
+                        {"IP", DH->Request.remoteIP, MongoDB::FieldType::String}
+                    };
+
+                    if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+                    {
+                        MongoDB::Field RecordIDField = {"RecordID", DH->ProcessedInputData.MongoID, MongoDB::FieldType::ObjectId};
+                        fields.push_back(RecordIDField);
+                    }
+
+                    DH->FailedDatabase ->Insert(DH->FailedDatabaseInfo.DatabaseName, DH->FailedDatabaseInfo.CollectionName, fields);
+                }
+                if(DH->DebugMode)
+                    SHOW_ERROR(crow::json::dump(Response));
+                this->releaseClassifierIndex(ClassifierObjectIndex);
+                ClientResponse["Status"] = CLASSIFIERERROR;
+                ClientResponse["Description"] = "Internal Service Error.";
+                return crow::response{DH->Response.HTTPCode , ClientResponse};
+            }
+        }
+
+        auto ClassifierFinishTime = std::chrono::high_resolution_clock::now();
+        auto ClassifierTime =  std::chrono::duration_cast<std::chrono::nanoseconds>(ClassifierFinishTime - ClassifierStartTime);
+
         auto storeImageStartTime = std::chrono::high_resolution_clock::now();
 #ifdef STOREIMAGE
-        // 4- Store Image
+        // 5- Store Image
         std::shared_ptr<storeimage> storeimageobj = std::make_shared<storeimage>();
         if(!(storeimageobj->run(DH)))
         {
             Response["Status"] = DH->Response.errorCode;
             Response["Description"] = DH->Response.Description;
-            if(DH->DebugMode)
-                SHOW_ERROR(crow::json::dump(Response));
-            return crow::response{DH->Response.HTTPCode , Response};
+            if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+                Response["RecordID"] = DH->ProcessedInputData.MongoID;
+            Response["IP"] = DH->Request.remoteIP;
+            if(DH->FailedDatabaseInfo.Enable)
+            {
+                std::vector<MongoDB::Field> fields = {
+                    {"Status", std::to_string(DH->Response.errorCode), MongoDB::FieldType::Integer},
+                    {"Description", DH->Response.Description, MongoDB::FieldType::String},
+                    {"IP", DH->Request.remoteIP, MongoDB::FieldType::String}
+                };
+
+                if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+                {
+                    MongoDB::Field RecordIDField = {"RecordID", DH->ProcessedInputData.MongoID, MongoDB::FieldType::ObjectId};
+                    fields.push_back(RecordIDField);
+                }
+
+                DH->FailedDatabase ->Insert(DH->FailedDatabaseInfo.DatabaseName, DH->FailedDatabaseInfo.CollectionName, fields);
+            }
+            SHOW_ERROR(crow::json::dump(Response));
+            ClientResponse["Status"] = DH->Response.errorCode;
+            ClientResponse["Description"] = DH->Response.Description;
+            return crow::response{DH->Response.HTTPCode , ClientResponse};
         }
 #endif // STOREIMAGE
         auto storeImageFinishTime = std::chrono::high_resolution_clock::now();
@@ -212,7 +430,7 @@ void WebService::InsertRoute()
 
         auto saveDataStartTime = std::chrono::high_resolution_clock::now();
 #if defined KAFKAOUTPUT || defined INSERTDATABASE
-        // 5- Save Data
+        // 6- Save Data
         std::shared_ptr<savedata> savedataobj = std::make_shared<savedata>();
 #ifdef KAFKAOUTPUT
         int OutputKafkaConnectionIndex = this->getKafkaConnectionIndex();
@@ -223,9 +441,29 @@ void WebService::InsertRoute()
         {
             Response["Status"] = DH->Response.errorCode;
             Response["Description"] = DH->Response.Description;
-            if(DH->DebugMode)
-                SHOW_ERROR(crow::json::dump(Response));
-            return crow::response{DH->Response.HTTPCode , Response};
+            if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+                Response["RecordID"] = DH->ProcessedInputData.MongoID;
+            Response["IP"] = DH->Request.remoteIP;
+            if(DH->FailedDatabaseInfo.Enable)
+            {
+                std::vector<MongoDB::Field> fields = {
+                    {"Status", std::to_string(DH->Response.errorCode), MongoDB::FieldType::Integer},
+                    {"Description", DH->Response.Description, MongoDB::FieldType::String},
+                    {"IP", DH->Request.remoteIP, MongoDB::FieldType::String}
+                };
+
+                if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+                {
+                    MongoDB::Field RecordIDField = {"RecordID", DH->ProcessedInputData.MongoID, MongoDB::FieldType::ObjectId};
+                    fields.push_back(RecordIDField);
+                }
+
+                DH->FailedDatabase ->Insert(DH->FailedDatabaseInfo.DatabaseName, DH->FailedDatabaseInfo.CollectionName, fields);
+            }
+            SHOW_ERROR(crow::json::dump(Response));
+            ClientResponse["Status"] = DH->Response.errorCode;
+            ClientResponse["Description"] = DH->Response.Description;
+            return crow::response{DH->Response.HTTPCode , ClientResponse};
         }
 #ifdef KAFKAOUTPUT
         this->releaseKafkaIndex(OutputKafkaConnectionIndex);
@@ -241,8 +479,9 @@ void WebService::InsertRoute()
             SHOW_IMPORTANTLOG3("ProccessTime(ns) = " << std::to_string(requestTime.count()) << std::endl << "0- Authentication ProccessTime(ns) = " << std::to_string(AuthenticationTime.count())
                            << std::endl << "1- Validation ProccessTime(ns) = " << std::to_string(ValidationTime.count())
                            << std::endl << "2- Check RecordID ProccessTime(ns) = " << std::to_string(ChecRecordIDTime.count()) << std::endl << "3- CheckOp ProccessTime(ns) = " << std::to_string(CheckOpTime.count())
-                           << std::endl << "4- Store image ProccessTime(ns) = " << std::to_string(storeImaheTime.count())
-                           << std::endl << "5- Save data ProccessTime(ns) = " << std::to_string(saveDataTime.count()));
+                           << std::endl << "4- Classifier ProccessTime(ns) = " << std::to_string(ClassifierTime.count())
+                           << std::endl << "5- Store image ProccessTime(ns) = " << std::to_string(storeImaheTime.count())
+                           << std::endl << "6- Save data ProccessTime(ns) = " << std::to_string(saveDataTime.count()));
         
         Response["Status"] = SUCCESSFUL;
         if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
@@ -267,6 +506,7 @@ void WebService::TokenRoute()
         
         std::shared_ptr<DataHandler::DataHandlerStruct> DH = std::make_shared<DataHandler::DataHandlerStruct>();
         DH->InsertRoute = false;
+        DH->DecryptedData = true;
         DH->Request.body = req.body;
         crow::json::wvalue Response;
 
@@ -293,12 +533,33 @@ void WebService::TokenRoute()
         auto validationFinishTime = std::chrono::high_resolution_clock::now();
         auto ValidationTime =  std::chrono::duration_cast<std::chrono::nanoseconds>(validationFinishTime - validationStartTime);
 
-        // 2- Generate Token
+        std::time_t currentTime = std::time(nullptr);
+        // 2- Check Current token expiration time
+        auto CheckCurrentTokenStartTime = std::chrono::high_resolution_clock::now();
+        std::string currentToken = DH->Cameras[DH->CameraIndex].TokenInfo.Token;
+        std::time_t currentTokenCreateAt = DH->Cameras[DH->CameraIndex].TokenInfo.CreatedAt;
+        std::time_t TokenExpirationTime = currentTokenCreateAt + this->WebServiceConfig.TokenTimeAllowed;
+        auto CheckCurrentTokenEndTime = std::chrono::high_resolution_clock::now();
+        auto CheckCurrentTokenTime =  std::chrono::duration_cast<std::chrono::nanoseconds>(CheckCurrentTokenEndTime - CheckCurrentTokenStartTime);
+        if(currentTime < TokenExpirationTime)
+        {
+            auto requestFinishTime = std::chrono::high_resolution_clock::now();
+            auto requestTime =  std::chrono::duration_cast<std::chrono::nanoseconds>(requestFinishTime - requstStartTime);
+            if(DH->DebugMode)
+                SHOW_IMPORTANTLOG3("ProccessTime(ns) = " << std::to_string(requestTime.count()) << std::endl << "1- Validation ProccessTime(ns) = " << std::to_string(ValidationTime.count()) << std::endl << 
+                                   "2- CheckCurrentToken ProccessTime(ns) = " << std::to_string(CheckCurrentTokenTime.count()));
+            
+            Response["Status"] = SUCCESSFUL;
+            Response["Token"] = currentToken;
+            SHOW_LOG(crow::json::dump(Response));
+            return crow::response{200 , Response};   
+        }
+
+        // 3- Generate Token
         auto GenerateTokenStartTime = std::chrono::high_resolution_clock::now();
         std::string Token = boost::lexical_cast<std::string>(boost::uuids::random_generator()());
         
         std::ostringstream oss;
-        std::time_t currentTime = std::time(nullptr);
         std::tm* CurrenttimeInfo = std::localtime(&currentTime);
         oss << std::put_time(CurrenttimeInfo, "%Y-%m-%d %H:%M:%S");
         std::string TokenTime = oss.str();
@@ -321,7 +582,7 @@ void WebService::TokenRoute()
         if(UpdateReturn.Code != MongoDB::MongoStatus::UpdateSuccessful)
         {
             Response["Status"] = DATABASEERROR;
-            Response["Description"] = UpdateReturn.Description;
+            Response["Description"] = "Internal Server Error.";
             if(DH->DebugMode)
                 SHOW_ERROR(crow::json::dump(Response));
             return crow::response{500 , Response};
@@ -332,7 +593,6 @@ void WebService::TokenRoute()
         {
             for(auto& Service : this->WebServiceConfig.OtherService)
             {
-                SHOW_IMPORTANTLOG2("Send Camera JSON to = " << Service.IP << ":" << Service.Port << "/" << Service.URI);
                 std::string URL = Service.IP + ":" + std::to_string(Service.Port) + "/" + Service.URI;
                 CURL *curl;
                 CURLcode res;
@@ -374,7 +634,8 @@ void WebService::TokenRoute()
         auto requestTime =  std::chrono::duration_cast<std::chrono::nanoseconds>(requestFinishTime - requstStartTime);
 
         if(DH->DebugMode)
-            SHOW_IMPORTANTLOG3("ProccessTime(ns) = " << std::to_string(requestTime.count()) << std::endl << "1- Validation ProccessTime(ns) = " << std::to_string(ValidationTime.count()) << std::endl << "2- Generate Token ProccessTime(ns) = " << std::to_string(GenerateTokenTime.count()));
+            SHOW_IMPORTANTLOG3("ProccessTime(ns) = " << std::to_string(requestTime.count()) << std::endl << "1- Validation ProccessTime(ns) = " << std::to_string(ValidationTime.count()) << std::endl << 
+                               "2- CheckCurrentToken ProccessTime(ns) = " << std::to_string(CheckCurrentTokenTime.count()) << std::endl << "3- Generate Token ProccessTime(ns) = " << std::to_string(GenerateTokenTime.count()));
 
         Response["Status"] = SUCCESSFUL;
         Response["Token"] = Token;

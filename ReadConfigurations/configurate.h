@@ -29,7 +29,7 @@ public:
     {
         std::string DatabaseName        = "";
         std::string CollectionName      = "";
-        std::string Enable              = "";
+        bool Enable                     = false;
     };
 
     struct WebServiceInfoStruct
@@ -143,11 +143,9 @@ public:
 
     struct ModelConfigStruct
     {
-        std::string Name;
-        int Width;
-        int Height;
-        int PrimaryThreshold;
-        int SecondaryThreshold;
+        std::string model           = "";
+        std::string modelConfigPath = "";
+        bool active                 = false;
     };
 
     struct CheckOperatorStruct
@@ -155,15 +153,35 @@ public:
         bool active;
         int NumberOfObjectPerService;
         std::string ModelsPath;
+        bool IgnoreInputPlateType;
         Configurate::ModelConfigStruct PD;
-        Configurate::ModelConfigStruct PROCR;
         Configurate::ModelConfigStruct PC;
+        Configurate::ModelConfigStruct IROCR;
         Configurate::ModelConfigStruct MBOCR;
+        Configurate::ModelConfigStruct TZOCR;
+        Configurate::ModelConfigStruct FZOCR;
+        Configurate::ModelConfigStruct FROCR;
+    };
+
+    struct ClassifierModelConfigStruct : public ModelConfigStruct
+    {
+        int InputRectField         = 0;
+        int InputImageType         = 0;
+        bool UseRect               = false;
+    };
+
+    struct ClassifierStruct
+    {
+        bool active;
+        int NumberOfObjectPerService;
+        std::string ModelsPath;
+        std::vector<Configurate::ClassifierModelConfigStruct> Models;
     };
 
     struct ModulesStruct
     {
         Configurate::CheckOperatorStruct CheckOperator;
+        Configurate::ClassifierStruct Classifier;
     };
 
     Configurate(const Configurate& Obj) = delete;

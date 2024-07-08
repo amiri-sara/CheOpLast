@@ -57,7 +57,7 @@ bool KafkaProsumer::write(DummyData data) noexcept
                             /* Value */
                             const_cast<char *>(data.text.c_str()), data.text.size(),
                             /* Key */
-                            nullptr, 0,
+                            const_cast<char *>(data.key.c_str()), data.key.size(),
                             /* Timestamp (defaults to now) */
                             0,
                             /* Message headers, if any */

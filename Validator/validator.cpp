@@ -53,7 +53,13 @@ bool Validator::CheckRequstFormatJSON(const std::shared_ptr<DataHandler::DataHan
 {
     bool isJson  = false;
     try {
-        DH->Request.JsonRvalue = crow::json::load(DH->Request.body);
+        if(DH->DecryptedData)
+        {
+            DH->Request.JsonRvalue = crow::json::load(DH->Request.body);
+        } else 
+        {   
+            DH->Request.enJsonRvalue = crow::json::load(DH->Request.body);
+        }
         isJson = true;
     }catch (...) 
     {
@@ -393,8 +399,11 @@ bool Validator::checkDataExistOrNo(const std::shared_ptr<DataHandler::DataHandle
         }
     }
 
-    // for UUID
-    DH->Request.NumberofInputFields++;
+    // UUID
+    if(DH->Request.JsonRvalue.has("UUID"))
+    {
+        DH->Request.NumberofInputFields++;
+    }
 
     allDataExist = true;
     return allDataExist;
@@ -405,7 +414,7 @@ bool Validator::checkEncryptedDataExistOrNo(const std::shared_ptr<DataHandler::D
     bool allDataExist = false;
     DH->Request.NumberofInputFields = 2;
 
-    if(!(DH->Request.JsonRvalue.has("Token")))
+    if(!(DH->Request.enJsonRvalue.has("Token")))
     {
         DH->Response.HTTPCode = 401;
         DH->Response.errorCode = INVALIDTOKEN;
@@ -413,7 +422,7 @@ bool Validator::checkEncryptedDataExistOrNo(const std::shared_ptr<DataHandler::D
         return allDataExist;
     }
 
-    if(!(DH->Request.JsonRvalue.has("Data")))
+    if(!(DH->Request.enJsonRvalue.has("Data")))
     {
         DH->Response.HTTPCode = 400;
         DH->Response.errorCode = INVALIDDATA;
@@ -466,7 +475,14 @@ bool Validator::checkTokenDataExistOrNo(const std::shared_ptr<DataHandler::DataH
 
 bool Validator::CheckNumberOfJSONFields(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH)
 {
-    int SizeOfJson = DH->Request.JsonRvalue.size();
+    int SizeOfJson;
+    if(DH->DecryptedData)
+    {
+        SizeOfJson = DH->Request.JsonRvalue.size();
+    } else 
+    {
+        SizeOfJson = DH->Request.enJsonRvalue.size();
+    }
     if(SizeOfJson == DH->Request.NumberofInputFields)
         return true;
     
@@ -582,11 +598,11 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
 
 #ifdef VALUEVALIDATION
         std::string StreetIDStr = std::to_string(StreetID);
-        if(StreetID != 0 && (StreetIDStr.length() < 8 || StreetIDStr.length() > 12))
+        if(StreetID != 0 && (StreetIDStr.length() < 1 || StreetIDStr.length() > 12))
         {
             DH->Response.HTTPCode = 400;
             DH->Response.errorCode = INVALIDSTREETID;
-            DH->Response.Description = "The number of digits of the StreetID value must be a value between 8 and 12.";
+            DH->Response.Description = "The number of digits of the StreetID value must be a value between 1 and 12.";
             return false;
         }
 #endif // VALUEVALIDATION
@@ -702,7 +718,10 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             return false;
         }
 
-        if(DH->Input.PlateType == 1)
+        if(PlateValue == "0")
+        {
+            // Just to not validate the plate value and accept zero value
+        }else if(DH->Input.PlateType == 1)
         {
             if(PlateValue.length() != 9 || !(std::all_of(PlateValue.begin(), PlateValue.end(),[](char c) { return std::isdigit(static_cast<unsigned char>(c));})))
             {
@@ -937,11 +956,11 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
         }
 
 #ifdef VALUEVALIDATION
-        if(PassedTime.empty() || PassedTime.length() != 20)
+        if(PassedTime.empty() || (PassedTime.length() != 20 && PassedTime.length() != 24))
         {
             DH->Response.HTTPCode = 400;
             DH->Response.errorCode = INVALIDPASSEDTIME;
-            DH->Response.Description = "The value of PassedTime must not be empty and its number of characters must be equal to 20(YYYY-MM-DDTHH:MM:SSZ).";
+            DH->Response.Description = "The value of PassedTime must not be empty and its number of characters must be equal to 20 or 24(YYYY-MM-DDTHH:MM:SSZ or YYYY-MM-DDTHH:MM:SS.sssZ).";
             return false;
         }
 #endif // VALUEVALIDATION
@@ -1099,14 +1118,18 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
         {
             DH->Response.HTTPCode = 400;
             DH->Response.errorCode = INVALIDPLATEIMAGESIZE;
-            DH->Response.Description = "The size of the ColorImage should not be more than " + std::to_string(DH->StoreImageConfig.PlateImageMaxSize) + "KB";
+            DH->Response.Description = "The size of the Plate Image should not be more than " + std::to_string(DH->StoreImageConfig.PlateImageMaxSize) + "KB";
             return false;
         }
 #endif // VALUEVALIDATION
 
         DH->Input.PlateImage = PlateImage;
+
 #ifdef STOREIMAGE
         DH->ProcessedInputData.PlateImageMat = PlateImageMat;
+#else
+        if(DH->Modules.CheckOperator.active)
+            DH->ProcessedInputData.PlateImageMat = PlateImageMat;
 #endif // STOREIMAGE
     }
 
@@ -1222,6 +1245,11 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
 #endif // VALUEVALIDATION
 
         DH->Input.PlateRect = PlateRect;
+        int x = 0, y = 0, width = 0, height = 0;
+        char delimiter;
+        std::stringstream ss(PlateRect);
+        ss >> x >> delimiter >> y >> delimiter >> width >> delimiter >> height;
+        DH->ProcessedInputData.PlateRect = cv::Rect(x, y, width, height);
     }
 
     // CarRect
@@ -1250,6 +1278,11 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
 #endif // VALUEVALIDATION
 
         DH->Input.CarRect = CarRect;
+        int x = 0, y = 0, width = 0, height = 0;
+        char delimiter;
+        std::stringstream ss(CarRect);
+        ss >> x >> delimiter >> y >> delimiter >> width >> delimiter >> height;
+        DH->ProcessedInputData.CarRect = cv::Rect(x, y, width, height);
     }
 
     // CodeType
@@ -1332,7 +1365,10 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             return false;
         }
 
-        if(DH->Input.PlateType == 1)
+        if(MasterPlate == "0")
+        {
+            // Just to not validate the plate value and accept zero value
+        }else if(DH->Input.PlateType == 1)
         {
             if(MasterPlate.length() != 9 || !(std::all_of(MasterPlate.begin(), MasterPlate.end(),[](char c) { return std::isdigit(static_cast<unsigned char>(c));})))
             {
@@ -1478,7 +1514,7 @@ bool Validator::CheckEncryptedRequestValues(const std::shared_ptr<DataHandler::D
     std::string Token;
     try
     {
-        Token = DH->Request.JsonRvalue["Token"].s();
+        Token = DH->Request.enJsonRvalue["Token"].s();
     }catch(...)
     {
         DH->Response.HTTPCode = 401;
@@ -1561,13 +1597,13 @@ bool Validator::CheckTokenRequestValues(const std::shared_ptr<DataHandler::DataH
         return false;    
     }
 
-    if(DH->Cameras[DH->CameraIndex].CompanyName != CompanyName)
-    {
-        DH->Response.HTTPCode = 400;
-        DH->Response.errorCode = INVALIDCOMPANYNAME;
-        DH->Response.Description = "Company Name is incorrect.";
-        return false;
-    }
+    // if(DH->Cameras[DH->CameraIndex].CompanyName != CompanyName)
+    // {
+    //     DH->Response.HTTPCode = 400;
+    //     DH->Response.errorCode = INVALIDCOMPANYNAME;
+    //     DH->Response.Description = "Company Name is incorrect.";
+    //     return false;
+    // }
 
     // User and Password
     std::string User;

@@ -15,7 +15,8 @@
     #include "../Kafka/Utility.h"
 #endif // KAFKAOUTPUT || KAFKASERVICE
 
-#include "./checkop/checkop.h"
+#include "chop.h"
+#include "classifier.h"
 
 class Service
 {
@@ -43,12 +44,19 @@ protected:
     void releaseKafkaIndex(int Index);
     boost::mutex FreeKafkaMutex;
 
-    std::vector<std::shared_ptr<CheckOP>> CheckOPObjects;
+    std::vector<std::shared_ptr<ChOp>> m_pChOpObjects;
     std::vector<bool> FreeCheckOpVec;
     int CheckOpNumberOfObjectPerService;
     int getCheckOpIndex();
     void releaseCheckOpIndex(int Index);
     boost::mutex FreeCheckOpMutex;
+
+    std::vector<std::shared_ptr<Classifier>> m_pClassifierObjects;
+    std::vector<bool> FreeClassifierVec;
+    int ClassifierNumberOfObjectPerService;
+    int getClassifierIndex();
+    void releaseClassifierIndex(int Index);
+    boost::mutex FreeClassifierMutex;
 };
 
 #endif //SERVICE_H

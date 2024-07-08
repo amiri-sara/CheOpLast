@@ -4,7 +4,7 @@ bool ConvertISO8601TimeToUnix(std::string ISOTime, std::time_t& UnixTime)
 {
     std::tm inputTimeInfo = {};
     std::istringstream iss(ISOTime);
-    iss >> std::get_time(&inputTimeInfo, "%Y-%m-%dT%H:%M:%SZ");
+    iss >> std::get_time(&inputTimeInfo, "%Y-%m-%dT%H:%M:%S");
     if (iss.fail())
         return false;
 

@@ -323,8 +323,14 @@ bool savedata::InsertDatabase(const std::shared_ptr<DataHandler::DataHandlerStru
         }
     }
 
-    // MongoDB::Field IDField = {"_id", DH->ProcessedInputData.MongoID, MongoDB::FieldType::ObjectId};
-    // fields.push_back(IDField);
+    if(DH->Modules.Classifier.active)
+    {
+        for(const auto& keyLabel : DH->ProcessedInputData.ClassifierModuleOutput)
+        {
+            MongoDB::Field ClassifierField = {keyLabel.first, std::to_string(keyLabel.second), MongoDB::FieldType::Integer};
+            fields.push_back(ClassifierField);
+        }
+    }
 
     auto InsertReturn = DH->InsertDatabase->Insert(DH->InsertDatabaseInfo.DatabaseName, DH->InsertDatabaseInfo.CollectionName, fields);
     if(InsertReturn.Code != MongoDB::MongoStatus::InsertSuccessful)
@@ -527,7 +533,7 @@ bool savedata::InsertKafka(const std::shared_ptr<DataHandler::DataHandlerStruct>
     if(DH->hasOutputFields.MasterPlate)
     {
         if(DH->Modules.CheckOperator.active || DH->hasInputFields.MasterPlate)
-            Response["MasterPlateValue"] = DH->Input.MasterPlate;
+            Response["MasterPlate"] = DH->Input.MasterPlate;
     }
 
     // RecordID
@@ -553,8 +559,26 @@ bool savedata::InsertKafka(const std::shared_ptr<DataHandler::DataHandlerStruct>
         }
     }
 
+    // UUID
+    if(DH->Request.JsonRvalue.has("UUID"))
+    {
+        if(DH->Request.JsonRvalue["UUID"].t() == crow::json::type::String)
+        {
+            Response["UUID"] = DH->Request.JsonRvalue["UUID"].s();
+        }else
+        {
+            Response["UUID"] = DH->Request.JsonRvalue["UUID"].i();
+        }
+    }
+
+    if(DH->Modules.Classifier.active)
+    {
+        for(const auto& keyLabel : DH->ProcessedInputData.ClassifierModuleOutput)
+            Response[keyLabel.first] = keyLabel.second;
+    }
+
     // SHOW_IMPORTANTLOG2(crow::json::dump(Response));
-    this->OutputKafkaConnection->write({crow::json::dump(Response)});
+    this->OutputKafkaConnection->write({crow::json::dump(Response), DH->ProcessedInputData.MongoID});
 
     return true;
 }

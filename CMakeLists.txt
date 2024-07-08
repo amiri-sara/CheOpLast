@@ -48,7 +48,14 @@ if(VALUEVALIDATION)
     add_definitions(-DVALUEVALIDATION)
 endif()
 
-include_directories(.)
+file(GLOB_RECURSE HEADER_FILES "./*.h")
+set(HEADER_DIRS "")
+foreach(header ${HEADER_FILES})
+    get_filename_component(HEADER_DIR ${header} PATH)
+    list(APPEND HEADER_DIRS ${HEADER_DIR})
+endforeach()
+list(REMOVE_DUPLICATES HEADER_DIRS)
+include_directories(${HEADER_DIRS})
 
 set(inc_dir /usr/local/include)
 if(BUILDUBUNTU20)
@@ -74,49 +81,7 @@ set(OPENCVLIB       ${OPENCVLIB_dir}/libopencv_imgcodecs.so
                     ${OPENCVLIB_dir}/libopencv_highgui.so
                     ${OPENCVLIB_dir}/libopencv_dnn.so
                     ${OPENCVLIB_dir}/libopencv_freetype.so
-    
-                    ${OPENCVLIB_dir}/libopencv_aruco.so 
-                    ${OPENCVLIB_dir}/libopencv_bgsegm.so
-                    ${OPENCVLIB_dir}/libopencv_bioinspired.so
-                    ${OPENCVLIB_dir}/libopencv_calib3d.so
-                    ${OPENCVLIB_dir}/libopencv_ccalib.so
-                    ${OPENCVLIB_dir}/libopencv_datasets.so
-                    ${OPENCVLIB_dir}/libopencv_dnn_objdetect.so
-                    ${OPENCVLIB_dir}/libopencv_dnn.so
-                    ${OPENCVLIB_dir}/libopencv_dnn_superres.so
-                    ${OPENCVLIB_dir}/libopencv_dpm.so
-                    ${OPENCVLIB_dir}/libopencv_face.so
-                    ${OPENCVLIB_dir}/libopencv_features2d.so
-                    ${OPENCVLIB_dir}/libopencv_flann.so
-                    ${OPENCVLIB_dir}/libopencv_fuzzy.so
-                    ${OPENCVLIB_dir}/libopencv_gapi.so
-                    ${OPENCVLIB_dir}/libopencv_hfs.so
-                    ${OPENCVLIB_dir}/libopencv_img_hash.so
-                    ${OPENCVLIB_dir}/libopencv_line_descriptor.so
-                    ${OPENCVLIB_dir}/libopencv_ml.so
-                    ${OPENCVLIB_dir}/libopencv_objdetect.so
-                    ${OPENCVLIB_dir}/libopencv_optflow.so
-                    ${OPENCVLIB_dir}/libopencv_phase_unwrapping.so
-                    ${OPENCVLIB_dir}/libopencv_photo.so
-                    ${OPENCVLIB_dir}/libopencv_plot.so
-                    ${OPENCVLIB_dir}/libopencv_quality.so
-                    ${OPENCVLIB_dir}/libopencv_reg.so
-                    ${OPENCVLIB_dir}/libopencv_rgbd.so
-                    ${OPENCVLIB_dir}/libopencv_saliency.so
-                    ${OPENCVLIB_dir}/libopencv_shape.so
-                    ${OPENCVLIB_dir}/libopencv_stereo.so
-                    ${OPENCVLIB_dir}/libopencv_stitching.so
-                    ${OPENCVLIB_dir}/libopencv_structured_light.so
-                    ${OPENCVLIB_dir}/libopencv_superres.so
-                    ${OPENCVLIB_dir}/libopencv_surface_matching.so
-                    ${OPENCVLIB_dir}/libopencv_text.so
-                    ${OPENCVLIB_dir}/libopencv_tracking.so
-                    ${OPENCVLIB_dir}/libopencv_video.so
-                    ${OPENCVLIB_dir}/libopencv_videostab.so
-                    ${OPENCVLIB_dir}/libopencv_xfeatures2d.so
-                    ${OPENCVLIB_dir}/libopencv_ximgproc.so
-                    ${OPENCVLIB_dir}/libopencv_xobjdetect.so
-                    ${OPENCVLIB_dir}/libopencv_xphoto.so)
+                    ${OPENCVLIB_dir}/libopencv_dnn.so)
 
 if(KAFKASERVICE OR KAFKAOUTPUT)
     if (DEFINED ENV{LIBRDKAFKA_INCLUDE_DIR})
@@ -201,11 +166,14 @@ add_executable(${PROJECT_NAME} ${SRC_LIST})
 
 set(onnxlib_dir /usr/local/lib/onnx/1.17.1)
 
-set(IDLMLIB_dir /usr/local/lib/kmodules)
-set(IDLMLIB     ${IDLMLIB_dir}/libIDLM.so)
+set(INFERENCELIB_dir /usr/local/lib/kmodules)
+set(INFERENCELIB     ${INFERENCELIB_dir}/libInference.so)
 
 set(CHOPLIB_dir /usr/local/lib/kmodules)
-set(CHOPLIB     ${CHOPLIB_dir}/libCheckOP.so)
+set(CHOPLIB     ${CHOPLIB_dir}/libchop.so)
+
+set(CLASSIFIERLIB_dir /usr/local/lib/kmodules)
+set(CLASSIFIERLIB     ${CLASSIFIERLIB_dir}/libclassifier.so)
 
 target_link_libraries(${PROJECT_NAME} 
                       curl
@@ -215,8 +183,9 @@ target_link_libraries(${PROJECT_NAME}
                       boost_chrono
                       boost_filesystem 
                       ${OPENCVLIB}
-                      ${IDLMLIB}
+                      ${INFERENCELIB}
                       ${CHOPLIB}
+                      ${CLASSIFIERLIB}
                       ${onnxlib_dir}/libonnxruntime.so)
 
 if(KAFKASERVICE OR KAFKAOUTPUT)

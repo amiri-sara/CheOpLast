@@ -2,7 +2,7 @@
 #include "./Service/WebService/webservice.h"
 #include "./Service/KafkaService/kafkaservice.h"
 
-#define AGGREGATION_VERSION "0.1.0"
+#define AGGREGATION_VERSION "1.0.0"
 
 int main(int argc, char *argv[])
 {
@@ -16,6 +16,14 @@ int main(int argc, char *argv[])
         }else if((argc == 2) && ((!strcmp(argv[1], "v")) || (!strcmp(argv[1], "V")) || (!strcmp(argv[1], "-v")) || (!strcmp(argv[1], "-V"))))
         {
             std::cout << AGGREGATION_VERSION << std::endl;
+            return 0;
+        }else if((argc == 2) && ((!strcmp(argv[1], "vv")) || (!strcmp(argv[1], "V")) || (!strcmp(argv[1], "-vv")) || (!strcmp(argv[1], "-VV"))))
+        {
+            SHOW_IMPORTANTLOG2("Aggregation Version = " << AGGREGATION_VERSION);
+            SHOW_IMPORTANTLOG2("Inference Version = " << inference::getVersion() << " Using ONNX Runtime " << std::to_string(ORT_API_VERSION));
+            SHOW_IMPORTANTLOG2("Database Version = " << DATABASEVERSION);
+            SHOW_IMPORTANTLOG2("Check Operator Version = " << ChOp::getVersion());
+            SHOW_IMPORTANTLOG2("Classifier Version = " << Classifier::getVersion());
             return 0;
         }else
         {
