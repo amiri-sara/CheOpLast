@@ -5,6 +5,7 @@
 #include "../Cryptography/cryptotools.h"
 #include "../Database/MongoDB.h"
 #include "../Logs/log.h"
+#include "../Time/timetools.h"
 
 #include "../crow.h"
 #include "../crow/json.h"
@@ -28,18 +29,34 @@ public:
     {
         std::string DatabaseName        = "";
         std::string CollectionName      = "";
-        std::string Enable              = "";
+        bool Enable                     = false;
+    };
+
+    struct WebServiceInfoStruct
+    {
+        std::string URI                  = "";
+        std::string IP                   = "";
+        int Port;
+    };
+
+    struct ReadConfigServiceStruct
+    {
+        WebServiceInfoStruct ReadCamerasCollectionServiceInfo;
+        WebServiceInfoStruct SetNewTokenServiceInfo;
+        int threadNumber;
     };
 
     struct WebServiceConfigStruct
     {
-        std::string URI                 = "";
-        int Port;
+        WebServiceInfoStruct WebServiceInfo;
         bool Authentication;
         int TokenTimeAllowed;
+        bool NotifyingOtherServicesTokenUpdate;
         int threadNumber;
         int DaysforPassedTimeAcceptable;
         bool DebugMode;
+        std::vector<Configurate::WebServiceInfoStruct> OtherService;
+        std::string KeysPath;
     };
 
     struct StoreImageConfigStruct
@@ -62,17 +79,28 @@ public:
         bool DebugMode;
     };
 
+    struct TokenStruct
+    {
+        int Counter;
+        std::time_t CreatedAt;
+        std::time_t ExpiryAt;
+        std::string Token;
+    };
+    
     struct CameraStruct
     {
         int DeviceID;
         std::string Username            = "";
         std::string Password            = "";
         std::string Location            = "";
+        std::string CompanyName         = "";
+        std::string CompanyID           = "";
         int PoliceCode;
         int AllowedSpeed;
         std::string subMode             = "";
         bool addBanner                  = false;
         bool addCrop                    = false;
+        Configurate::TokenStruct TokenInfo;
     };
 
     struct FieldsStruct
@@ -113,6 +141,49 @@ public:
         std::string ImageSuffix;
     };
 
+    struct ModelConfigStruct
+    {
+        std::string model           = "";
+        std::string modelConfigPath = "";
+        bool active                 = false;
+    };
+
+    struct CheckOperatorStruct
+    {
+        bool active;
+        int NumberOfObjectPerService;
+        std::string ModelsPath;
+        bool IgnoreInputPlateType;
+        Configurate::ModelConfigStruct PD;
+        Configurate::ModelConfigStruct PC;
+        Configurate::ModelConfigStruct IROCR;
+        Configurate::ModelConfigStruct MBOCR;
+        Configurate::ModelConfigStruct TZOCR;
+        Configurate::ModelConfigStruct FZOCR;
+        Configurate::ModelConfigStruct FROCR;
+    };
+
+    struct ClassifierModelConfigStruct : public ModelConfigStruct
+    {
+        int InputRectField         = 0;
+        int InputImageType         = 0;
+        bool UseRect               = false;
+    };
+
+    struct ClassifierStruct
+    {
+        bool active;
+        int NumberOfObjectPerService;
+        std::string ModelsPath;
+        std::vector<Configurate::ClassifierModelConfigStruct> Models;
+    };
+
+    struct ModulesStruct
+    {
+        Configurate::CheckOperatorStruct CheckOperator;
+        Configurate::ClassifierStruct Classifier;
+    };
+
     Configurate(const Configurate& Obj) = delete;
 
     static Configurate* getInstance()
@@ -142,6 +213,9 @@ public:
     FieldsStruct getOutputFields();
     std::vector<CameraStruct> getCameras();
     std::unordered_map<int, ViolationStruct> getViolationMap();
+    Configurate::ModulesStruct getModules();
+
+    void SetNewToken(int CameraIndex, std::string Token, std::time_t TokenTime);
 
 private:
     InfoDatabaseStruct ConfigDatabaseInfo;
@@ -150,7 +224,7 @@ private:
     std::shared_ptr<MongoDB> ConfigDatabase;
     std::shared_ptr<MongoDB> InsertDatabase;
     std::shared_ptr<MongoDB> FailedDatabase;
-    WebServiceConfigStruct ReadConfigServiceConfig;
+    ReadConfigServiceStruct ReadConfigServiceConfig;
     std::vector<WebServiceConfigStruct> WebServiceConfig;
     StoreImageConfigStruct StoreImageConfig;
     KafkaConfigStruct InputKafkaConfig;
@@ -159,10 +233,12 @@ private:
     FieldsStruct OutputFields;
     std::vector<CameraStruct> Cameras;
     std::unordered_map<int, ViolationStruct> ViolationMap;
+    Configurate::ModulesStruct Modules;
 
     void ReadCamerasCollection();
 
-    void UpdateRoute();
+    void ReadCamerasCollectionRoute();
+    void SetNewTokenRoute();
 
     static Configurate* InstancePtr;
     Configurate();

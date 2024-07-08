@@ -53,6 +53,9 @@ namespace DataHandler
         std::tm PassedTimeLocal;
         std::tm ReceivedTimeLocal;
         std::string MongoID;
+        cv::Rect CarRect;
+        cv::Rect PlateRect;
+        std::unordered_map<std::string,int> ClassifierModuleOutput;
     };
 
     struct StoreImageAddressStruct
@@ -67,6 +70,7 @@ namespace DataHandler
         std::string remoteIP = "";
         std::string body = "";
         crow::json::rvalue JsonRvalue;
+        crow::json::rvalue enJsonRvalue;
         int NumberofInputFields;
     };
 
@@ -82,6 +86,7 @@ namespace DataHandler
         Configurate::FieldsStruct hasInputFields;
         Configurate::FieldsStruct hasOutputFields;
         std::vector<Configurate::CameraStruct> Cameras;
+        int CameraIndex;
         Configurate::StoreImageConfigStruct StoreImageConfig;
         std::unordered_map<int, Configurate::ViolationStruct> ViolationMap;
         Configurate::ViolationStruct ViolationInfo;
@@ -93,7 +98,13 @@ namespace DataHandler
         int DaysforPassedTimeAcceptable;
         std::shared_ptr<MongoDB> InsertDatabase;
         Configurate::InfoDatabaseStruct InsertDatabaseInfo;
+        std::shared_ptr<MongoDB> FailedDatabase;
+        Configurate::InfoDatabaseStruct FailedDatabaseInfo;
+        Configurate::ModulesStruct Modules;
         bool DebugMode;
+        bool InsertRoute;
+        bool DecryptedData;
+        bool WebServiceAuthentication;
     };
 }
 

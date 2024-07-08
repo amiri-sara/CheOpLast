@@ -42,7 +42,7 @@ Configurate::Configurate()
         this->InsertDatabaseInfo.CollectionName   = ConfigInputJson["Aggregation_Insert_Collection_Name"].s();
 
 #ifdef FAILEDDATABASE
-        this->FailedDatabaseInfo.Enable           = ConfigInputJson["Aggregation_Failed_Database_Enable"].s();
+        this->FailedDatabaseInfo.Enable           = ConfigInputJson["Aggregation_Failed_Database_Enable"].i();
         FailedDatabaseConnect.DatabaseIP       = ConfigInputJson["Aggregation_Failed_Database_IP"].s();
         FailedDatabaseConnect.DatabasePort     = ConfigInputJson["Aggregation_Failed_Database_PORT"].s();
         FailedDatabaseConnect.DatabaseUsername = ConfigInputJson["Aggregation_Failed_Database_USER"].s();
@@ -103,8 +103,10 @@ Configurate::Configurate()
         {
             crow::json::rvalue AggregationConfigJSON = crow::json::load(doc);
             
-            this->ReadConfigServiceConfig.URI = AggregationConfigJSON["ReadConfigService"]["URI"].s(); 
-            this->ReadConfigServiceConfig.Port = AggregationConfigJSON["ReadConfigService"]["Port"].i(); 
+            this->ReadConfigServiceConfig.ReadCamerasCollectionServiceInfo.URI = AggregationConfigJSON["ReadConfigService"]["ReadCamerasCollectionURI"].s(); 
+            this->ReadConfigServiceConfig.ReadCamerasCollectionServiceInfo.Port = AggregationConfigJSON["ReadConfigService"]["Port"].i(); 
+            this->ReadConfigServiceConfig.SetNewTokenServiceInfo.URI = AggregationConfigJSON["ReadConfigService"]["SetNewTokenURI"].s(); 
+            this->ReadConfigServiceConfig.SetNewTokenServiceInfo.Port = AggregationConfigJSON["ReadConfigService"]["Port"].i(); 
             this->ReadConfigServiceConfig.threadNumber = AggregationConfigJSON["ReadConfigService"]["threadNumber"].i();
         }
     }else
@@ -167,12 +169,27 @@ Configurate::Configurate()
                 crow::json::rvalue WebserviceConfigJSON = WebServiceArray[i];
 
                 Configurate::WebServiceConfigStruct WebServiceConf;
-                WebServiceConf.URI = WebserviceConfigJSON["URI"].s();
-                WebServiceConf.Port = WebserviceConfigJSON["Port"].i();
-                WebServiceConf.Authentication = WebserviceConfigJSON["Authentication"].b();
-                WebServiceConf.TokenTimeAllowed = WebserviceConfigJSON["TokenTimeAllowed"].i();
+                WebServiceConf.WebServiceInfo.URI = WebserviceConfigJSON["URI"].s();
+                WebServiceConf.WebServiceInfo.Port = WebserviceConfigJSON["Port"].i();
                 WebServiceConf.threadNumber = WebserviceConfigJSON["threadNumber"].i();
                 WebServiceConf.DaysforPassedTimeAcceptable = WebserviceConfigJSON["DaysforPassedTimeAcceptable"].i();
+                WebServiceConf.Authentication = WebserviceConfigJSON["Authentication"]["active"].b();
+                WebServiceConf.TokenTimeAllowed = WebserviceConfigJSON["Authentication"]["TokenTimeAllowed"].i();
+                WebServiceConf.NotifyingOtherServicesTokenUpdate = WebserviceConfigJSON["Authentication"]["NotifyingOtherServicesTokenUpdate"].b();
+                WebServiceConf.KeysPath = WebserviceConfigJSON["Authentication"]["KeysPath"].s();
+                crow::json::rvalue OtherServiceArray = WebserviceConfigJSON["Authentication"]["OtherServices"];
+                std::size_t OtherServicearraySize = OtherServiceArray.size();
+                for(int j = 0; j < OtherServicearraySize; j++)
+                {
+                    crow::json::rvalue OtherserviceInfoJSON = OtherServiceArray[j];
+                    
+                    Configurate::WebServiceInfoStruct WebServiceInfo;
+                    WebServiceInfo.IP   = OtherserviceInfoJSON["IP"].s();
+                    WebServiceInfo.URI  = OtherserviceInfoJSON["URI"].s();
+                    WebServiceInfo.Port = OtherserviceInfoJSON["Port"].i();
+
+                    WebServiceConf.OtherService.push_back(WebServiceInfo);
+                }
                 this->WebServiceConfig.push_back(WebServiceConf);
             }
 #endif // WEBSERVICE 
@@ -221,13 +238,13 @@ Configurate::Configurate()
             this->OutputFields.RecordID          = OutputFieldsJSON["RecordID"].b();
             this->OutputFields.ReceivedTime      = OutputFieldsJSON["ReceivedTime"].b();
 
-#ifdef STOREIMAGE
+
             crow::json::rvalue StoreImageConfigJSON = OutputConfigJSON["StoreImage"];
-            this->StoreImageConfig.StorePath = StoreImageConfigJSON["StorePath"].s();
             this->StoreImageConfig.ColorImageMaxSize = StoreImageConfigJSON["ColorImageMaxSize"].i();
             this->StoreImageConfig.PlateImageMaxSize = StoreImageConfigJSON["PlateImageMaxSize"].i();
             this->StoreImageConfig.PlateImagePercent = StoreImageConfigJSON["PlateImagePercent"].i();
-            
+#ifdef STOREIMAGE
+            this->StoreImageConfig.StorePath = StoreImageConfigJSON["StorePath"].s();
             crow::json::rvalue BannerJSON = StoreImageConfigJSON["Banner"];
             crow::json::wvalue WBannerJSON(BannerJSON);
             this->StoreImageConfig.AddBanner = BannerJSON["active"].b();
@@ -260,6 +277,287 @@ Configurate::Configurate()
         throw;
     }
 
+    std::vector<std::string> ModulesDoc;
+    FindReturn = this->ConfigDatabase->Find(this->ConfigDatabaseInfo.DatabaseName, "Modules", filter, Option, ModulesDoc);
+    if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
+    {
+        for(auto& doc : ModulesDoc)
+        {   
+            crow::json::rvalue ModulesConfigJSON = crow::json::load(doc);
+
+            crow::json::rvalue CheckOperatorJSON = ModulesConfigJSON["CheckOperator"];
+            this->Modules.CheckOperator.active = CheckOperatorJSON["active"].b();
+            this->Modules.CheckOperator.NumberOfObjectPerService = CheckOperatorJSON["NumberOfObjectPerService"].i();
+            this->Modules.CheckOperator.ModelsPath = CheckOperatorJSON["ModelsPath"].s();
+            this->Modules.CheckOperator.IgnoreInputPlateType = CheckOperatorJSON["IgnoreInputPlateType"].b();
+            if(this->Modules.CheckOperator.active)
+            {
+                MongoDB::FindOptionStruct Option;
+                
+                crow::json::rvalue PDConfig = CheckOperatorJSON["PD"];
+                std::string PDid = PDConfig["model"]["$oid"].s();
+                std::vector<MongoDB::Field> Modelfilter = {
+                    // equal
+                    {"_id", PDid, MongoDB::FieldType::ObjectId, "$gte"},
+                    {"_id", PDid, MongoDB::FieldType::ObjectId, "$lte"}
+
+                };
+                std::vector<std::string> PDResultDoc;
+                FindReturn = this->ConfigDatabase->Find(this->ConfigDatabaseInfo.DatabaseName, "Models", Modelfilter, Option, PDResultDoc);
+                if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
+                {
+                    if(PDResultDoc.size() != 1)
+                    {
+                        SHOW_ERROR(PDid << " Model does not exist");
+                        throw;
+                    }
+                    for(auto& doc : PDResultDoc)
+                    {
+                        crow::json::rvalue ModelsConfigJSON = crow::json::load(doc);
+                        this->Modules.CheckOperator.PD.model = ModelsConfigJSON["Name"].s();
+                        this->Modules.CheckOperator.PD.modelConfigPath = ModelsConfigJSON["Config"].s(); 
+                        this->Modules.CheckOperator.PD.active = PDConfig["active"].b();
+                    }
+                }else
+                {
+                    SHOW_ERROR(FindReturn.Description);
+                    throw;
+                }
+
+                crow::json::rvalue PCConfig = CheckOperatorJSON["PC"];
+                std::string PCid = PCConfig["model"]["$oid"].s();
+                Modelfilter = {
+                    // equal
+                    {"_id", PCid, MongoDB::FieldType::ObjectId, "$gte"},
+                    {"_id", PCid, MongoDB::FieldType::ObjectId, "$lte"}
+
+                };
+                std::vector<std::string> PCResultDoc;
+                FindReturn = this->ConfigDatabase->Find(this->ConfigDatabaseInfo.DatabaseName, "Models", Modelfilter, Option, PCResultDoc);
+                if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
+                {
+                    if(PCResultDoc.size() != 1)
+                    {
+                        SHOW_ERROR(PDid << " Model does not exist");
+                        throw;
+                    }
+                    for(auto& doc : PCResultDoc)
+                    {
+                        crow::json::rvalue ModelsConfigJSON = crow::json::load(doc);
+                        this->Modules.CheckOperator.PC.model = ModelsConfigJSON["Name"].s();
+                        this->Modules.CheckOperator.PC.modelConfigPath = ModelsConfigJSON["Config"].s(); 
+                        this->Modules.CheckOperator.PC.active = PCConfig["active"].b();
+                    }
+                }else
+                {
+                    SHOW_ERROR(FindReturn.Description);
+                    throw;
+                }
+
+                crow::json::rvalue IROCRConfig = CheckOperatorJSON["IROCR"];
+                std::string IROCRid = IROCRConfig["model"]["$oid"].s();
+                Modelfilter = {
+                    // equal
+                    {"_id", IROCRid, MongoDB::FieldType::ObjectId, "$gte"},
+                    {"_id", IROCRid, MongoDB::FieldType::ObjectId, "$lte"}
+                };
+                std::vector<std::string> IROCRResultDoc;
+                FindReturn = this->ConfigDatabase->Find(this->ConfigDatabaseInfo.DatabaseName, "Models", Modelfilter, Option, IROCRResultDoc);
+                if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
+                {
+                    if(IROCRResultDoc.size() != 1)
+                    {
+                        SHOW_ERROR(PDid << " Model does not exist");
+                        throw;
+                    }
+                    for(auto& doc : IROCRResultDoc)
+                    {
+                        crow::json::rvalue ModelsConfigJSON = crow::json::load(doc);
+                        this->Modules.CheckOperator.IROCR.model = ModelsConfigJSON["Name"].s();
+                        this->Modules.CheckOperator.IROCR.modelConfigPath = ModelsConfigJSON["Config"].s(); 
+                        this->Modules.CheckOperator.IROCR.active = IROCRConfig["active"].b();
+                    }
+                }else
+                {
+                    SHOW_ERROR(FindReturn.Description);
+                    throw;
+                }
+
+                crow::json::rvalue MBOCRConfig = CheckOperatorJSON["MBOCR"];
+                std::string MBOCRid = MBOCRConfig["model"]["$oid"].s();
+                Modelfilter = {
+                    // equal
+                    {"_id", MBOCRid, MongoDB::FieldType::ObjectId, "$gte"},
+                    {"_id", MBOCRid, MongoDB::FieldType::ObjectId, "$lte"}
+                };
+                std::vector<std::string> MBOCRResultDoc;
+                FindReturn = this->ConfigDatabase->Find(this->ConfigDatabaseInfo.DatabaseName, "Models", Modelfilter, Option, MBOCRResultDoc);
+                if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
+                {
+                    if(MBOCRResultDoc.size() != 1)
+                    {
+                        SHOW_ERROR(PDid << " Model does not exist");
+                        throw;
+                    }
+                    for(auto& doc : MBOCRResultDoc)
+                    {
+                        crow::json::rvalue ModelsConfigJSON = crow::json::load(doc);
+                        this->Modules.CheckOperator.MBOCR.model = ModelsConfigJSON["Name"].s();
+                        this->Modules.CheckOperator.MBOCR.modelConfigPath = ModelsConfigJSON["Config"].s(); 
+                        this->Modules.CheckOperator.MBOCR.active = MBOCRConfig["active"].b();
+                    }
+                }else
+                {
+                    SHOW_ERROR(FindReturn.Description);
+                    throw;
+                }
+
+                crow::json::rvalue TZOCRConfig = CheckOperatorJSON["TZOCR"];
+                std::string TZOCRid = TZOCRConfig["model"]["$oid"].s();
+                Modelfilter = {
+                    // equal
+                    {"_id", TZOCRid, MongoDB::FieldType::ObjectId, "$gte"},
+                    {"_id", TZOCRid, MongoDB::FieldType::ObjectId, "$lte"}
+                };
+                std::vector<std::string> TZOCRResultDoc;
+                FindReturn = this->ConfigDatabase->Find(this->ConfigDatabaseInfo.DatabaseName, "Models", Modelfilter, Option, TZOCRResultDoc);
+                if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
+                {
+                    if(TZOCRResultDoc.size() != 1)
+                    {
+                        SHOW_ERROR(PDid << " Model does not exist");
+                        throw;
+                    }
+                    for(auto& doc : TZOCRResultDoc)
+                    {
+                        crow::json::rvalue ModelsConfigJSON = crow::json::load(doc);
+                        this->Modules.CheckOperator.TZOCR.model = ModelsConfigJSON["Name"].s();
+                        this->Modules.CheckOperator.TZOCR.modelConfigPath = ModelsConfigJSON["Config"].s(); 
+                        this->Modules.CheckOperator.TZOCR.active = TZOCRConfig["active"].b();
+                    }
+                }else
+                {
+                    SHOW_ERROR(FindReturn.Description);
+                    throw;
+                }
+
+                crow::json::rvalue FZOCRConfig = CheckOperatorJSON["FZOCR"];
+                std::string FZOCRid = FZOCRConfig["model"]["$oid"].s();
+                Modelfilter = {
+                    // equal
+                    {"_id", FZOCRid, MongoDB::FieldType::ObjectId, "$gte"},
+                    {"_id", FZOCRid, MongoDB::FieldType::ObjectId, "$lte"}
+                };
+                std::vector<std::string> FZOCRResultDoc;
+                FindReturn = this->ConfigDatabase->Find(this->ConfigDatabaseInfo.DatabaseName, "Models", Modelfilter, Option, FZOCRResultDoc);
+                if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
+                {
+                    if(FZOCRResultDoc.size() != 1)
+                    {
+                        SHOW_ERROR(PDid << " Model does not exist");
+                        throw;
+                    }
+                    for(auto& doc : FZOCRResultDoc)
+                    {
+                        crow::json::rvalue ModelsConfigJSON = crow::json::load(doc);
+                        this->Modules.CheckOperator.FZOCR.model = ModelsConfigJSON["Name"].s();
+                        this->Modules.CheckOperator.FZOCR.modelConfigPath = ModelsConfigJSON["Config"].s(); 
+                        this->Modules.CheckOperator.FZOCR.active = FZOCRConfig["active"].b();
+                    }
+                }else
+                {
+                    SHOW_ERROR(FindReturn.Description);
+                    throw;
+                }
+
+                crow::json::rvalue FROCRConfig = CheckOperatorJSON["FROCR"];
+                std::string FROCRid = FROCRConfig["model"]["$oid"].s();
+                Modelfilter = {
+                    // equal
+                    {"_id", FROCRid, MongoDB::FieldType::ObjectId, "$gte"},
+                    {"_id", FROCRid, MongoDB::FieldType::ObjectId, "$lte"}
+                };
+                std::vector<std::string> FROCRResultDoc;
+                FindReturn = this->ConfigDatabase->Find(this->ConfigDatabaseInfo.DatabaseName, "Models", Modelfilter, Option, FROCRResultDoc);
+                if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
+                {
+                    if(FROCRResultDoc.size() != 1)
+                    {
+                        SHOW_ERROR(PDid << " Model does not exist");
+                        throw;
+                    }
+                    for(auto& doc : FROCRResultDoc)
+                    {
+                        crow::json::rvalue ModelsConfigJSON = crow::json::load(doc);
+                        this->Modules.CheckOperator.FROCR.model = ModelsConfigJSON["Name"].s();
+                        this->Modules.CheckOperator.FROCR.modelConfigPath = ModelsConfigJSON["Config"].s(); 
+                        this->Modules.CheckOperator.FROCR.active = FROCRConfig["active"].b();
+                    }
+                }else
+                {
+                    SHOW_ERROR(FindReturn.Description);
+                    throw;
+                }
+            }
+        
+            crow::json::rvalue ClassifierJSON = ModulesConfigJSON["Classifier"];
+            this->Modules.Classifier.active = ClassifierJSON["active"].b();
+            this->Modules.Classifier.NumberOfObjectPerService = ClassifierJSON["NumberOfObjectPerService"].i();
+            this->Modules.Classifier.ModelsPath = ClassifierJSON["ModelsPath"].s();
+
+            if(this->Modules.Classifier.active)
+            {
+                crow::json::rvalue ModelsArray = ClassifierJSON["Models"];
+                std::size_t arraySize = ModelsArray.size();
+                for(std::size_t i = 0; i < arraySize; ++i)
+                {
+                    crow::json::rvalue ClassifierModelConfigJSON = ModelsArray[i];
+                    Configurate::ClassifierModelConfigStruct ModelConfig;
+
+                    ModelConfig.active = ClassifierModelConfigJSON["active"].b();
+                    if(ModelConfig.active)
+                    {
+                        std::string Modelid = ClassifierModelConfigJSON["model"]["$oid"].s();
+                        std::vector<MongoDB::Field> Modelfilter = {
+                            // equal
+                            {"_id", Modelid, MongoDB::FieldType::ObjectId, "$gte"},
+                            {"_id", Modelid, MongoDB::FieldType::ObjectId, "$lte"}
+
+                        };
+                        std::vector<std::string> modelResultDoc;
+                        FindReturn = this->ConfigDatabase->Find(this->ConfigDatabaseInfo.DatabaseName, "Models", Modelfilter, Option, modelResultDoc);
+                        if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
+                        {
+                            if(modelResultDoc.size() != 1)
+                            {
+                                SHOW_ERROR(Modelid << " Model does not exist");
+                                throw;
+                            }
+                            for(auto& doc : modelResultDoc)
+                            {
+                                crow::json::rvalue ModelsConfigJSON = crow::json::load(doc);
+                                ModelConfig.model = ModelsConfigJSON["Name"].s();
+                                ModelConfig.modelConfigPath = ModelsConfigJSON["Config"].s();
+                                ModelConfig.InputImageType = ClassifierModelConfigJSON["InputImageType"].i();
+                                ModelConfig.UseRect = ClassifierModelConfigJSON["UseRect"].b();
+                                ModelConfig.InputRectField = ClassifierModelConfigJSON["InputRectField"].i();
+                                this->Modules.Classifier.Models.push_back(ModelConfig);
+                            }
+                        }else
+                        {
+                            SHOW_ERROR(FindReturn.Description);
+                            throw;
+                        }
+                    }
+                } 
+            }  
+        }
+    }else
+    {
+        SHOW_ERROR(FindReturn.Description);
+        throw;
+    }
+
     this->ReadCamerasCollection();
 }
 
@@ -269,6 +567,24 @@ void Configurate::ReadCamerasCollection()
     
     std::vector<MongoDB::Field> filter = {};
     MongoDB::FindOptionStruct Option;
+
+    std::map<std::string , std::string> CompaniesMap;
+    std::vector<std::string> CompaniesDoc;
+    MongoDB::ResponseStruct CompaniesFindReturn = this->InsertDatabase->Find(this->InsertDatabaseInfo.DatabaseName, "companies", filter, Option, CompaniesDoc);
+    if(CompaniesFindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
+    {
+        for(auto& doc : CompaniesDoc)
+        {
+            crow::json::rvalue CompaniesJSON = crow::json::load(doc);
+            std::string ID = CompaniesJSON["_id"]["$oid"].s();
+            std::string faName = CompaniesJSON["faName"].s();
+            CompaniesMap[ID] = faName;
+        }
+    } else
+    {
+        SHOW_ERROR(CompaniesFindReturn.Description);
+        throw;
+    }
 
     std::vector<std::string> SystemDoc;
     MongoDB::ResponseStruct FindReturn = this->InsertDatabase->Find(this->InsertDatabaseInfo.DatabaseName, "systems", filter, Option, SystemDoc);
@@ -295,15 +611,21 @@ void Configurate::ReadCamerasCollection()
                     crow::json::rvalue CameraJSON = crow::json::load(doc);
             
                     CameraStruct Camera;
-                    Camera.DeviceID     = CameraJSON["deviceId"].i();
-                    Camera.Username     = CameraJSON["username"].s();
-                    Camera.Password     = CameraJSON["password"].s();
-                    Camera.Location     = SystemJSON["location"].s();
-                    Camera.PoliceCode   = SystemJSON["policeCode"].i();
-                    Camera.AllowedSpeed = SystemJSON["allowedSpeed"].i();
-                    Camera.subMode      = SystemJSON["subMode"].s();
-                    Camera.addBanner    = SystemJSON["addBanner"].b();
-                    Camera.addCrop      = SystemJSON["addCrop"].b();
+                    Camera.DeviceID            = CameraJSON["deviceId"].i();
+                    Camera.Username            = CameraJSON["username"].s();
+                    Camera.Password            = CameraJSON["password"].s();
+                    Camera.TokenInfo.Counter   = CameraJSON["tokenCounter"].i();
+                    Camera.TokenInfo.Token     = CameraJSON["token"].s();
+                    Camera.Location            = SystemJSON["location"].s();
+                    Camera.PoliceCode          = SystemJSON["policeCode"].i();
+                    Camera.AllowedSpeed        = SystemJSON["allowedSpeed"].i();
+                    Camera.subMode             = SystemJSON["subMode"].s();
+                    Camera.addBanner           = SystemJSON["addBanner"].b();
+                    Camera.addCrop             = SystemJSON["addCrop"].b();
+                    Camera.CompanyID           = SystemJSON["companyId"]["$oid"].s();
+                    Camera.CompanyName         = CompaniesMap[SystemJSON["companyId"]["$oid"].s()];
+                    
+                    ConvertISO8601TimeToUnix(CameraJSON["tokenCreatedAt"]["$date"].s(), Camera.TokenInfo.CreatedAt);
 
                     this->Cameras.push_back(Camera);
                 }
@@ -313,11 +635,18 @@ void Configurate::ReadCamerasCollection()
                 throw;
             }
         }
-    }else
+    } else
     {
         SHOW_ERROR(FindReturn.Description);
         throw;
     }
+}
+
+void Configurate::SetNewToken(int CameraIndex, std::string Token, std::time_t TokenTime)
+{
+    this->Cameras[CameraIndex].TokenInfo.Token = Token;
+    this->Cameras[CameraIndex].TokenInfo.CreatedAt = TokenTime;
+    this->Cameras[CameraIndex].TokenInfo.Counter += 1;
 }
 
 void Configurate::RunUpdateService()
@@ -326,15 +655,16 @@ void Configurate::RunUpdateService()
     {   
         this->app = std::make_shared<crow::SimpleApp>();
         this->app->loglevel(crow::LogLevel::Error);
-        this->UpdateRoute();
+        this->ReadCamerasCollectionRoute();
+        this->SetNewTokenRoute();
 
-        SHOW_IMPORTANTLOG3("Runinng Update Config Service on port " + std::to_string(this->ReadConfigServiceConfig.Port));
+        SHOW_IMPORTANTLOG3("Runinng Update Config Service on port " + std::to_string(this->ReadConfigServiceConfig.ReadCamerasCollectionServiceInfo.Port));
         try{
             //! run object of crow by specific port and many rout in multithread status
-            this->app->port(this->ReadConfigServiceConfig.Port).concurrency(this->ReadConfigServiceConfig.threadNumber).run();
+            this->app->port(this->ReadConfigServiceConfig.ReadCamerasCollectionServiceInfo.Port).concurrency(this->ReadConfigServiceConfig.threadNumber).run();
 
         }  catch (...) {
-            SHOW_ERROR("port " + std::to_string(this->ReadConfigServiceConfig.Port) + " is busy . Check ports in server table in config database .");
+            SHOW_ERROR("port " + std::to_string(this->ReadConfigServiceConfig.ReadCamerasCollectionServiceInfo.Port) + " is busy . Check ports in server table in config database .");
             exit(0);
         }
 
@@ -344,20 +674,21 @@ void Configurate::RunUpdateService()
 
         SHOW_ERROR("Error Code 0x" + std::to_string(__LINE__) + "JBF_3K92XS543272" + e.what());
 
-        SHOW_ERROR("Can't Run Crow on port "  + std::to_string(this->ReadConfigServiceConfig.Port) + " please check this port ." );
+        SHOW_ERROR("Can't Run Crow on port "  + std::to_string(this->ReadConfigServiceConfig.ReadCamerasCollectionServiceInfo.Port) + " please check this port ." );
 
     }
 }
 
-void Configurate::UpdateRoute()
+void Configurate::ReadCamerasCollectionRoute()
 {
-    std::string Route = this->ReadConfigServiceConfig.URI;
+    std::string Route = this->ReadConfigServiceConfig.ReadCamerasCollectionServiceInfo.URI;
     if(Route[0] != '/')
         Route = "/" + Route;
 
     this->app->route_dynamic(Route.c_str()).methods(crow::HTTPMethod::POST)([&](const crow::request& req ) { 
         crow::json::rvalue Req = crow::json::load(req.body);
-        
+        SHOW_IMPORTANTLOG("Recived Read cameras collection Request from IP -> " + req.ipAddress);
+
         if(Req["collection"].s() == "cameras")
         {
             this->ReadCamerasCollection();
@@ -374,6 +705,29 @@ void Configurate::UpdateRoute()
             Res["Description"]  = "Collection name not valid";
             return crow::response{200 , Res};
         }
+    });
+}
+
+void Configurate::SetNewTokenRoute()
+{
+    std::string Route = this->ReadConfigServiceConfig.SetNewTokenServiceInfo.URI;
+    if(Route[0] != '/')
+        Route = "/" + Route;
+
+    this->app->route_dynamic(Route.c_str()).methods(crow::HTTPMethod::POST)([&](const crow::request& req ) { 
+        crow::json::rvalue Req = crow::json::load(req.body);
+        SHOW_IMPORTANTLOG("Recived Set New Token Request from IP -> " + req.ipAddress);
+
+        int CameraIndex = Req["CameraIndex"].i();
+        std::string Token = Req["Token"].s();
+        std::time_t TokenTime = Req["TokenTime"].i();
+
+        this->SetNewToken(CameraIndex, Token, TokenTime);
+        
+        auto Res    {crow::json::wvalue()};
+        Res["Code"]  = 0;
+        Res["Description"]  = "Set New Token value was successful";
+        return crow::response{200 , Res};
     });
 }
 
@@ -436,4 +790,9 @@ Configurate::FieldsStruct Configurate::getOutputFields()
 std::unordered_map<int, Configurate::ViolationStruct> Configurate::getViolationMap()
 {
     return this->ViolationMap;
+}
+
+Configurate::ModulesStruct Configurate::getModules()
+{
+    return this->Modules;
 }

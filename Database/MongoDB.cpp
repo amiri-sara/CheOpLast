@@ -415,7 +415,7 @@ MongoDB::ResponseStruct MongoDB::Update(const std::string &DatabaseName, const s
 
     mongocxx::v_noabi::stdx::optional<mongocxx::result::update> update_many_result = coll.update_many(FilterView, UpdateView);
 
-    SHOW_IMPORTANTLOG("modified count = " << update_many_result->modified_count());
+    // SHOW_IMPORTANTLOG("modified count = " << update_many_result->modified_count());
 
     return ResponseStruct{MongoStatus::UpdateSuccessful, "Update Successful"};
 }
@@ -504,7 +504,7 @@ MongoDB::ResponseStruct MongoDB::Delete(const std::string &DatabaseName, const s
 
     mongocxx::v_noabi::stdx::optional<mongocxx::v_noabi::result::delete_result> delete_many_result = coll.delete_many(FilterView);
 
-    SHOW_IMPORTANTLOG("Delete count = " << delete_many_result->deleted_count());
+    // SHOW_IMPORTANTLOG("Delete count = " << delete_many_result->deleted_count());
 
     return ResponseStruct{MongoStatus::DeleteSuccessful, "Delete Successful"};
 }

@@ -32,7 +32,7 @@ bool storeimage::run(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH)
     std::string ColorImageName = DH->StoreImageAddress.ImageName + DH->ViolationInfo.ImageSuffix + ".jpg";
     if(!(this->StoreImage(FolderName, ColorImageName, DH->ProcessedInputData.ColorImageMat, true, DH->StoreImageConfig.ColorImageMaxSize)))
     {
-        DH->Response.HTTPCode = 400;
+        DH->Response.HTTPCode = 500;
         DH->Response.errorCode = CANNOTSAVECOLORIMAGE;
         DH->Response.Description = "Internal Error.";
         return false;
@@ -42,7 +42,7 @@ bool storeimage::run(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH)
     std::string PlateImageName = DH->StoreImageAddress.ImageName + "_P" + ".jpg";
     if(!(this->StoreImage(FolderName, PlateImageName, DH->ProcessedInputData.PlateImageMat, true, DH->StoreImageConfig.PlateImageMaxSize)))
     {
-        DH->Response.HTTPCode = 400;
+        DH->Response.HTTPCode = 500;
         DH->Response.errorCode = CANNOTSAVEPLATEIMAGE;
         DH->Response.Description = "Internal Error.";
         return false;
@@ -52,7 +52,7 @@ bool storeimage::run(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH)
     std::string ThumbnailImageName = DH->StoreImageAddress.ImageName + "_IT" + ".jpg";
     if(!(this->StoreImage(FolderName, ThumbnailImageName, DH->ProcessedInputData.ThumbnailImage, true, 5)))
     {
-        DH->Response.HTTPCode = 400;
+        DH->Response.HTTPCode = 500;
         DH->Response.errorCode = CANNOTSAVETHUMBNAILIMAGE;
         DH->Response.Description = "Internal Error.";
         return false;
@@ -140,6 +140,11 @@ bool storeimage::AddPlateCrop(const std::shared_ptr<DataHandler::DataHandlerStru
         cv::Mat largerImg;
         float plateToColorImage = DH->StoreImageConfig.PlateImagePercent / 100.0 + 1;
         cv::resize(DH->ProcessedInputData.PlateImageMat, largerImg, cv::Size(), plateToColorImage, plateToColorImage);
+        if((largerImg.cols > DH->ProcessedInputData.ColorImageMat.cols) || (largerImg.rows > DH->ProcessedInputData.ColorImageMat.rows))
+        {
+            SHOW_WARNING("Plate Crop cannot be added to the Color Image because its size is not appropriate. ColorImage Size = " << DH->ProcessedInputData.ColorImageMat.size() << " - PlateImage Size = " << DH->ProcessedInputData.PlateImageMat.size() << " - IP : " << DH->Request.remoteIP);
+            return true;
+        }
         cv::Rect roi(0, 0, largerImg.cols, largerImg.rows);
         cv::Mat target = DH->ProcessedInputData.ColorImageMat(roi);
         largerImg.copyTo(target);

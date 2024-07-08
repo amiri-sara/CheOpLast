@@ -7,15 +7,44 @@ bool Validator::run(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH)
         return false;
 
     // Check Input fields exist in request or not
-    if(!(this->checkDataExistOrNo(DH)))
-        return false;
+    if(DH->InsertRoute)
+    {
+        if(DH->DecryptedData)
+        {
+            if(!(this->checkDataExistOrNo(DH)))
+                return false;
+        }else
+        {
+            if(!(this->checkEncryptedDataExistOrNo(DH)))
+                return false;
+        }
+    } else
+    {
+        if(!(this->checkTokenDataExistOrNo(DH)))
+            return false;
+    }
 
     // Check Number of Input fields
     if(!(this->CheckNumberOfJSONFields(DH)))
         return false;
 
-    if(!(this->CheckRequestValues(DH)))
-        return false;
+    // Check Request values
+    if(DH->InsertRoute)
+    {
+        if(DH->DecryptedData)
+        {
+            if(!(this->CheckRequestValues(DH)))
+                return false;
+        }else
+        {
+            if(!(this->CheckEncryptedRequestValues(DH)))
+                return false;
+        }
+    } else
+    {
+        if(!(this->CheckTokenRequestValues(DH)))
+            return false;
+    }
 
     return true;
 }
@@ -24,7 +53,13 @@ bool Validator::CheckRequstFormatJSON(const std::shared_ptr<DataHandler::DataHan
 {
     bool isJson  = false;
     try {
-        DH->Request.JsonRvalue = crow::json::load(DH->Request.body);
+        if(DH->DecryptedData)
+        {
+            DH->Request.JsonRvalue = crow::json::load(DH->Request.body);
+        } else 
+        {   
+            DH->Request.enJsonRvalue = crow::json::load(DH->Request.body);
+        }
         isJson = true;
     }catch (...) 
     {
@@ -364,16 +399,90 @@ bool Validator::checkDataExistOrNo(const std::shared_ptr<DataHandler::DataHandle
         }
     }
 
-    // for UUID
-    DH->Request.NumberofInputFields++;
+    // UUID
+    if(DH->Request.JsonRvalue.has("UUID"))
+    {
+        DH->Request.NumberofInputFields++;
+    }
 
     allDataExist = true;
     return allDataExist;
 }
 
+bool Validator::checkEncryptedDataExistOrNo(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH)
+{
+    bool allDataExist = false;
+    DH->Request.NumberofInputFields = 2;
+
+    if(!(DH->Request.enJsonRvalue.has("Token")))
+    {
+        DH->Response.HTTPCode = 401;
+        DH->Response.errorCode = INVALIDTOKEN;
+        DH->Response.Description = "Token Dont Exist In Body Of JSON.";
+        return allDataExist;
+    }
+
+    if(!(DH->Request.enJsonRvalue.has("Data")))
+    {
+        DH->Response.HTTPCode = 400;
+        DH->Response.errorCode = INVALIDDATA;
+        DH->Response.Description = "Data Dont Exist In Body Of JSON";
+        return allDataExist;
+    }
+
+    return true;
+}
+
+bool Validator::checkTokenDataExistOrNo(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH)
+{
+    bool allDataExist = false;
+    DH->Request.NumberofInputFields = 4;
+
+    if(!(DH->Request.JsonRvalue.has("DeviceID")))
+    {
+        DH->Response.HTTPCode = 400;
+        DH->Response.errorCode = INVALIDDEVICEID;
+        DH->Response.Description = "DeviceID Dont Exist In Body Of JSON";
+        return allDataExist;
+    }
+
+    if(!(DH->Request.JsonRvalue.has("User")))
+    {
+        DH->Response.HTTPCode = 400;
+        DH->Response.errorCode = INVALIDUSERPASS;
+        DH->Response.Description = "User Dont Exist In Body Of JSON";
+        return allDataExist;
+    }
+
+    if(!(DH->Request.JsonRvalue.has("Password")))
+    {
+        DH->Response.HTTPCode = 400;
+        DH->Response.errorCode = INVALIDUSERPASS;
+        DH->Response.Description = "Password Dont Exist In Body Of JSON";
+        return allDataExist;
+    }
+
+    if(!(DH->Request.JsonRvalue.has("CompanyName")))
+    {
+        DH->Response.HTTPCode = 400;
+        DH->Response.errorCode = INVALIDCOMPANYNAME;
+        DH->Response.Description = "CompanyName Dont Exist In Body Of JSON";
+        return allDataExist;
+    }
+
+    return true;
+}
+
 bool Validator::CheckNumberOfJSONFields(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH)
 {
-    int SizeOfJson = DH->Request.JsonRvalue.size();
+    int SizeOfJson;
+    if(DH->DecryptedData)
+    {
+        SizeOfJson = DH->Request.JsonRvalue.size();
+    } else 
+    {
+        SizeOfJson = DH->Request.enJsonRvalue.size();
+    }
     if(SizeOfJson == DH->Request.NumberofInputFields)
         return true;
     
@@ -427,6 +536,17 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             DH->Response.Description = "This DeviceID does not exist.";
             return false; 
         }
+
+        if(DH->WebServiceAuthentication)
+        {
+            if(DH->Cameras[DH->CameraIndex].DeviceID != DeviceID)
+            {
+                DH->Response.HTTPCode = 401;
+                DH->Response.errorCode = INVALIDTOKEN;
+                DH->Response.Description = "Invalid Token.";
+                return false; 
+            }
+        }
 #endif // VALUEVALIDATION
 
         DH->Input.DeviceID = DeviceID;
@@ -478,11 +598,11 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
 
 #ifdef VALUEVALIDATION
         std::string StreetIDStr = std::to_string(StreetID);
-        if(StreetID != 0 && (StreetIDStr.length() < 8 || StreetIDStr.length() > 12))
+        if(StreetID != 0 && (StreetIDStr.length() < 1 || StreetIDStr.length() > 12))
         {
             DH->Response.HTTPCode = 400;
             DH->Response.errorCode = INVALIDSTREETID;
-            DH->Response.Description = "The number of digits of the StreetID value must be a value between 8 and 12.";
+            DH->Response.Description = "The number of digits of the StreetID value must be a value between 1 and 12.";
             return false;
         }
 #endif // VALUEVALIDATION
@@ -598,7 +718,10 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             return false;
         }
 
-        if(DH->Input.PlateType == 1)
+        if(PlateValue == "0")
+        {
+            // Just to not validate the plate value and accept zero value
+        }else if(DH->Input.PlateType == 1)
         {
             if(PlateValue.length() != 9 || !(std::all_of(PlateValue.begin(), PlateValue.end(),[](char c) { return std::isdigit(static_cast<unsigned char>(c));})))
             {
@@ -833,11 +956,11 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
         }
 
 #ifdef VALUEVALIDATION
-        if(PassedTime.empty() || PassedTime.length() != 20)
+        if(PassedTime.empty() || (PassedTime.length() != 20 && PassedTime.length() != 24))
         {
             DH->Response.HTTPCode = 400;
             DH->Response.errorCode = INVALIDPASSEDTIME;
-            DH->Response.Description = "The value of PassedTime must not be empty and its number of characters must be equal to 20(YYYY-MM-DDTHH:MM:SSZ).";
+            DH->Response.Description = "The value of PassedTime must not be empty and its number of characters must be equal to 20 or 24(YYYY-MM-DDTHH:MM:SSZ or YYYY-MM-DDTHH:MM:SS.sssZ).";
             return false;
         }
 #endif // VALUEVALIDATION
@@ -994,15 +1117,19 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
         if(sizeInKb > DH->StoreImageConfig.PlateImageMaxSize)
         {
             DH->Response.HTTPCode = 400;
-            DH->Response.errorCode = INVALIDCOLORIMAGESIZE;
-            DH->Response.Description = "The size of the ColorImage should not be more than " + std::to_string(DH->StoreImageConfig.PlateImageMaxSize) + "KB";
+            DH->Response.errorCode = INVALIDPLATEIMAGESIZE;
+            DH->Response.Description = "The size of the Plate Image should not be more than " + std::to_string(DH->StoreImageConfig.PlateImageMaxSize) + "KB";
             return false;
         }
 #endif // VALUEVALIDATION
 
         DH->Input.PlateImage = PlateImage;
+
 #ifdef STOREIMAGE
         DH->ProcessedInputData.PlateImageMat = PlateImageMat;
+#else
+        if(DH->Modules.CheckOperator.active)
+            DH->ProcessedInputData.PlateImageMat = PlateImageMat;
 #endif // STOREIMAGE
     }
 
@@ -1118,6 +1245,11 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
 #endif // VALUEVALIDATION
 
         DH->Input.PlateRect = PlateRect;
+        int x = 0, y = 0, width = 0, height = 0;
+        char delimiter;
+        std::stringstream ss(PlateRect);
+        ss >> x >> delimiter >> y >> delimiter >> width >> delimiter >> height;
+        DH->ProcessedInputData.PlateRect = cv::Rect(x, y, width, height);
     }
 
     // CarRect
@@ -1146,6 +1278,11 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
 #endif // VALUEVALIDATION
 
         DH->Input.CarRect = CarRect;
+        int x = 0, y = 0, width = 0, height = 0;
+        char delimiter;
+        std::stringstream ss(CarRect);
+        ss >> x >> delimiter >> y >> delimiter >> width >> delimiter >> height;
+        DH->ProcessedInputData.CarRect = cv::Rect(x, y, width, height);
     }
 
     // CodeType
@@ -1228,7 +1365,10 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
             return false;
         }
 
-        if(DH->Input.PlateType == 1)
+        if(MasterPlate == "0")
+        {
+            // Just to not validate the plate value and accept zero value
+        }else if(DH->Input.PlateType == 1)
         {
             if(MasterPlate.length() != 9 || !(std::all_of(MasterPlate.begin(), MasterPlate.end(),[](char c) { return std::isdigit(static_cast<unsigned char>(c));})))
             {
@@ -1320,7 +1460,6 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
         DH->ProcessedInputData.MongoID = RecordID;
     }else
     {
-#ifdef INSERTDATABASE
         if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
         {
             std::string MOngoIdPlate = DH->hasInputFields.MasterPlate ? DH->Input.MasterPlate : DH->Input.PlateValue;
@@ -1328,7 +1467,6 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
 
             DH->ProcessedInputData.MongoID = CalculatedRecordID;
         }
-#endif // INSERTDATABASE
     }
 
     // ReceivedTime
@@ -1368,6 +1506,148 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
         DH->Input.ReceivedTime = ReceivedTime;
         DH->ProcessedInputData.ReceivedTimeLocal = ReceivedTimeLocal;
     }
+    return true;
+}
+
+bool Validator::CheckEncryptedRequestValues(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH)
+{
+    std::string Token;
+    try
+    {
+        Token = DH->Request.enJsonRvalue["Token"].s();
+    }catch(...)
+    {
+        DH->Response.HTTPCode = 401;
+        DH->Response.errorCode = INVALIDTOKEN;
+        DH->Response.Description = "The type of Token is invalid.";
+        return false; 
+    }
+
+    if(Token.length() != 36)
+    {
+        DH->Response.HTTPCode = 401;
+        DH->Response.errorCode = INVALIDTOKEN;
+        DH->Response.Description = "Invalid Token.";
+        return false;    
+    }
+    return true;
+}
+
+bool Validator::CheckTokenRequestValues(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH)
+{
+    // DeviceID
+    int DeviceID;
+    try
+    {
+        DeviceID = DH->Request.JsonRvalue["DeviceID"].i();
+    }catch(...)
+    {
+        DH->Response.HTTPCode = 400;
+        DH->Response.errorCode = INVALIDDEVICEID;
+        DH->Response.Description = "The type of DeviceID is invalid.";
+        return false; 
+    }
+
+    std::string DeviceIDStr = std::to_string(DeviceID);
+    if(DeviceIDStr.length() != 7)
+    {
+        DH->Response.HTTPCode = 400;
+        DH->Response.errorCode = INVALIDDEVICEID;
+        DH->Response.Description = "The number of digits of the DeviceID value must be equal to 7.";
+        return false;    
+    }
+
+    bool DeviceIDExist = false;
+    for(int i = 0; i < DH->Cameras.size(); i++)
+    {
+        if(DeviceID == DH->Cameras[i].DeviceID)
+        {
+            DH->CameraIndex = i; // Cannot use DH->CameraIndex in the insert route because Validation may be disabled
+            DeviceIDExist = true;
+            break;
+        }
+    }
+
+    if(!DeviceIDExist)
+    {
+        DH->Response.HTTPCode = 400;
+        DH->Response.errorCode = INVALIDDEVICEID;
+        DH->Response.Description = "This DeviceID does not exist.";
+        return false; 
+    }
+
+    // Company Name
+    std::string CompanyName;
+    try
+    {
+        CompanyName = DH->Request.JsonRvalue["CompanyName"].s();
+    }catch(...)
+    {
+        DH->Response.HTTPCode = 400;
+        DH->Response.errorCode = INVALIDCOMPANYNAME;
+        DH->Response.Description = "The type of CompanyName is invalid.";
+        return false; 
+    }
+
+    if(CompanyName.length() > 100)
+    {
+        DH->Response.HTTPCode = 400;
+        DH->Response.errorCode = INVALIDCOMPANYNAME;
+        DH->Response.Description = "The number of characters of the CompanyName value should not be more than 100.";
+        return false;    
+    }
+
+    // if(DH->Cameras[DH->CameraIndex].CompanyName != CompanyName)
+    // {
+    //     DH->Response.HTTPCode = 400;
+    //     DH->Response.errorCode = INVALIDCOMPANYNAME;
+    //     DH->Response.Description = "Company Name is incorrect.";
+    //     return false;
+    // }
+
+    // User and Password
+    std::string User;
+    try
+    {
+        User = DH->Request.JsonRvalue["User"].s();
+    }catch(...)
+    {
+        DH->Response.HTTPCode = 400;
+        DH->Response.errorCode = INVALIDUSERPASS;
+        DH->Response.Description = "The type of User is invalid.";
+        return false; 
+    }
+
+    std::string EncryptedPassword;
+    try
+    {
+        EncryptedPassword = DH->Request.JsonRvalue["Password"].s();
+    }catch(...)
+    {
+        DH->Response.HTTPCode = 400;
+        DH->Response.errorCode = INVALIDUSERPASS;
+        DH->Response.Description = "The type of Password is invalid.";
+        return false; 
+    }
+
+    cipher cipherObj;
+    std::string Password = cipherObj.base64_decode(EncryptedPassword);
+    if((User.length() > 100) || (Password.length() > 100))
+    {
+        DH->Response.HTTPCode = 400;
+        DH->Response.errorCode = INVALIDUSERPASS;
+        DH->Response.Description = "The number of characters of the User/Password value should not be more than 100.";
+        return false;    
+    }
+
+    if((DH->Cameras[DH->CameraIndex].Username != User) || (DH->Cameras[DH->CameraIndex].Password != Password))
+    {
+        DH->Response.HTTPCode = 400;
+        DH->Response.errorCode = INVALIDUSERPASS;
+        DH->Response.Description = "Username or Password is incorrect.";
+        return false;
+    }
+
     return true;
 }
 

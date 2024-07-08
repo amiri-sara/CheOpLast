@@ -168,7 +168,7 @@ std::string  cipher::EncryptRSA(RSA* Key, std::string Message, bool PrivateKey)
     {
         std::cout<<" Could not Encrypt the message something wrong here ! \n";
         std::cout.flush();
-
+        free(ed);
         return Buffer;
     }
 
@@ -197,9 +197,9 @@ std::string  cipher::DecryptRSA(RSA* Key, std::string Message, bool PrivateKey)
 
     if(resultLength == -1)
     {
-        std::cout<<" Could not Decrypt the message something wrong here ! \n";
+        std::cout << "Could not Decrypt the message something wrong here !" << std::endl;
         std::cout.flush();
-
+        free(ed);
         return Buffer;
     }
 
@@ -287,6 +287,9 @@ std::string cipher::DecryptAES(std::string Message, std::string Key, std::string
     if(1 != EVP_DecryptUpdate(ctx, plaintext, &len, (unsigned char*)Message.c_str(), ciphertext_len))
     {
         std::cout<<"EVP_DecryptUpdate Error !  "<<ERR_error_string(ERR_get_error(),NULL)<<std::endl;
+        /* Clean up */
+        EVP_CIPHER_CTX_free(ctx);
+        delete [] plaintext;
         return "";
     }
     plaintext_len = len;
@@ -294,6 +297,9 @@ std::string cipher::DecryptAES(std::string Message, std::string Key, std::string
     if(1 != EVP_DecryptFinal_ex(ctx, plaintext + len, &len))
     {
         std::cout<<"4 EVP_EncryptInit_ex Error !  "<<ERR_error_string(ERR_get_error(),NULL)<<std::endl;
+        /* Clean up */
+        EVP_CIPHER_CTX_free(ctx);
+        delete [] plaintext;
         return "";
     }
     plaintext_len += len;
