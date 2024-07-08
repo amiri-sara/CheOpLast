@@ -88,10 +88,10 @@ void WebService::InsertRoute()
                 SHOW_ERROR(crow::json::dump(Response));
                 return crow::response{DH->Response.HTTPCode , Response};
             }
-
+            
             // Check Token
             bool TokenFind = false;
-            std::string Token = DH->Request.JsonRvalue["Token"].s();
+            std::string Token = DH->Request.enJsonRvalue["Token"].s();
             for(int i = 0; i < DH->Cameras.size(); i++)
             {
                 if(DH->Cameras[i].TokenInfo.Token == Token)
@@ -119,7 +119,7 @@ void WebService::InsertRoute()
                 return crow::response{401, Response};
             }
 
-            std::string EncryptedData = DH->Request.JsonRvalue["Data"].s();
+            std::string EncryptedData = DH->Request.enJsonRvalue["Data"].s();
             std::string ClientPublicKeyAddress = this->WebServiceConfig.KeysPath + "/" + DH->Cameras[DH->CameraIndex].CompanyID;
             std::string ServerPrivateKeyAddress = this->WebServiceConfig.KeysPath + "/ServerPri.pem";
             std::string DecryptedData = decryptString(EncryptedData, ServerPrivateKeyAddress,  ClientPublicKeyAddress).DecryptedMessage;
@@ -531,12 +531,33 @@ void WebService::TokenRoute()
         auto validationFinishTime = std::chrono::high_resolution_clock::now();
         auto ValidationTime =  std::chrono::duration_cast<std::chrono::nanoseconds>(validationFinishTime - validationStartTime);
 
-        // 2- Generate Token
+        std::time_t currentTime = std::time(nullptr);
+        // 2- Check Current token expiration time
+        auto CheckCurrentTokenStartTime = std::chrono::high_resolution_clock::now();
+        std::string currentToken = DH->Cameras[DH->CameraIndex].TokenInfo.Token;
+        std::time_t currentTokenCreateAt = DH->Cameras[DH->CameraIndex].TokenInfo.CreatedAt;
+        std::time_t TokenExpirationTime = currentTokenCreateAt + this->WebServiceConfig.TokenTimeAllowed;
+        auto CheckCurrentTokenEndTime = std::chrono::high_resolution_clock::now();
+        auto CheckCurrentTokenTime =  std::chrono::duration_cast<std::chrono::nanoseconds>(CheckCurrentTokenEndTime - CheckCurrentTokenStartTime);
+        if(currentTime < TokenExpirationTime)
+        {
+            auto requestFinishTime = std::chrono::high_resolution_clock::now();
+            auto requestTime =  std::chrono::duration_cast<std::chrono::nanoseconds>(requestFinishTime - requstStartTime);
+            if(DH->DebugMode)
+                SHOW_IMPORTANTLOG3("ProccessTime(ns) = " << std::to_string(requestTime.count()) << std::endl << "1- Validation ProccessTime(ns) = " << std::to_string(ValidationTime.count()) << std::endl << 
+                                   "2- CheckCurrentToken ProccessTime(ns) = " << std::to_string(CheckCurrentTokenTime.count()));
+            
+            Response["Status"] = SUCCESSFUL;
+            Response["Token"] = currentToken;
+            SHOW_LOG(crow::json::dump(Response));
+            return crow::response{200 , Response};   
+        }
+
+        // 3- Generate Token
         auto GenerateTokenStartTime = std::chrono::high_resolution_clock::now();
         std::string Token = boost::lexical_cast<std::string>(boost::uuids::random_generator()());
         
         std::ostringstream oss;
-        std::time_t currentTime = std::time(nullptr);
         std::tm* CurrenttimeInfo = std::localtime(&currentTime);
         oss << std::put_time(CurrenttimeInfo, "%Y-%m-%d %H:%M:%S");
         std::string TokenTime = oss.str();
@@ -570,7 +591,6 @@ void WebService::TokenRoute()
         {
             for(auto& Service : this->WebServiceConfig.OtherService)
             {
-                SHOW_IMPORTANTLOG2("Send Token Update to = " << Service.IP << ":" << Service.Port << "/" << Service.URI);
                 std::string URL = Service.IP + ":" + std::to_string(Service.Port) + "/" + Service.URI;
                 CURL *curl;
                 CURLcode res;
@@ -612,7 +632,8 @@ void WebService::TokenRoute()
         auto requestTime =  std::chrono::duration_cast<std::chrono::nanoseconds>(requestFinishTime - requstStartTime);
 
         if(DH->DebugMode)
-            SHOW_IMPORTANTLOG3("ProccessTime(ns) = " << std::to_string(requestTime.count()) << std::endl << "1- Validation ProccessTime(ns) = " << std::to_string(ValidationTime.count()) << std::endl << "2- Generate Token ProccessTime(ns) = " << std::to_string(GenerateTokenTime.count()));
+            SHOW_IMPORTANTLOG3("ProccessTime(ns) = " << std::to_string(requestTime.count()) << std::endl << "1- Validation ProccessTime(ns) = " << std::to_string(ValidationTime.count()) << std::endl << 
+                               "2- CheckCurrentToken ProccessTime(ns) = " << std::to_string(CheckCurrentTokenTime.count()) << std::endl << "3- Generate Token ProccessTime(ns) = " << std::to_string(GenerateTokenTime.count()));
 
         Response["Status"] = SUCCESSFUL;
         Response["Token"] = Token;

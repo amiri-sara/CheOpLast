@@ -70,6 +70,7 @@ namespace DataHandler
         std::string remoteIP = "";
         std::string body = "";
         crow::json::rvalue JsonRvalue;
+        crow::json::rvalue enJsonRvalue;
         int NumberofInputFields;
     };
 

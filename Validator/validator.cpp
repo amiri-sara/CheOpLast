@@ -53,7 +53,13 @@ bool Validator::CheckRequstFormatJSON(const std::shared_ptr<DataHandler::DataHan
 {
     bool isJson  = false;
     try {
-        DH->Request.JsonRvalue = crow::json::load(DH->Request.body);
+        if(DH->DecryptedData)
+        {
+            DH->Request.JsonRvalue = crow::json::load(DH->Request.body);
+        } else 
+        {   
+            DH->Request.enJsonRvalue = crow::json::load(DH->Request.body);
+        }
         isJson = true;
     }catch (...) 
     {
@@ -408,7 +414,7 @@ bool Validator::checkEncryptedDataExistOrNo(const std::shared_ptr<DataHandler::D
     bool allDataExist = false;
     DH->Request.NumberofInputFields = 2;
 
-    if(!(DH->Request.JsonRvalue.has("Token")))
+    if(!(DH->Request.enJsonRvalue.has("Token")))
     {
         DH->Response.HTTPCode = 401;
         DH->Response.errorCode = INVALIDTOKEN;
@@ -416,7 +422,7 @@ bool Validator::checkEncryptedDataExistOrNo(const std::shared_ptr<DataHandler::D
         return allDataExist;
     }
 
-    if(!(DH->Request.JsonRvalue.has("Data")))
+    if(!(DH->Request.enJsonRvalue.has("Data")))
     {
         DH->Response.HTTPCode = 400;
         DH->Response.errorCode = INVALIDDATA;
@@ -469,7 +475,14 @@ bool Validator::checkTokenDataExistOrNo(const std::shared_ptr<DataHandler::DataH
 
 bool Validator::CheckNumberOfJSONFields(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH)
 {
-    int SizeOfJson = DH->Request.JsonRvalue.size();
+    int SizeOfJson;
+    if(DH->DecryptedData)
+    {
+        SizeOfJson = DH->Request.JsonRvalue.size();
+    } else 
+    {
+        SizeOfJson = DH->Request.enJsonRvalue.size();
+    }
     if(SizeOfJson == DH->Request.NumberofInputFields)
         return true;
     
@@ -1501,7 +1514,7 @@ bool Validator::CheckEncryptedRequestValues(const std::shared_ptr<DataHandler::D
     std::string Token;
     try
     {
-        Token = DH->Request.JsonRvalue["Token"].s();
+        Token = DH->Request.enJsonRvalue["Token"].s();
     }catch(...)
     {
         DH->Response.HTTPCode = 401;
@@ -1584,13 +1597,13 @@ bool Validator::CheckTokenRequestValues(const std::shared_ptr<DataHandler::DataH
         return false;    
     }
 
-    if(DH->Cameras[DH->CameraIndex].CompanyName != CompanyName)
-    {
-        DH->Response.HTTPCode = 400;
-        DH->Response.errorCode = INVALIDCOMPANYNAME;
-        DH->Response.Description = "Company Name is incorrect.";
-        return false;
-    }
+    // if(DH->Cameras[DH->CameraIndex].CompanyName != CompanyName)
+    // {
+    //     DH->Response.HTTPCode = 400;
+    //     DH->Response.errorCode = INVALIDCOMPANYNAME;
+    //     DH->Response.Description = "Company Name is incorrect.";
+    //     return false;
+    // }
 
     // User and Password
     std::string User;

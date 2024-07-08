@@ -93,7 +93,6 @@ DecryptedOutputStruct decryptFile(std::string FilePath,std::string ServerPublicK
     return DecryptedOutput;
 }
 
-
 DecryptedOutputStruct decryptString(std::string InputStr,std::string ServerPrivateKeyPath, std::string ClientPublicKeyPath)
 {
     DecryptedOutputStruct DecryptedOutput;
@@ -114,20 +113,19 @@ DecryptedOutputStruct decryptString(std::string InputStr,std::string ServerPriva
         std::string EncryptedData = InputJson["Data"].s();
         std::string EncryptedDigitalSignature = InputJson["DigitalSignature"].s();
 
-        DecryptedOutput.DecryptedDigitalSignature = CW.DecryptRSA(ClientPubKey, EncryptedDigitalSignature, false);
-
+        // DecryptedOutput.DecryptedDigitalSignature = CW.DecryptRSA(ClientPubKey, EncryptedDigitalSignature, false);
         std::string header("Konect__");
         int Indx = EncryptedData.find(header);
         if(Indx < 0)
         {
-            std::cout<<"Could not load header from the data!"<<std::endl;
+            std::cout << "Could not load header from the data!" << std::endl;
             return DecryptedOutput;
         }
 
         std::string EncryptedKey     = CW.base64_decode(EncryptedData.substr(0, Indx));
         std::string EncryptedMessage = EncryptedData.substr(Indx);
 
-        std::string Passphrase = CW.DecryptRSA(ServerPriKey, EncryptedKey, true);
+        // std::string Passphrase = CW.DecryptRSA(ServerPriKey, EncryptedKey, true);
 
         std::string key;
         std::string iv;
@@ -144,13 +142,13 @@ DecryptedOutputStruct decryptString(std::string InputStr,std::string ServerPriva
             }
             else
             {
-                std::cout<<"Could not load salt from the data!"<<std::endl;
+                std::cout << "Could not load salt from the data!" << std::endl;
                 return DecryptedOutput;
             }
         }
         else
         {
-            std::cout<<"Could not load salt from the data!"<<std::endl;
+            std::cout << "Could not load salt from the data!" << std::endl;
             return DecryptedOutput;
         }
 
@@ -161,11 +159,11 @@ DecryptedOutputStruct decryptString(std::string InputStr,std::string ServerPriva
             return DecryptedOutput;
         }
         DecryptedOutput.DecryptedMessage = DecodedMessage;
-        std::string MyDigSig = CW.generateHash(EncryptedData);
-        if(MyDigSig != DecryptedOutput.DecryptedDigitalSignature)
-        {
-            std::cout<<"The DigitalSignatures do not match"<<std::endl;
-        }
+        // std::string MyDigSig = CW.generateHash(EncryptedData);
+        // if(MyDigSig != DecryptedOutput.DecryptedDigitalSignature)
+        // {
+        //     std::cout<<"The DigitalSignatures do not match"<<std::endl;
+        // }
     }
     catch(std::exception & e)
     {
