@@ -2,7 +2,7 @@
 #include "./Service/WebService/webservice.h"
 #include "./Service/KafkaService/kafkaservice.h"
 
-#define AGGREGATION_VERSION "1.0.0 : TestVersion"
+#define AGGREGATION_VERSION "1.0.0"
 
 int main(int argc, char *argv[])
 {

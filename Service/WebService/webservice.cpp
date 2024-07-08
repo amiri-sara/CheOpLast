@@ -506,6 +506,7 @@ void WebService::TokenRoute()
         
         std::shared_ptr<DataHandler::DataHandlerStruct> DH = std::make_shared<DataHandler::DataHandlerStruct>();
         DH->InsertRoute = false;
+        DH->DecryptedData = true;
         DH->Request.body = req.body;
         crow::json::wvalue Response;
 
