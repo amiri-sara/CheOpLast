@@ -55,6 +55,7 @@ public:
     struct OutputStruct
     {
         std::string newPlateValue = "";
+        int newPlateType;
         int codeType = ChOp::CodeTypes::NOT_PROCESSED;
         float probability = 0;
     };

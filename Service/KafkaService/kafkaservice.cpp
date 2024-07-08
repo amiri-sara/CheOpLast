@@ -177,6 +177,7 @@ void KafkaService::run()
                         DH->Input.PlateValue = ChOpOutput.newPlateValue;
                         DH->Input.CodeType = ChOpOutput.codeType;
                         DH->Input.Probability = ChOpOutput.probability;
+                        DH->Input.PlateType = ChOpOutput.newPlateType;
                     } catch (const std::exception& e)
                     {
                         Response["Status"] = CHECKOPERROR;
