@@ -16,6 +16,23 @@ OPTION(STOREIMAGE "Store Image" ON)
 OPTION(KAFKAOUTPUT "Add the output data to the Kafka" ON)
 OPTION(VALUEVALIDATION "Validation value of input" ON)
 
+find_package(Boost COMPONENTS system filesystem  REQUIRED)
+
+set(WITH_GPU OFF)
+if(WITH_GPU)
+    add_definitions(-DWITH_GPU)
+    set(CUDA_DIR /usr/local/cuda-11.6)
+    include_directories(${CUDA_DIR}/include)
+    link_directories(${CUDA_DIR}/lib64)
+    set(TRT_DIR /usr/local/TensorRT-8.4.0.6)
+    include_directories(${TRT_DIR}/include)
+    link_directories(${TRT_DIR}/lib)
+endif()
+
+include_directories(${PROJECT_SOURCE_DIR}/include/)
+
+set(DEEP_CORES ${PROJECT_SOURCE_DIR}/libs/libkodnn.so)
+
 if(BUILDUBUNTU22)
     add_definitions(-DCREATEMONGOINSTANCE)
 endif()
@@ -59,7 +76,7 @@ include_directories(${HEADER_DIRS})
 
 set(inc_dir /usr/local/include)
 if(BUILDUBUNTU20)
-    include_directories(/home/mohammad/opencv/4.2.0/include/opencv4)
+    include_directories(/etc/programs/opencv/4.2.0/include/opencv4)
     set(OPENCVLIB_dir /usr/local/lib)
 elseif(BUILDUBUNTU22)
     include_directories(${inc_dir}/opencv/4.7.0/opencv4)
@@ -72,15 +89,15 @@ include_directories(.
                     /usr/local/include/bsoncxx/v_noabi/bsoncxx/third_party/mnmlstc
                     /usr/local/include/libmongoc-1.0
                     /usr/local/include/libbson-1.0
-                    ${inc_dir}/onnx/1.17.1)
+                    /home/amiri/projects/c++/models/konect-dnn-library-master/artifacts/microsoft.ml.onnxruntime.1.17.0/build/native/include/)
 
 set(OPENCVLIB       ${OPENCVLIB_dir}/libopencv_imgcodecs.so
                     ${OPENCVLIB_dir}/libopencv_core.so
-                    ${OPENCVLIB_dir}/libopencv_videoio.so
+                    ${OPENCVLIB_dir}/libopencv_videoio.so 
                     ${OPENCVLIB_dir}/libopencv_imgproc.so
                     ${OPENCVLIB_dir}/libopencv_highgui.so
                     ${OPENCVLIB_dir}/libopencv_dnn.so
-                    ${OPENCVLIB_dir}/libopencv_freetype.so
+                    ${OPENCVLIB_dir}/libopencv_freetype.so 
                     ${OPENCVLIB_dir}/libopencv_dnn.so)
 
 if(KAFKASERVICE OR KAFKAOUTPUT)
@@ -133,6 +150,7 @@ if(KAFKASERVICE OR KAFKAOUTPUT)
 endif()
 
 set(SRC_LIST main.cpp
+             checkop/chop.cpp #TODO must remove
              ReadConfigurations/configurate.cpp
              Cryptography/cipher.cpp
              Cryptography/cryptotools.cpp
@@ -164,30 +182,34 @@ endif()
 
 add_executable(${PROJECT_NAME} ${SRC_LIST})
 
-set(onnxlib_dir /usr/local/lib/onnx/1.17.1)
+set(onnxlib_dir  /home/amiri/projects/c++/models/konect-dnn-library-master/artifacts/microsoft.ml.onnxruntime.1.17.0/runtimes/linux-x64/native/)
 
 set(INFERENCELIB_dir /usr/local/lib/kmodules)
-set(INFERENCELIB     ${INFERENCELIB_dir}/libInference.so)
+# set(INFERENCELIB     ${INFERENCELIB_dir}/libInference.so)
 
-set(CHOPLIB_dir /usr/local/lib/kmodules)
-set(CHOPLIB     ${CHOPLIB_dir}/libchop.so)
+# set(CHOPLIB_dir /usr/local/lib/kmodules)#TODO
+# set(CHOPLIB     ${CHOPLIB_dir}/libchop.so)
 
 set(CLASSIFIERLIB_dir /usr/local/lib/kmodules)
-set(CLASSIFIERLIB     ${CLASSIFIERLIB_dir}/libclassifier.so)
+# set(CLASSIFIERLIB     ${CLASSIFIERLIB_dir}/libclassifier.so)
 
 target_link_libraries(${PROJECT_NAME} 
                       curl
-                      pthread 
+                      pthread
                       crypto 
                       boost_thread 
                       boost_chrono
                       boost_filesystem 
+                      ${DEEP_CORES}
                       ${OPENCVLIB}
                       ${INFERENCELIB}
                       ${CHOPLIB}
                       ${CLASSIFIERLIB}
-                      ${onnxlib_dir}/libonnxruntime.so)
+                      ${onnxlib_dir}/libonnxruntime.so
+                      /usr/lib/x86_64-linux-gnu/libssl.so.3 
+                      /usr/lib/x86_64-linux-gnu/libcrypto.so.3)
 
+                      
 if(KAFKASERVICE OR KAFKAOUTPUT)
     target_link_libraries(${PROJECT_NAME} 
                           ${GLIB_LIBRARIES} 

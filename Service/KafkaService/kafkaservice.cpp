@@ -263,7 +263,7 @@ void KafkaService::run()
 
                     try
                     {
-                        ClassifierOutput = this->m_pClassifierObjects[ClassifierObjectIndex]->run(classifierModelsInput);
+                        // ClassifierOutput = this->m_pClassifierObjects[ClassifierObjectIndex]->run(classifierModelsInput);
                         this->releaseClassifierIndex(ClassifierObjectIndex);
                         DH->ProcessedInputData.ClassifierModuleOutput = ClassifierOutput.keyLabels;
                         // for(const auto& keyLabel : ClassifierOutput.keyLabels)

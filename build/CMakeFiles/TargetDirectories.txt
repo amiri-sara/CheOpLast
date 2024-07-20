@@ -1,0 +1,3 @@
+/home/amiri/projects/c++/check_isf/Aggregation_V1.0.0/Aggregation/SourceCode/build/CMakeFiles/Aggregation.dir
+/home/amiri/projects/c++/check_isf/Aggregation_V1.0.0/Aggregation/SourceCode/build/CMakeFiles/edit_cache.dir
+/home/amiri/projects/c++/check_isf/Aggregation_V1.0.0/Aggregation/SourceCode/build/CMakeFiles/rebuild_cache.dir

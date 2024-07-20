@@ -3,6 +3,8 @@
 
 #include "log.h"
 #include <onnxruntime_cxx_api.h>
+#include "nn/common.h"
+#include <boost/filesystem.hpp>
 
 namespace inference
 {

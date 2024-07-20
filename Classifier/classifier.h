@@ -21,7 +21,7 @@ public:
     };
 
     Classifier() = delete;
-    Classifier(const std::vector<Classifier::ConfigStruct>& configs);
+    Classifier(const std::vector<Classifier::ConfigStruct>& configs){}
     Classifier::OutputStruct run(const std::vector<Classifier::InputStruct>& inputs);
     static std::string getVersion();
 private:

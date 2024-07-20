@@ -2,6 +2,7 @@
 
 WebService::WebService(Configurate::WebServiceConfigStruct ServiceConfig)
 {
+    std::cout<<"Debug"<<std::endl;
     this->app = std::make_shared<crow::SimpleApp>();
     this->app->loglevel(crow::LogLevel::Error);
     this->WebServiceConfig = ServiceConfig;
@@ -11,7 +12,7 @@ void WebService::run()
 {
     try 
     {   
-        this->InsertRoute();
+        this->InsertRouteTest();//#todo REMOVE tEST
         if(this->WebServiceConfig.Authentication)
             this->TokenRoute();
 
@@ -34,6 +35,30 @@ void WebService::run()
         SHOW_ERROR("Can't Run Crow on port "  + std::to_string(this->WebServiceConfig.WebServiceInfo.Port) + " please check this port ." );
 
     }
+}
+
+void WebService::InsertRouteTest()
+{
+    std::string Route = this->WebServiceConfig.WebServiceInfo.URI;
+    if(Route.back() != '/')
+        Route += "/";
+    if(Route[0] != '/')
+        Route = "/" + Route;
+    Route += "insert";
+    
+    this->app->route_dynamic("/insert").methods(crow::HTTPMethod::POST)([&](const crow::request& req ) {
+
+        std::shared_ptr<DataHandler::DataHandlerStruct> DH = std::make_shared<DataHandler::DataHandlerStruct>();
+        DH->Request.remoteIP = req.ipAddress;
+        SHOW_IMPORTANTLOG("Recived Insert request from IP -> " + DH->Request.remoteIP);
+
+                    // Optionally, you may want to send a response back
+        crow::json::wvalue response;
+        response["status"] = "success";
+        response["message"] = "Insert request processed.";
+        return response;
+    
+    });
 }
 
 void WebService::InsertRoute()
@@ -352,7 +377,7 @@ void WebService::InsertRoute()
 
             try
             {
-                ClassifierOutput = this->m_pClassifierObjects[ClassifierObjectIndex]->run(classifierModelsInput);
+                // ClassifierOutput = this->m_pClassifierObjects[ClassifierObjectIndex]->run(classifierModelsInput);
                 this->releaseClassifierIndex(ClassifierObjectIndex);
                 DH->ProcessedInputData.ClassifierModuleOutput = ClassifierOutput.keyLabels;
                 // for(const auto& keyLabel : ClassifierOutput.keyLabels)

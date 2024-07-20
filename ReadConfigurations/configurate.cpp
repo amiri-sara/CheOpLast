@@ -653,6 +653,8 @@ void Configurate::RunUpdateService()
 {
     try 
     {   
+
+        std::cout<<"DEbug"<<std::endl;
         this->app = std::make_shared<crow::SimpleApp>();
         this->app->loglevel(crow::LogLevel::Error);
         this->ReadCamerasCollectionRoute();

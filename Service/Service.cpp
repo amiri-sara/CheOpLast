@@ -23,7 +23,7 @@ Service::Service()
 #endif // KAFKAOUTPUT
     
     auto SysKeys {std::make_shared<SystemKeys>()};
-    std::string ServerKey = SysKeys->GetKey17().Key + SysKeys->GetKey18().Key;
+    std::string ServerKey = SysKeys->GetKey17().Key + SysKeys->GetKey18().Key; //#TODO
     std::string ClientKey = SysKeys->GetKey19().Key + SysKeys->GetKey20().Key;
 
     auto Modules = ConfigurateObj->getModules();
@@ -35,6 +35,7 @@ Service::Service()
         if(Modules.CheckOperator.PD.active)
         {
             chopConf.PDConfig.model = decryptFile(Modules.CheckOperator.ModelsPath + "/" + Modules.CheckOperator.PD.model, ServerKey, ClientKey).DecryptedMessage;
+
             chopConf.PDConfig.modelConfig = decryptFile(Modules.CheckOperator.ModelsPath + "/" + Modules.CheckOperator.PD.modelConfigPath, ServerKey, ClientKey).DecryptedMessage;
         } else
         {
@@ -99,7 +100,10 @@ Service::Service()
 
         for(int i = 0; i < this->CheckOpNumberOfObjectPerService; i++)
         {
-            this->m_pChOpObjects.push_back(std::make_shared<ChOp>(chopConf));
+            // this->m_pChOpObjects.push_back(std::make_shared<ChOp>(chopConf));#TODO
+            std::shared_ptr<ChOp> chOpPtr = std::make_shared<ChOp>(chopConf);
+            chOpPtr->init(chopConf); // Call init() function
+            this->m_pChOpObjects.push_back(chOpPtr);
             this->FreeCheckOpVec.push_back(true);
         }
     }

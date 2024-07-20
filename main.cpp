@@ -20,10 +20,10 @@ int main(int argc, char *argv[])
         }else if((argc == 2) && ((!strcmp(argv[1], "vv")) || (!strcmp(argv[1], "V")) || (!strcmp(argv[1], "-vv")) || (!strcmp(argv[1], "-VV"))))
         {
             SHOW_IMPORTANTLOG2("Aggregation Version = " << AGGREGATION_VERSION);
-            SHOW_IMPORTANTLOG2("Inference Version = " << inference::getVersion() << " Using ONNX Runtime " << std::to_string(ORT_API_VERSION));
+            // SHOW_IMPORTANTLOG2("Inference Version = " << inference::getVersion() << " Using ONNX Runtime " << std::to_string(ORT_API_VERSION));
             SHOW_IMPORTANTLOG2("Database Version = " << DATABASEVERSION);
             SHOW_IMPORTANTLOG2("Check Operator Version = " << ChOp::getVersion());
-            SHOW_IMPORTANTLOG2("Classifier Version = " << Classifier::getVersion());
+            // SHOW_IMPORTANTLOG2("Classifier Version = " << Classifier::getVersion());
             return 0;
         }else
         {
@@ -33,17 +33,18 @@ int main(int argc, char *argv[])
     }
     
     Configurate* ConfigurateObj = Configurate::getInstance();
-    boost::thread UpdateServiceThread(&Configurate::RunUpdateService, ConfigurateObj);
-    UpdateServiceThread.detach();
+    // boost::thread UpdateServiceThread(&Configurate::RunUpdateService, ConfigurateObj); #TODO
+    // UpdateServiceThread.detach();
     
 #ifdef WEBSERVICE
     auto WebServicesConfig = ConfigurateObj->getWebServiceConfig();
-    for(auto& config : WebServicesConfig)
+    for( auto& config : WebServicesConfig)
     {
         config.DebugMode = DebugMode;
         std::shared_ptr<WebService> service{std::make_shared<WebService>(config)};
-        boost::thread WebServiceThread(&WebService::run, service);
-        WebServiceThread.detach();
+        service->run();
+        // boost::thread WebServiceThread(&WebService::run, service);
+        // WebServiceThread.detach();
     }
 #endif // WEBSERVICE
 

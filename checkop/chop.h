@@ -62,19 +62,27 @@ public:
 
     ChOp() = delete;
     ChOp(const ChOp::ConfigStruct& conf);
+    int init(const ChOp::ConfigStruct& conf);
     ChOp::OutputStruct run(const ChOp::InputStruct& input);
     static std::string getVersion();
 private:
 
     struct ModelsStruct
     {
-        std::shared_ptr<inference::Handler> PD      = nullptr;
-        std::shared_ptr<inference::Handler> PC      = nullptr;
-        std::shared_ptr<inference::Handler> IROCR   = nullptr;
-        std::shared_ptr<inference::Handler> MBOCR   = nullptr;
-        std::shared_ptr<inference::Handler> TZOCR   = nullptr;
-        std::shared_ptr<inference::Handler> FZOCR   = nullptr;
-        std::shared_ptr<inference::Handler> FROCR   = nullptr;
+        std::unique_ptr< aivision::nn::NNModel> PD      = nullptr;
+        std::unique_ptr< aivision::nn::NNModel> PC      = nullptr;
+        std::unique_ptr< aivision::nn::NNModel> IROCR   = nullptr;
+        std::unique_ptr< aivision::nn::NNModel> MBOCR   = nullptr;
+        std::unique_ptr< aivision::nn::NNModel> TZOCR   = nullptr;
+        std::unique_ptr< aivision::nn::NNModel> FZOCR   = nullptr;
+        std::unique_ptr< aivision::nn::NNModel> FROCR   = nullptr;
+        // std::shared_ptr<inference::Handler> PD      = nullptr;
+        // std::shared_ptr<inference::Handler> PC      = nullptr;
+        // std::shared_ptr<inference::Handler> IROCR   = nullptr;
+        // std::shared_ptr<inference::Handler> MBOCR   = nullptr;
+        // std::shared_ptr<inference::Handler> TZOCR   = nullptr;
+        // std::shared_ptr<inference::Handler> FZOCR   = nullptr;
+        // std::shared_ptr<inference::Handler> FROCR   = nullptr;
     } m_models;
 
     bool m_ignoreInputPlateType = false;
@@ -82,6 +90,8 @@ private:
     void fixRectDimension(cv::Rect& candRect,int row, int col);
     int calculateIrCodeType(const std::string& newPlateValue, const std::string& oldPlateValue);
     int calculateProbability(const inference::OutputStruct& modelOutput);
+    std::unique_ptr<NNModel> handler(const aivision::nn::BaseNNConfig::ConfigStruct& modelConfig);
+
 };
 
 #endif // !CHOP_H
