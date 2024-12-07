@@ -1,4 +1,4 @@
-# Install script for directory: /home/amiri/projects/c++/check_isf/Aggregation_V1.0.0/Aggregation/SourceCode
+# Install script for directory: /home/amiri/projects/c++/check_isf/check_try/Aggregation_V1.0.0/Aggregation/v.2.0.5/SourceCode
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -50,5 +50,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/home/amiri/projects/c++/check_isf/Aggregation_V1.0.0/Aggregation/SourceCode/build/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/home/amiri/projects/c++/check_isf/check_try/Aggregation_V1.0.0/Aggregation/v.2.0.5/SourceCode/build/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")

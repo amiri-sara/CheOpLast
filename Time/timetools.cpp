@@ -11,6 +11,47 @@ bool ConvertISO8601TimeToUnix(std::string ISOTime, std::time_t& UnixTime)
     UnixTime = timegm(&inputTimeInfo);
     return true;
 }
+std::tm stringToTm(const std::string& dateTimeStr) {
+    std::tm tm = {};
+    std::istringstream ss(dateTimeStr);
+    
+    // Assuming the format is "yyyy-mm-dd"
+    ss >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%S");
+    
+    if (ss.fail()) {
+        throw std::runtime_error("Failed to parse date string");
+    }
+    
+    return tm;
+}
+bool ConvertLocalTimeToUTC(const std::string& localTimeStr, std::tm& utcTime) {
+    // Parse the local time string into a std::tm structure
+    std::tm localTime = {};
+    std::istringstream ss(localTimeStr);
+
+    // Assuming the input format is "YYYY-MM-DD HH:MM:SS"
+    ss >> std::get_time(&localTime, "%Y-%m-%dT%H:%M:%S");
+    if (ss.fail()) {
+        return false; // Failed to parse the time
+    }
+
+    // Convert local time to time_t
+    std::time_t localTimeT = std::mktime(&localTime);
+    if (localTimeT == -1) {
+        return false; // mktime failed
+    }
+
+    // Convert time_t to UTC time
+    std::tm* utcPtr = std::gmtime(&localTimeT);
+    if (!utcPtr) {
+        return false; // gmtime failed
+    }
+
+    // Copy the UTC time to the output parameter
+    utcTime = *utcPtr;
+
+    return true;
+}
 
 bool ConvertISO8601TimeToLocal(std::string ISOTime, std::tm& LocalTime)
 {

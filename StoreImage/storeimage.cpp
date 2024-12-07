@@ -10,53 +10,53 @@ bool storeimage::run(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH)
     if(!(this->CreateAddress(DH)))
         return false;
 
-    // Create thumbnail image
-    if(!(this->CreateThumbnail(DH)))
-        return false;
+    // //Create thumbnail image
+    // if(!(this->CreateThumbnail(DH)))//TODO Deactive 
+    //     return false;
 
-    // Add Plate crop
-    if(!(this->AddPlateCrop(DH)))
-        return false;
+    // // Add Plate crop
+    // if(!(this->AddPlateCrop(DH)))
+    //     return false;
 
-    // Create banner
-    if(DH->StoreImageConfig.AddBanner)
-    {        
-        if(!(this->CreateBanner(DH)))
-        {
-            return false;
-        }
-    }
+    // // Create banner
+    // if(DH->StoreImageConfig.AddBanner)
+    // {        
+    //     if(!(this->CreateBanner(DH)))
+    //     {
+    //         return false;
+    //     }
+    // }
 
-    // Store Color Images
+    ///// Store Color Images
     std::string FolderName = DH->StoreImageConfig.StorePath + "/" + DH->StoreImageAddress.ImageFolder;
-    std::string ColorImageName = DH->StoreImageAddress.ImageName + DH->ViolationInfo.ImageSuffix + ".jpg";
-    if(!(this->StoreImage(FolderName, ColorImageName, DH->ProcessedInputData.ColorImageMat, true, DH->StoreImageConfig.ColorImageMaxSize)))
-    {
-        DH->Response.HTTPCode = 500;
-        DH->Response.errorCode = CANNOTSAVECOLORIMAGE;
-        DH->Response.Description = "Internal Error.";
-        return false;
-    }
+    // std::string ColorImageName = DH->StoreImageAddress.ImageName + DH->ViolationInfo.ImageSuffix + ".jpg";
+    // if(!(this->StoreImage(FolderName, ColorImageName, DH->ProcessedInputData.ColorImageMat, true, DH->StoreImageConfig.ColorImageMaxSize)))
+    // {
+    //     DH->Response.HTTPCode = 500;
+    //     DH->Response.errorCode = CANNOTSAVECOLORIMAGE;
+    //     DH->Response.Description = "Internal Error.";
+    //     return false;
+    // }
 
     // Store plate Images
     std::string PlateImageName = DH->StoreImageAddress.ImageName + "_P" + ".jpg";
-    if(!(this->StoreImage(FolderName, PlateImageName, DH->ProcessedInputData.PlateImageMat, true, DH->StoreImageConfig.PlateImageMaxSize)))
+    if(!(this->StoreImage(FolderName, PlateImageName, DH->ProcessedInputData.croppedPlateImage, true, DH->StoreImageConfig.PlateImageMaxSize)))
     {
-        DH->Response.HTTPCode = 500;
-        DH->Response.errorCode = CANNOTSAVEPLATEIMAGE;
-        DH->Response.Description = "Internal Error.";
+        // DH->Response.HTTPCode = 500;
+        // DH->Response.errorCode = CANNOTSAVEPLATEIMAGE;//TODO
+        // DH->Response.Description = "Internal Error.";
         return false;
     }
 
-    // Store Thumbnail Image
-    std::string ThumbnailImageName = DH->StoreImageAddress.ImageName + "_IT" + ".jpg";
-    if(!(this->StoreImage(FolderName, ThumbnailImageName, DH->ProcessedInputData.ThumbnailImage, true, 5)))
-    {
-        DH->Response.HTTPCode = 500;
-        DH->Response.errorCode = CANNOTSAVETHUMBNAILIMAGE;
-        DH->Response.Description = "Internal Error.";
-        return false;
-    }
+    // // Store Thumbnail Image
+    // std::string ThumbnailImageName = DH->StoreImageAddress.ImageName + "_IT" + ".jpg";
+    // if(!(this->StoreImage(FolderName, ThumbnailImageName, DH->ProcessedInputData.ThumbnailImage, true, 5)))
+    // {
+    //     DH->Response.HTTPCode = 500;
+    //     DH->Response.errorCode = CANNOTSAVETHUMBNAILIMAGE;
+    //     DH->Response.Description = "Internal Error.";
+    //     return false;
+    // }
 
     return true;
 }
@@ -67,7 +67,7 @@ bool storeimage::ReadViolationInfo(const std::shared_ptr<DataHandler::DataHandle
     for (const auto& pair : DH->ViolationMap)
     {
         int key = pair.first;
-        if(key == DH->Input.ViolationID)
+        if(key ==  DH->Input.ViolationID)
         {
             DH->ViolationInfo = pair.second;
             findViolation = true;
@@ -96,15 +96,15 @@ bool storeimage::CreateAddress(const std::shared_ptr<DataHandler::DataHandlerStr
     std::string Min = (DH->ProcessedInputData.PassedTimeLocal.tm_min < 10) ? "0" + std::to_string(DH->ProcessedInputData.PassedTimeLocal.tm_min) : std::to_string(DH->ProcessedInputData.PassedTimeLocal.tm_min);
     std::string Sec = (DH->ProcessedInputData.PassedTimeLocal.tm_sec < 10) ? "0" + std::to_string(DH->ProcessedInputData.PassedTimeLocal.tm_sec) : std::to_string(DH->ProcessedInputData.PassedTimeLocal.tm_sec);
     
-    DH->StoreImageAddress.ImageFolder = std::to_string(DH->Input.DeviceID) + "/" + Year + "/" + Month + "/" + Day + "/" + Hour + "/" + Min + "/" + Sec + "/" + DH->ProcessedInputData.MongoID + "/";
+    DH->StoreImageAddress.ImageFolder = std::to_string(DH->Input.PlateType)+ "/" +std::to_string(DH->Input.CodeType) + "/" + Year + "/" + Month + "/" + Day + "/" + Hour + "/" + Min + "/" + Sec + "/";//std::to_string(DH->Input.DeviceID) + "/" + Year + "/" + Month + "/" + Day + "/" + Hour + "/" + Min + "/" + Sec + "/"; //+ DH->ProcessedInputData.MongoID + "/";//TODO mongoID
     
     DH->StoreImageAddress.ImageName = DH->Input.PlateValue;
-    DH->StoreImageAddress.ImageAddress = DH->StoreImageAddress.ImageFolder + DH->StoreImageAddress.ImageName + DH->ViolationInfo.ImageSuffix + ".jpg";
+    DH->StoreImageAddress.ImageAddress = DH->StoreImageAddress.ImageFolder + DH->StoreImageAddress.ImageName + "_P.jpg";//DH->ViolationInfo.ImageSuffix + ".jpg";//TODO when add colorImage ans banner uncomment this 
 
     return true;
 }
 
-bool storeimage::CreateThumbnail(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH)
+bool storeimage::CreateThumbnail(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH) 
 {
     try 
     {
@@ -178,7 +178,7 @@ bool storeimage::CreateBanner(const std::shared_ptr<DataHandler::DataHandlerStru
     bool addBanner;
     for(auto& camera : DH->Cameras)
     {
-        if(camera.DeviceID == DH->Input.DeviceID)
+        if(camera.DeviceID ==  DH->Input.DeviceID)
         {
             streetLocation = camera.Location;
             AllowedSpeed = camera.AllowedSpeed;
@@ -366,6 +366,11 @@ bool storeimage::CreateBanner(const std::shared_ptr<DataHandler::DataHandlerStru
 
 bool storeimage::StoreImage(std::string FolderName, std::string ImageName, cv::Mat Image, bool EnableResize, int MaxSize)
 {
+    if(Image.total() == 0)
+    {
+        return false;
+
+    }
     setPermissionsDir(FolderName+"/");
 
     std::vector<uchar> ImgData;

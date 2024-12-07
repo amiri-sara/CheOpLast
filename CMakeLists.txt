@@ -1,20 +1,22 @@
 cmake_minimum_required(VERSION 3.5)
 
 set(CMAKE_CXX_STANDARD 17)
-add_compile_options(-g)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -pg")
 
-project(Aggregation LANGUAGES CXX)
+project(checkOperator LANGUAGES CXX)
+message(STATUS "CXX Compiler: ${CMAKE_CXX_COMPILER}")
 
 OPTION(BUILDUBUNTU22 "Build in Ubuntu22" ON)
 OPTION(BUILDUBUNTU20 "Build in Ubuntu20" OFF)
 
-OPTION(WEBSERVICE "Run Web service" ON)
-OPTION(KAFKASERVICE "Run Kafka service" ON)
+OPTION(CURLSERVICE "Run curl service" ON)
+OPTION(WEBSERVICE "Run Web service" OFF)
+OPTION(KAFKASERVICE "Run Kafka service" OFF)
 OPTION(INSERTDATABASE "Insert the data into the database" ON)
-OPTION(FAILEDDATABASE "failed database" OFF)
+OPTION(FAILEDDATABASE "failed database" ON)
 OPTION(STOREIMAGE "Store Image" ON)
-OPTION(KAFKAOUTPUT "Add the output data to the Kafka" ON)
-OPTION(VALUEVALIDATION "Validation value of input" ON)
+OPTION(KAFKAOUTPUT "Add the output data to the Kafka" OFF)
+OPTION(VALUEVALIDATION "Validation value of input" OFF)
 
 find_package(Boost COMPONENTS system filesystem  REQUIRED)
 
@@ -29,12 +31,12 @@ if(WITH_GPU)
     link_directories(${TRT_DIR}/lib)
 endif()
 
-include_directories(${PROJECT_SOURCE_DIR}/include/)
-
-set(DEEP_CORES ${PROJECT_SOURCE_DIR}/libs/libkodnn.so)
-
 if(BUILDUBUNTU22)
     add_definitions(-DCREATEMONGOINSTANCE)
+endif()
+
+if(CURLSERVICE)
+    add_definitions(-DCURLSERVICE)
 endif()
 
 if(WEBSERVICE)
@@ -76,7 +78,7 @@ include_directories(${HEADER_DIRS})
 
 set(inc_dir /usr/local/include)
 if(BUILDUBUNTU20)
-    include_directories(/etc/programs/opencv/4.2.0/include/opencv4)
+    include_directories(/etc/programs/opencv-_pervios/4.2.0/include/opencv4)
     set(OPENCVLIB_dir /usr/local/lib)
 elseif(BUILDUBUNTU22)
     include_directories(${inc_dir}/opencv/4.7.0/opencv4)
@@ -84,12 +86,13 @@ elseif(BUILDUBUNTU22)
 endif()
 
 include_directories(.
+                    /home/amiri/programs/rapidjson/include
                     /usr/local/include/mongocxx/v_noabi
                     /usr/local/include/bsoncxx/v_noabi
                     /usr/local/include/bsoncxx/v_noabi/bsoncxx/third_party/mnmlstc
                     /usr/local/include/libmongoc-1.0
                     /usr/local/include/libbson-1.0
-                    /home/amiri/projects/c++/models/konect-dnn-library-master/artifacts/microsoft.ml.onnxruntime.1.17.0/build/native/include/)
+                    ${inc_dir}/onnx/1.17.1)
 
 set(OPENCVLIB       ${OPENCVLIB_dir}/libopencv_imgcodecs.so
                     ${OPENCVLIB_dir}/libopencv_core.so
@@ -150,7 +153,7 @@ if(KAFKASERVICE OR KAFKAOUTPUT)
 endif()
 
 set(SRC_LIST main.cpp
-             checkop/chop.cpp #TODO must remove
+             checkop/chop.cpp #TODO must remove make .so
              ReadConfigurations/configurate.cpp
              Cryptography/cipher.cpp
              Cryptography/cryptotools.cpp
@@ -165,6 +168,12 @@ if(KAFKASERVICE OR KAFKAOUTPUT)
                     Service/KafkaService/kafkaservice.cpp
                     Kafka/KafkaProsumer.cpp)
 endif()
+
+if(CURLSERVICE)
+    set(SRC_LIST    ${SRC_LIST}
+                    Service/Rahdari/rahdariService.cpp)
+endif()
+
 if(WEBSERVICE)
     set(SRC_LIST    ${SRC_LIST}
                     Service/WebService/webservice.cpp)
@@ -182,16 +191,16 @@ endif()
 
 add_executable(${PROJECT_NAME} ${SRC_LIST})
 
-set(onnxlib_dir  /home/amiri/projects/c++/models/konect-dnn-library-master/artifacts/microsoft.ml.onnxruntime.1.17.0/runtimes/linux-x64/native/)
+set(onnxlib_dir  /usr/local/lib/onnx/1.17.1)
 
 set(INFERENCELIB_dir /usr/local/lib/kmodules)
-# set(INFERENCELIB     ${INFERENCELIB_dir}/libInference.so)
+set(INFERENCELIB     ${INFERENCELIB_dir}/libInference.so)
 
 # set(CHOPLIB_dir /usr/local/lib/kmodules)#TODO
 # set(CHOPLIB     ${CHOPLIB_dir}/libchop.so)
 
 set(CLASSIFIERLIB_dir /usr/local/lib/kmodules)
-# set(CLASSIFIERLIB     ${CLASSIFIERLIB_dir}/libclassifier.so)
+set(CLASSIFIERLIB     ${CLASSIFIERLIB_dir}/libclassifier.so)
 
 target_link_libraries(${PROJECT_NAME} 
                       curl
@@ -207,7 +216,8 @@ target_link_libraries(${PROJECT_NAME}
                       ${CLASSIFIERLIB}
                       ${onnxlib_dir}/libonnxruntime.so
                       /usr/lib/x86_64-linux-gnu/libssl.so.3 
-                      /usr/lib/x86_64-linux-gnu/libcrypto.so.3)
+                      /usr/lib/x86_64-linux-gnu/libcrypto.so.3
+                      /usr/lib/x86_64-linux-gnu/libfreeimage.so)
 
                       
 if(KAFKASERVICE OR KAFKAOUTPUT)

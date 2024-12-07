@@ -12,7 +12,7 @@ void WebService::run()
 {
     try 
     {   
-        this->InsertRoute();//#todo REMOVE tEST
+        this->InsertRoute();
         if(this->WebServiceConfig.Authentication)
             this->TokenRoute();
 
@@ -46,7 +46,7 @@ void WebService::InsertRoute()
         Route = "/" + Route;
     Route += "insert";
     
-    this->app->route_dynamic(Route.c_str()).methods(crow::HTTPMethod::POST)([&](const crow::request& req ) {
+    this->app->route_dynamic("/insert").methods(crow::HTTPMethod::POST)([&](const crow::request& req ) {
         
         //! "startTime" for Computing process time for this request
         auto requstStartTime = std::chrono::high_resolution_clock::now();
@@ -255,7 +255,7 @@ void WebService::InsertRoute()
             ChOp::InputStruct inputChOp;
             inputChOp.plateImage = DH->ProcessedInputData.PlateImageMat;
             inputChOp.plateValue = DH->hasInputFields.PlateValue ? DH->Input.PlateValue : "";
-            inputChOp.plateType = DH->hasInputFields.PlateType ? DH->Input.PlateType : static_cast<int>(inference::standards::PlateType::UNKNOWN);
+            // inputChOp.plateType = DH->hasInputFields.PlateType ? DH->Input.PlateType : static_cast<int>(inference::standards::PlateType::UNKNOWN);
 
             int CheckOpObjectIndex = this->getCheckOpIndex();
             ChOp::OutputStruct ChOpOutput;

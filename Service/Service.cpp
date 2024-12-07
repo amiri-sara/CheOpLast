@@ -23,7 +23,7 @@ Service::Service()
 #endif // KAFKAOUTPUT
     
     auto SysKeys {std::make_shared<SystemKeys>()};
-    std::string ServerKey = SysKeys->GetKey17().Key + SysKeys->GetKey18().Key; //#TODO
+    std::string ServerKey = SysKeys->GetKey17().Key + SysKeys->GetKey18().Key; 
     std::string ClientKey = SysKeys->GetKey19().Key + SysKeys->GetKey20().Key;
 
     auto Modules = ConfigurateObj->getModules();
@@ -100,10 +100,9 @@ Service::Service()
 
         for(int i = 0; i < this->CheckOpNumberOfObjectPerService; i++)
         {
-            // this->m_pChOpObjects.push_back(std::make_shared<ChOp>(chopConf));#TODO
-            std::shared_ptr<ChOp> chOpPtr = std::make_shared<ChOp>(chopConf);
-            chOpPtr->init(chopConf); // Call init() function
-            this->m_pChOpObjects.push_back(chOpPtr);
+            this->m_pChOpObjects.push_back(std::make_shared<ChOp>(chopConf));
+            boost::thread checkOPTread(&ChOp::process,this->m_pChOpObjects[i]);
+
             this->FreeCheckOpVec.push_back(true);
         }
     }
@@ -127,6 +126,7 @@ Service::Service()
         }
     }
 }
+
 
 int Service::getKafkaConnectionIndex()
 {

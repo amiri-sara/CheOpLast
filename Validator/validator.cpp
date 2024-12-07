@@ -1123,7 +1123,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
         }
 #endif // VALUEVALIDATION
 
-        DH->Input.PlateImage = PlateImage;
+        DH->Input.PlateImageBase64 = PlateImage;
 
 #ifdef STOREIMAGE
         DH->ProcessedInputData.PlateImageMat = PlateImageMat;

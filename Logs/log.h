@@ -46,6 +46,64 @@
 #define SHOW_IMPORTANTLOG2(X)     std::cout<<"\033[1;35m"<<X<<"\033[0m"<<std::endl
 #define SHOW_IMPORTANTLOG3(X)     std::cout<<"\033[1;36m"<<X<<"\033[0m"<<std::endl
 
+class Logger {
+public:
+    // Get the instance of the Logger (Singleton pattern)
+    static Logger& getInstance() {
+        static Logger instance;
+        return instance;
+    }
+    void log(const std::string& message) {
+        std::cout << currentDateTime() << " - " << message << std::endl;
+    }
+        // Log with error level (red)
+    void logError(const std::string& message) {
+        SHOW_ERROR(currentDateTime() + " - " + message);
+    }
+
+    // Log with regular log level (green)
+    void logInfo(const std::string& message) {
+        SHOW_LOG(currentDateTime() + " - " + message);
+    }
+
+    // Log with warning level (yellow)
+    void logWarning(const std::string& message) {
+        SHOW_WARNING(currentDateTime() + " - " + message);
+    }
+
+    // Log with important log level (blue)
+    void logImportant(const std::string& message) {
+        SHOW_IMPORTANTLOG(currentDateTime() + " - " + message);
+    }
+
+    // Log with second level of important log (purple)
+    void logImportant2(const std::string& message) {
+        SHOW_IMPORTANTLOG2(currentDateTime() + " - " + message);
+    }
+
+    // Log with third level of important log (cyan)
+    void logImportant3(const std::string& message) {
+        SHOW_IMPORTANTLOG3(currentDateTime() + " - " + message);
+    }
+
+private:
+    // Private constructor to prevent instantiation
+    Logger() {}
+
+    // Prevent copying
+    Logger(const Logger&) = delete;
+    Logger& operator=(const Logger&) = delete;
+    std::string currentDateTime() {
+        auto now = std::chrono::system_clock::now();
+        std::time_t now_time = std::chrono::system_clock::to_time_t(now);
+        std::tm local_tm = *std::localtime(&now_time);
+
+        std::ostringstream oss;
+        oss << std::put_time(&local_tm, "%Y-%m-%d %H:%M:%S");
+        return oss.str();
+    }
+};
+
 // Error Code
 #define SUCCESSFUL                                          0
 #define INVALIDJSON                                         600
@@ -99,5 +157,6 @@
 #define CANNOTSAVETHUMBNAILIMAGE                            656
 #define CANNOTCREATEBANNER                                  657
 #define CANNOTADDPLATECROP                                  658
+#define CANNOTFINDIMAGE                                     659
 
 #endif // LOG_H

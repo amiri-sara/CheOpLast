@@ -1,6 +1,7 @@
 #ifndef SERVICE_H
 #define SERVICE_H
 
+#include <atomic>
 #include "../Logs/log.h"
 #include "../ReadConfigurations/configurate.h"
 #include "../DataHandler/datahandler.h"

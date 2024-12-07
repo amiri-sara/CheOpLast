@@ -165,7 +165,7 @@ void KafkaService::run()
                     ChOp::InputStruct inputChOp;
                     inputChOp.plateImage = DH->ProcessedInputData.PlateImageMat;
                     inputChOp.plateValue = DH->hasInputFields.PlateValue ? DH->Input.PlateValue : "";
-                    inputChOp.plateType = DH->hasInputFields.PlateType ? DH->Input.PlateType : static_cast<int>(inference::standards::PlateType::UNKNOWN);
+                    // inputChOp.plateType = DH->hasInputFields.PlateType ? DH->Input.PlateType : static_cast<int>(inference::standards::PlateType::UNKNOWN);
 
                     int CheckOpObjectIndex = this->getCheckOpIndex();
                     ChOp::OutputStruct ChOpOutput;

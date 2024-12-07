@@ -92,7 +92,8 @@ MongoDB::MongoDB(const DatabaseConfig &DBC)
     } 
     catch (const mongocxx::exception& e) 
     {
-        SHOW_ERROR("Error connecting to MongoDB: " << e.what());
+        Logger::getInstance().logError(std::string("Error connecting to MongoDB: ") + e.what());
+
     }
 }
 
@@ -131,6 +132,12 @@ MongoDB::ResponseStruct MongoDB::Insert(const std::string &DatabaseName, const s
                 case FieldType::Double:
                     BasicBuilder.append(bsoncxx::builder::basic::kvp(field.key, std::stod(field.value)));
                     break;
+                case FieldType::Int64:{
+                    int64_t value_int64 = std::stoll(field.value);
+                    BasicBuilder.append(bsoncxx::builder::basic::kvp(field.key, value_int64));//std::strtoll(field.value.c_str(),nullptr,10)));
+                    break;
+                }
+
                 case FieldType::Date:
                 {
                     std::tm tm{};
@@ -264,6 +271,123 @@ MongoDB::ResponseStruct MongoDB::Find(const std::string &DatabaseName, const std
     }
     return ResponseStruct{MongoStatus::FindSuccessful, "Find Successful"};
 }
+MongoDB::ResponseStruct MongoDB::Update_one(const std::string &DatabaseName, const std::string &CollectionName, const std::vector<Field>& findfields, const std::vector<Field>& updatefields)
+{
+    std::shared_ptr<mongocxx::pool::entry> client = std::make_shared<mongocxx::pool::entry>(this->mongoPool->acquire());
+    std::shared_ptr<mongocxx::database> db = std::make_shared<mongocxx::database>((*client)->database(DatabaseName.c_str()));
+    
+    // Check if the database is valid
+    if (!db) {
+        return ResponseStruct{MongoStatus::Database, "Access Database Error"};
+    }
+
+    mongocxx::collection coll = (*(db))[CollectionName.c_str()];
+    
+    // Check if the collection is valid
+    if (!coll) {
+        return ResponseStruct{MongoStatus::Collection, "Access Collection Error"};
+    }
+
+    // Build the query filter
+    bsoncxx::builder::basic::document QueryBuilder;
+    for (const auto& field : findfields) {
+        switch (field.type) {
+            case FieldType::ObjectId:
+                QueryBuilder.append(bsoncxx::builder::basic::kvp(field.key, bsoncxx::oid(field.value)));
+                break;
+            case FieldType::String:
+                QueryBuilder.append(bsoncxx::builder::basic::kvp(field.key, field.value));
+                break;
+            case FieldType::Integer:
+                QueryBuilder.append(bsoncxx::builder::basic::kvp(field.key, std::stoi(field.value)));
+                break;
+            case FieldType::Double:
+                QueryBuilder.append(bsoncxx::builder::basic::kvp(field.key, std::stod(field.value)));
+                break;
+            // case Field::FieldType::Int64:
+            //     QueryBuilder.append(bsoncxx::builder::basic::kvp(field.key, std::stoll(field.value)));
+            //     break;
+            case FieldType::Date: {
+                std::tm tm{};
+                std::istringstream ss(field.value);
+                if (ss >> std::get_time(&tm, "%Y-%m-%d %H:%M:%S")) {
+                    time_t UnixSecond = std::mktime(&tm);
+                    std::chrono::system_clock::time_point tp = std::chrono::system_clock::from_time_t(UnixSecond);
+                    QueryBuilder.append(bsoncxx::builder::basic::kvp(field.key, bsoncxx::types::b_date(tp)));
+                } else {
+                    return ResponseStruct{MongoStatus::FailedParseDataFromString, "Failed to parse date and time from string."};
+                }
+                break;
+            }
+            default:
+                return ResponseStruct{MongoStatus::InvalidMongoType, "Invalid Mongo Type = " + field.key};
+        }
+    }
+
+    // Build the update document
+    bsoncxx::builder::basic::document UpdateBuilder;
+    for (const auto& field : updatefields) {
+        switch (field.type) {
+            case FieldType::Int64:
+            {
+                try {
+                    int64_t int64Value = std::stoll(field.value); // Convert string to int64_t
+
+                    // Use $set to modify the field
+                    UpdateBuilder.append(bsoncxx::builder::basic::kvp("$set", bsoncxx::builder::basic::make_document(
+                        bsoncxx::builder::basic::kvp(field.key, int64Value)
+                    )));
+                } catch (const std::exception& e) {
+                    return ResponseStruct{MongoStatus::FailedParseDataFromString, "Failed to parse int64 from string: " + field.value};
+                }
+                break;
+            }
+            case FieldType::String:
+                UpdateBuilder.append(bsoncxx::builder::basic::kvp("$set", bsoncxx::builder::basic::make_document(
+                    bsoncxx::builder::basic::kvp(field.key, field.value)
+                )));
+                break;
+            case FieldType::Integer:
+                UpdateBuilder.append(bsoncxx::builder::basic::kvp("$set", bsoncxx::builder::basic::make_document(
+                    bsoncxx::builder::basic::kvp(field.key, std::stoi(field.value))
+                )));
+                break;
+            case FieldType::Double:
+                UpdateBuilder.append(bsoncxx::builder::basic::kvp("$set", bsoncxx::builder::basic::make_document(
+                    bsoncxx::builder::basic::kvp(field.key, std::stod(field.value))
+                )));
+                break;
+            case FieldType::Date: {
+                std::tm tm{};
+                std::istringstream ss(field.value);
+                if (ss >> std::get_time(&tm, "%Y-%m-%d %H:%M:%S")) {
+                    time_t UnixSecond = std::mktime(&tm);
+                    std::chrono::system_clock::time_point tp = std::chrono::system_clock::from_time_t(UnixSecond);
+                    UpdateBuilder.append(bsoncxx::builder::basic::kvp("$set", bsoncxx::builder::basic::make_document(
+                        bsoncxx::builder::basic::kvp(field.key, bsoncxx::types::b_date(tp))
+                    )));
+                } else {
+                    return ResponseStruct{MongoStatus::FailedParseDataFromString, "Failed to parse date and time from string."};
+                }
+                break;
+            }
+            default:
+                return ResponseStruct{MongoStatus::InvalidMongoType, "Invalid Mongo Type = " + field.key};
+        }
+    }
+
+    // Perform the update
+    bsoncxx::document::view FilterView = QueryBuilder.view();
+    bsoncxx::document::view UpdateView = UpdateBuilder.view();
+    auto result = coll.update_one(FilterView, UpdateView);
+
+    if (result && result->modified_count() > 0) {
+        return ResponseStruct{MongoStatus::UpdateSuccessful, "Update Successful"};
+    } else {
+        return ResponseStruct{MongoStatus::UpdateFailed, "No document matched the filter or update failed."};
+    }
+}
+
 
 MongoDB::ResponseStruct MongoDB::Update(const std::string &DatabaseName, const std::string &CollectionName, const std::vector<Field>& findfields, const std::vector<Field>& updatefields)
 {

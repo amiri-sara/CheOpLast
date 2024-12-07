@@ -18,9 +18,12 @@ class storeimage
 public:
     storeimage() = default;
     bool run(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH);
+
 private:  
     bool ReadViolationInfo(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH);
+
     bool CreateAddress(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH);
+
     bool CreateThumbnail(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH);
     bool AddPlateCrop(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH);
     bool CreateBanner(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH);

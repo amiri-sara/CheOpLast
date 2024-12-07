@@ -3,7 +3,6 @@
 
 #include "log.h"
 #include <onnxruntime_cxx_api.h>
-#include "nn/common.h"
 #include <boost/filesystem.hpp>
 
 namespace inference
@@ -181,7 +180,8 @@ namespace inference
 
         enum NormalizingMethod 
         {
-            VANILLA_NORMALIZE = 0    // 1/255
+            VANILLA_NORMALIZE = 0,    // 1/255
+            IMAGENET_NORMALIZE = 1
         };
         
         enum ResizingMethod 
@@ -225,6 +225,8 @@ namespace inference
             inference::engine::ResizingMethod resizingMethod = inference::engine::ResizingMethod::VANILLA_RESIZE;
             inference::engine::NormalizingMethod normalizingMethod = inference::engine::NormalizingMethod::VANILLA_NORMALIZE;
             bool debugMode = false;
+            std::vector<float> normalizingMethodmean;
+            std::vector<float> normalizingMethodstd;
         };
 
         struct InputStruct
@@ -341,7 +343,6 @@ namespace inference
     {
         cv::Mat Image;
     };
-
     struct ModelOutputStruct : public inference::engine::OutputStruct
     {
         std::string labelType;
@@ -372,6 +373,8 @@ namespace inference
         int resizingMethodpaddingValue;
         int normalizingMethod;
         int normalizingMethodscaleValue;
+        std::vector<float> normalizingMethodmean;
+        std::vector<float> normalizingMethodstd;
         int primaryThreshold;
         int secondaryThreshold;
         inference::standards::InferenceMethod inferenceMethod;

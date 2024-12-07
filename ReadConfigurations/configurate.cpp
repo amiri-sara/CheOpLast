@@ -152,6 +152,8 @@ Configurate::Configurate()
             this->InputFields.Probability     = InputFieldsJSON["Probability"].b();
             this->InputFields.RecordID        = InputFieldsJSON["RecordID"].b();
             this->InputFields.ReceivedTime    = InputFieldsJSON["ReceivedTime"].b();
+            this->InputFields.SystemCode      = InputFieldsJSON["SystemCode"].b();
+            this->InputFields.CompanyCode     = InputFieldsJSON["CompanyCode"].b();
 
 #ifdef KAFKASERVICE
             crow::json::rvalue KafkaDocConfigJSON = AggregationInputJSON["KafkaService"];
@@ -161,6 +163,22 @@ Configurate::Configurate()
             this->InputKafkaConfig.PartitionNumber = KafkaDocConfigJSON["PartitionNumber"].i();
             this->InputKafkaConfig.DaysforPassedTimeAcceptable = KafkaDocConfigJSON["DaysforPassedTimeAcceptable"].i();
 #endif // KAFKASERVICE
+
+#ifdef CURLSERVICE
+            crow::json::rvalue CurlServiceArray = AggregationInputJSON["CurlService"];
+            std::size_t curlarraySize = CurlServiceArray.size();
+            for(std::size_t i =0 ; i < curlarraySize; ++i)
+            {
+                crow::json::rvalue CurlserviceConfigJSON = CurlServiceArray[i];
+                Configurate::CurlServiceConfigStruct CurlServiceConf;
+                CurlServiceConf.CurlServiceInfo.URI = CurlserviceConfigJSON["URI"].s();
+                CurlServiceConf.CurlServiceInfo.Port = CurlserviceConfigJSON["Port"].i();
+                CurlServiceConf.ThreadNumber = CurlserviceConfigJSON["ThreadNumber"].i();
+                CurlServiceConf.ThresholdFetchedRecors = CurlserviceConfigJSON["ThresholdFetchedRecors"].i();
+                this->CurlServiceConfig.push_back(CurlServiceConf);
+
+            }
+#endif // CURLSERVICE
 #ifdef WEBSERVICE   
             crow::json::rvalue WebServiceArray = AggregationInputJSON["WebService"];
             std::size_t arraySize = WebServiceArray.size();
@@ -237,6 +255,9 @@ Configurate::Configurate()
             this->OutputFields.Probability       = OutputFieldsJSON["Probability"].b();
             this->OutputFields.RecordID          = OutputFieldsJSON["RecordID"].b();
             this->OutputFields.ReceivedTime      = OutputFieldsJSON["ReceivedTime"].b();
+            this->OutputFields.PassedVehicleRecordsId = OutputFieldsJSON["PassedVehicleRecordsId"].b();
+            this->OutputFields.CompanyCode       = OutputFieldsJSON["CompanyCode"].b();
+            this->OutputFields.SystemCode        = OutputFieldsJSON["SystemCode"].b();
 
 
             crow::json::rvalue StoreImageConfigJSON = OutputConfigJSON["StoreImage"];
@@ -273,6 +294,23 @@ Configurate::Configurate()
         }
     }else
     {
+        SHOW_ERROR(FindReturn.Description);
+        throw;
+    }
+
+    std::vector<std::string> MetaDoc;
+    FindReturn = this->ConfigDatabase->Find(this->ConfigDatabaseInfo.DatabaseName, "Meta", filter, Option, MetaDoc);
+    if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
+    {
+        for(auto &doc : MetaDoc)
+        {
+            crow::json::rvalue AggregationConfigJSON = crow::json::load(doc);
+            if(AggregationConfigJSON["_id"] == "last_processed_id")
+                this->Meta.last_processed_id = static_cast<uint64_t>(AggregationConfigJSON["PassedVehicleRecordsId"].i());
+
+        }
+
+    }else{
         SHOW_ERROR(FindReturn.Description);
         throw;
     }
@@ -742,10 +780,18 @@ Configurate::InfoDatabaseStruct Configurate::getFailedDatabaseInfo()
 {
     return this->FailedDatabaseInfo;
 }
+Configurate::InfoDatabaseStruct Configurate::getConfigDatabaseInfo()
+{
+    return this->ConfigDatabaseInfo;
+}
 
 std::shared_ptr<MongoDB> Configurate::getInsertDatabase()
 {
     return this->InsertDatabase;
+}
+std::shared_ptr<MongoDB> Configurate::getConfigDatabase()
+{
+    return this->ConfigDatabase;
 }
 
 std::shared_ptr<MongoDB> Configurate::getFailedDatabase()
@@ -756,6 +802,10 @@ std::shared_ptr<MongoDB> Configurate::getFailedDatabase()
 std::vector<Configurate::WebServiceConfigStruct> Configurate::getWebServiceConfig()
 {
     return this->WebServiceConfig;
+}
+std::vector<Configurate::CurlServiceConfigStruct> Configurate::getCurlServiceConfig()
+{
+    return this->CurlServiceConfig;
 }
 
 Configurate::StoreImageConfigStruct Configurate::getStoreImageConfig()
@@ -797,4 +847,8 @@ std::unordered_map<int, Configurate::ViolationStruct> Configurate::getViolationM
 Configurate::ModulesStruct Configurate::getModules()
 {
     return this->Modules;
+}
+Configurate::MetaStruct Configurate::getMeta()
+{
+    return this->Meta;
 }

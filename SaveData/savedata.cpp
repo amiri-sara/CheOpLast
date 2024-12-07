@@ -204,7 +204,7 @@ bool savedata::InsertDatabase(const std::shared_ptr<DataHandler::DataHandlerStru
     {
         if(DH->hasInputFields.PlateImage)
         {            
-            MongoDB::Field PlateImageField = {"PlateImage", DH->Input.PlateImage, MongoDB::FieldType::String};
+            MongoDB::Field PlateImageField = {"PlateImage", DH->Input.PlateImageBase64, MongoDB::FieldType::String};
             fields.push_back(PlateImageField);
         }
     }
@@ -288,6 +288,12 @@ bool savedata::InsertDatabase(const std::shared_ptr<DataHandler::DataHandlerStru
             fields.push_back(MasterPlateField);
         }
     }
+    //PassedVehicleRecordsId
+    if(DH->hasOutputFields.PassedVehicleRecordsId)
+    {
+        MongoDB::Field PassedVehicleRecordsId = {"PassedVehicleRecordsId", std::to_string(DH->Input.PassedVehicleRecordsId), MongoDB::FieldType::Int64};
+        fields.push_back(PassedVehicleRecordsId);
+    }
 
     // RecordID
     if(DH->hasOutputFields.RecordID)
@@ -297,6 +303,28 @@ bool savedata::InsertDatabase(const std::shared_ptr<DataHandler::DataHandlerStru
             MongoDB::Field RecordIDField = {"RecordID", DH->ProcessedInputData.MongoID, MongoDB::FieldType::ObjectId};
             fields.push_back(RecordIDField);
         }
+    }
+
+    // SystemCode
+    if(DH->hasOutputFields.SystemCode)
+    {
+        if(DH->hasInputFields.SystemCode)
+        {  
+            MongoDB::Field SystemCode = {"SystemCode", std::to_string(DH->Input.SystemCode), MongoDB::FieldType::Integer};
+            fields.push_back(SystemCode);
+        }
+
+    }
+
+    // CompanyCode
+    if(DH->hasOutputFields.CompanyCode)
+    {
+        if(DH->hasInputFields.CompanyCode)
+        {  
+            MongoDB::Field CompanyCode = {"CompanyCode", std::to_string(DH->Input.CompanyCode), MongoDB::FieldType::Integer};
+            fields.push_back(CompanyCode);
+        }
+
     }
 
     // ReceivedTime
@@ -333,7 +361,7 @@ bool savedata::InsertDatabase(const std::shared_ptr<DataHandler::DataHandlerStru
     }
 
     auto InsertReturn = DH->InsertDatabase->Insert(DH->InsertDatabaseInfo.DatabaseName, DH->InsertDatabaseInfo.CollectionName, fields);
-    if(InsertReturn.Code != MongoDB::MongoStatus::InsertSuccessful)
+    if(InsertReturn.Code != MongoDB::MongoStatus::InsertSuccessful) //TODO
     {
         DH->Response.HTTPCode = 500;
         DH->Response.errorCode = DATABASEERROR;

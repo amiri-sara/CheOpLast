@@ -10,7 +10,7 @@
 #include "../crow.h"
 #include "../crow/json.h"
 
-#define CONFIG_FILE_LOCATION        "/etc/Aggregation.conf"
+#define CONFIG_FILE_LOCATION        "/etc/CheckOperator.conf"
 
 class Configurate
 {
@@ -39,6 +39,13 @@ public:
         int Port;
     };
 
+    struct CurlServiceInfoStruct
+    {
+        std::string URI                  = "";
+        std::string IP                   = "";
+        int Port;
+    };
+
     struct ReadConfigServiceStruct
     {
         WebServiceInfoStruct ReadCamerasCollectionServiceInfo;
@@ -46,6 +53,16 @@ public:
         int threadNumber;
     };
 
+    struct CurlServiceConfigStruct
+    {
+        CurlServiceInfoStruct CurlServiceInfo;
+        int ThreadNumber;
+        int ThresholdFetchedRecors;
+        bool DebugMode;
+        bool ReadFromMinIdTXT;
+        std::vector<Configurate::CurlServiceInfoStruct> OtherService;
+
+    };
     struct WebServiceConfigStruct
     {
         WebServiceInfoStruct WebServiceInfo;
@@ -105,34 +122,37 @@ public:
 
     struct FieldsStruct
     {
-        bool DeviceID       =   false;
-        bool UserID         =   false;
-        bool StreetID       =   false;
-        bool ViolationID    =   false;
-        bool Direction      =   false;
-        bool PlateValue     =   false;
-        bool PlateType      =   false;
-        bool Suspicious     =   false;
-        bool Speed          =   false;
-        bool VehicleType    =   false;
-        bool VehicleColor   =   false;
-        bool VehicleModel   =   false;
-        bool Lane           =   false;
-        bool PassedTime     =   false;
-        bool ColorImage     =   false;
-        bool ImageAddress   =   false;
-        bool GrayScaleImage =   false;
-        bool PlateImage     =   false;
-        bool Latitude       =   false;
-        bool Longitude      =   false;
-        bool Accuracy       =   false;
-        bool PlateRect      =   false;
-        bool CarRect        =   false;
-        bool CodeType       =   false;
-        bool MasterPlate    =   false;
-        bool Probability    =   false;
-        bool RecordID       =   false;
-        bool ReceivedTime   =   false;
+        bool DeviceID               =   false;
+        bool UserID                 =   false;
+        bool StreetID               =   false;
+        bool ViolationID            =   false;
+        bool Direction              =   false;
+        bool PlateValue             =   false;
+        bool PlateType              =   false;
+        bool Suspicious             =   false;
+        bool Speed                  =   false;
+        bool VehicleType            =   false;
+        bool VehicleColor           =   false;
+        bool VehicleModel           =   false;
+        bool Lane                   =   false;
+        bool PassedTime             =   false;
+        bool ColorImage             =   false;
+        bool ImageAddress           =   false;
+        bool GrayScaleImage         =   false;
+        bool PlateImage             =   false;
+        bool Latitude               =   false;
+        bool Longitude              =   false;
+        bool Accuracy               =   false;
+        bool PlateRect              =   false;
+        bool CarRect                =   false;
+        bool CodeType               =   false;
+        bool MasterPlate            =   false;
+        bool Probability            =   false;
+        bool RecordID               =   false;
+        bool ReceivedTime           =   false;
+        bool PassedVehicleRecordsId = false;
+        bool CompanyCode            = false;
+        bool SystemCode             = false;
     };
 
     struct ViolationStruct
@@ -183,6 +203,10 @@ public:
         Configurate::CheckOperatorStruct CheckOperator;
         Configurate::ClassifierStruct Classifier;
     };
+    struct MetaStruct
+    {
+        uint64_t last_processed_id = 0;
+    };
 
     Configurate(const Configurate& Obj) = delete;
 
@@ -206,6 +230,7 @@ public:
     std::shared_ptr<MongoDB> getInsertDatabase();
     std::shared_ptr<MongoDB> getFailedDatabase();
     std::vector<WebServiceConfigStruct> getWebServiceConfig();
+    std::vector<CurlServiceConfigStruct> getCurlServiceConfig();
     StoreImageConfigStruct getStoreImageConfig();
     KafkaConfigStruct getInputKafkaConfig();
     KafkaConfigStruct getOutputKafkaConfig();
@@ -214,6 +239,9 @@ public:
     std::vector<CameraStruct> getCameras();
     std::unordered_map<int, ViolationStruct> getViolationMap();
     Configurate::ModulesStruct getModules();
+    Configurate::MetaStruct getMeta();
+    std::shared_ptr<MongoDB> getConfigDatabase();
+    InfoDatabaseStruct getConfigDatabaseInfo();
 
     void SetNewToken(int CameraIndex, std::string Token, std::time_t TokenTime);
 
@@ -226,6 +254,7 @@ private:
     std::shared_ptr<MongoDB> FailedDatabase;
     ReadConfigServiceStruct ReadConfigServiceConfig;
     std::vector<WebServiceConfigStruct> WebServiceConfig;
+    std::vector<CurlServiceConfigStruct> CurlServiceConfig;
     StoreImageConfigStruct StoreImageConfig;
     KafkaConfigStruct InputKafkaConfig;
     KafkaConfigStruct OutputKafkaConfig;
@@ -234,6 +263,7 @@ private:
     std::vector<CameraStruct> Cameras;
     std::unordered_map<int, ViolationStruct> ViolationMap;
     Configurate::ModulesStruct Modules;
+    Configurate::MetaStruct Meta;
 
     void ReadCamerasCollection();
 

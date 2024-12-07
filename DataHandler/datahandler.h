@@ -20,8 +20,11 @@ namespace DataHandler
         int VehicleType;
         int VehicleColor;
         int VehicleModel;
+        int CompanyCode;
+        int SystemCode;
         int Lane;
         int Accuracy;
+        uint64_t PassedVehicleRecordsId;
         
         double Latitude;
         double Longitude;
@@ -32,7 +35,7 @@ namespace DataHandler
         std::string ColorImage;
         std::string ImageAddress;
         std::string GrayScaleImage;
-        std::string PlateImage;
+        std::string PlateImageBase64;
         std::string PlateRect;
         std::string CarRect;
         
@@ -50,6 +53,10 @@ namespace DataHandler
         cv::Mat ColorImageMat;
         cv::Mat PlateImageMat;
         cv::Mat ThumbnailImage;
+        cv::Mat croppedPlateImage;
+        std::string PlateImageBase64;
+        std::tm PassedTimeUTC;
+        std::tm ReceivedTimeUTC;
         std::tm PassedTimeLocal;
         std::tm ReceivedTimeLocal;
         std::string MongoID;
@@ -99,8 +106,11 @@ namespace DataHandler
         std::shared_ptr<MongoDB> InsertDatabase;
         Configurate::InfoDatabaseStruct InsertDatabaseInfo;
         std::shared_ptr<MongoDB> FailedDatabase;
+        std::shared_ptr<MongoDB> ConfigDatabase;
+        Configurate::InfoDatabaseStruct ConfigDatabaseInfo;
         Configurate::InfoDatabaseStruct FailedDatabaseInfo;
         Configurate::ModulesStruct Modules;
+        Configurate::MetaStruct Meta;
         bool DebugMode;
         bool InsertRoute;
         bool DecryptedData;

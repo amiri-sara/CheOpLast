@@ -14,8 +14,6 @@ private:
     Configurate::WebServiceConfigStruct WebServiceConfig;
 
     void InsertRoute();
-    void InsertRouteTest();
-
     void TokenRoute();
 
 protected:

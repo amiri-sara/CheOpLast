@@ -10,7 +10,8 @@ public:
         String,
         Integer,
         Date,
-        Double
+        Double,
+        Int64
     };
 
     enum  MongoStatus {
@@ -24,6 +25,7 @@ public:
         FailedParseDataFromString,
         FindSuccessful,
         UpdateSuccessful,
+        UpdateFailed,
         DeleteSuccessful
     };
     
@@ -62,7 +64,9 @@ public:
     ResponseStruct Insert(const std::string &DatabaseName, const std::string &CollectionName, const std::vector<Field>& fields);
     ResponseStruct Find(const std::string &DatabaseName, const std::string &CollectionName, const std::vector<Field>& fields, FindOptionStruct& FindOption, std::vector<std::string>& Documents);
     ResponseStruct Update(const std::string &DatabaseName, const std::string &CollectionName, const std::vector<Field>& findfields, const std::vector<Field>& updatefields);
+    ResponseStruct Update_one(const std::string &DatabaseName, const std::string &CollectionName, const std::vector<Field>& findfields, const std::vector<Field>& updatefields);
     ResponseStruct Delete(const std::string &DatabaseName, const std::string &CollectionName, const std::vector<Field>& findfields);
+    
 
 private:
     std::shared_ptr<mongocxx::pool> mongoPool;
