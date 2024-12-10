@@ -325,7 +325,7 @@ int RahdariService::init()
         boost::thread(&RahdariService::getInfoHandler, this).detach();
     }
         
-    if(this->CurlServiceConfig.DebugMode)
+    if(this->CurlServiceConfig.MonitorMode)
         boost::thread (&RahdariService::monitor, this).detach();
 
 
@@ -796,10 +796,10 @@ std::vector<RahdariService::TTOInfo> RahdariService::getInfo(const std::string& 
     HList = curl_slist_append(HList, "Accept: application/json");
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, HList);
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, Packet.c_str());
-    std::string response;
+    std::string response = "";
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeToString);
-            // Set connection timeout (in seconds)
+    // Set connection timeout (in seconds)
     curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 30L); 
     // Set timeout
     curl_easy_setopt(curl, CURLOPT_TIMEOUT, 60L);

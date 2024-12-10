@@ -8,6 +8,7 @@
 int main(int argc, char *argv[])
 {   
     bool DebugMode = false;
+    bool MonitorMode = false;
     bool ReadFromMinIdTXT = false;
     if(argc > 1)
     {
@@ -15,6 +16,11 @@ int main(int argc, char *argv[])
         {
             Logger::getInstance().logWarning("***************** Debug Mode *****************");
             DebugMode = true;
+        }else if((argc == 2) && ((!strcmp(argv[1], "m")) || (!strcmp(argv[1], "M")) || (!strcmp(argv[1], "-m")) || (!strcmp(argv[1], "-M"))))
+        {
+            Logger::getInstance().logWarning("***************** Monitoring Mode *****************");
+            MonitorMode = true;
+
         }else if((argc == 2) && ((!strcmp(argv[1], "v")) || (!strcmp(argv[1], "V")) || (!strcmp(argv[1], "-v")) || (!strcmp(argv[1], "-V"))))
         {
             std::cout << CHECKOP_VERSION << std::endl;
@@ -47,6 +53,7 @@ int main(int argc, char *argv[])
     for( auto& config : CurlServiceConfig)
     {
         config.DebugMode = DebugMode;
+        config.MonitorMode = MonitorMode;
         config.ReadFromMinIdTXT = ReadFromMinIdTXT;
         std::shared_ptr<RahdariService> service3{std::make_shared<RahdariService>(config)};
         service3->init();

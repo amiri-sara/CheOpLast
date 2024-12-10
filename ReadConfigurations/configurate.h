@@ -59,6 +59,7 @@ public:
         int ThreadNumber;
         int ThresholdFetchedRecors;
         bool DebugMode;
+        bool MonitorMode;
         bool ReadFromMinIdTXT;
         std::vector<Configurate::CurlServiceInfoStruct> OtherService;
 
