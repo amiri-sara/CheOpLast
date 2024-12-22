@@ -112,6 +112,7 @@ namespace DataHandler
         Configurate::ModulesStruct Modules;
         Configurate::MetaStruct Meta;
         bool DebugMode;
+        bool MonitorMode;
         bool InsertRoute;
         bool DecryptedData;
         bool WebServiceAuthentication;

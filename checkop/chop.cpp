@@ -118,7 +118,7 @@ void ChOp::process()
                 DH->ProcessedInputData.croppedPlateImage = OutPutchOp.croppedPlateImage;
 
 
-                if(DH->DebugMode)
+                if(DH->MonitorMode)
                 {
                     mtx_ChOp.lock();
                     // SHOW_IMPORTANTLOG("CheckOpTime: (ms)" << CheckOpTime << " >>>>>  Record ID : " << DH->Input.PassedVehicleRecordsId << " >>>>> thredID: " <<boost::this_thread::get_id());
@@ -232,7 +232,7 @@ void ChOp::process()
             // MinId_mutex.unlock();
 
 
-            if(DH->DebugMode)
+            if(DH->MonitorMode)
             {
                 mtx_Saving.lock();
                 totalSavingTime += durationSaveTime; // Use regular addition
