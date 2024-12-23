@@ -10,38 +10,64 @@ int main(int argc, char *argv[])
     bool DebugMode = false;
     bool MonitorMode = false;
     bool ReadFromMinIdTXT = false;
+
     if(argc > 1)
     {
-        if((argc == 2) && ((!strcmp(argv[1], "d")) || (!strcmp(argv[1], "D")) || (!strcmp(argv[1], "-d")) || (!strcmp(argv[1], "-D"))))
+        bool hasDebugFlag = false;
+        bool hasMonitorFlag = false;
+
+        // Iterate through all provided arguments
+        for(int i = 1; i < argc; ++i)
+        {
+            if((!strcmp(argv[i], "d")) || (!strcmp(argv[i], "D")) || (!strcmp(argv[i], "-d")) || (!strcmp(argv[i], "-D")))
+            {
+                hasDebugFlag = true;
+            }
+            else if((!strcmp(argv[i], "m")) || (!strcmp(argv[i], "M")) || (!strcmp(argv[i], "-m")) || (!strcmp(argv[i], "-M")))
+            {
+                hasMonitorFlag = true;
+            }
+            else if((!strcmp(argv[i], "v")) || (!strcmp(argv[i], "V")) || (!strcmp(argv[i], "-v")) || (!strcmp(argv[i], "-V")))
+            {
+                std::cout << CHECKOP_VERSION << std::endl;
+                return 0;
+            }
+            else if((!strcmp(argv[i], "vv")) || (!strcmp(argv[i], "VV")) || (!strcmp(argv[i], "-vv")) || (!strcmp(argv[i], "-VV")))
+            {
+                SHOW_IMPORTANTLOG2("Check Operator Version = " << CHECKOP_VERSION);
+                SHOW_IMPORTANTLOG2("Inference Version = " << inference::getVersion() << " Using ONNX Runtime " << std::to_string(ORT_API_VERSION));
+                SHOW_IMPORTANTLOG2("Database Version = " << DATABASEVERSION);
+                SHOW_IMPORTANTLOG2("Classifier Version = " << Classifier::getVersion());
+                return 0;
+            }
+            else if((!strcmp(argv[i], "f")) || (!strcmp(argv[i], "F")) || (!strcmp(argv[i], "-f")) || (!strcmp(argv[i], "-F")))
+            {
+                SHOW_WARNING("***************** Read From MinId.txt *****************");
+                ReadFromMinIdTXT = true;
+            }
+            else
+            {
+                Logger::getInstance().logError("Invalid Argument.");
+                return 0;
+            }
+        }
+
+        // Activate Debug and/or Monitor Mode based on flags
+        if(hasDebugFlag && hasMonitorFlag)
+        {
+            Logger::getInstance().logWarning("***************** Debug and Monitoring Mode *****************");
+            DebugMode = true;
+            MonitorMode = true;
+        }
+        else if(hasDebugFlag)
         {
             Logger::getInstance().logWarning("***************** Debug Mode *****************");
             DebugMode = true;
-        }else if((argc == 2) && ((!strcmp(argv[1], "m")) || (!strcmp(argv[1], "M")) || (!strcmp(argv[1], "-m")) || (!strcmp(argv[1], "-M"))))
+        }
+        else if(hasMonitorFlag)
         {
             Logger::getInstance().logWarning("***************** Monitoring Mode *****************");
             MonitorMode = true;
-
-        }else if((argc == 2) && ((!strcmp(argv[1], "v")) || (!strcmp(argv[1], "V")) || (!strcmp(argv[1], "-v")) || (!strcmp(argv[1], "-V"))))
-        {
-            std::cout << CHECKOP_VERSION << std::endl;
-            return 0;
-        }else if((argc == 2) && ((!strcmp(argv[1], "vv")) || (!strcmp(argv[1], "V")) || (!strcmp(argv[1], "-vv")) || (!strcmp(argv[1], "-VV"))))
-        {
-            SHOW_IMPORTANTLOG2("Check Operator Version = " << CHECKOP_VERSION);
-            SHOW_IMPORTANTLOG2("Inference Version = " << inference::getVersion() << " Using ONNX Runtime " << std::to_string(ORT_API_VERSION));
-            SHOW_IMPORTANTLOG2("Database Version = " << DATABASEVERSION);
-            // SHOW_IMPORTANTLOG2("Check Operator Version = " << ChOp::getVersion());
-            SHOW_IMPORTANTLOG2("Classifier Version = " << Classifier::getVersion());
-            return 0;
-        }else if((argc == 2) && ((!strcmp(argv[1], "f")) || (!strcmp(argv[1], "F")) || (!strcmp(argv[1], "-f")) || (!strcmp(argv[1], "-F"))))
-        {
-            SHOW_WARNING("***************** Read From MinId.txt *****************");
-            ReadFromMinIdTXT = true;
-        }
-        else
-        {
-            Logger::getInstance().logError("Invalid Argument.");
-            return 0;
         }
     }
     
