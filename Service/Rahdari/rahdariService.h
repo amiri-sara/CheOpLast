@@ -7,6 +7,7 @@
 // Include a faster JSON library, e.g., RapidJSON or simdjson
 #include <rapidjson/document.h>
 #include <rapidjson/error/en.h>
+#include "../crow.h"
 #define batchMetaData_vec_sizeThresold 100
 #define monitorInterval 10
 class RahdariService : public Service

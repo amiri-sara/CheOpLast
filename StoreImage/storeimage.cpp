@@ -42,9 +42,14 @@ bool storeimage::run(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH)
     std::string PlateImageName = DH->StoreImageAddress.ImageName + "_P" + ".jpg";
     if(!(this->StoreImage(FolderName, PlateImageName, DH->ProcessedInputData.croppedPlateImage, true, DH->StoreImageConfig.PlateImageMaxSize)))
     {
-        // DH->Response.HTTPCode = 500;
-        // DH->Response.errorCode = CANNOTSAVEPLATEIMAGE;//TODO
-        // DH->Response.Description = "Internal Error.";
+        if(DH->Response.Description == "")
+        {
+            DH->Response.HTTPCode = 500;
+            DH->Response.errorCode = CANNOTSAVEPLATEIMAGE;
+            DH->Response.Description = "Internal Error.";
+
+        }
+
         return false;
     }
 
@@ -378,7 +383,7 @@ bool storeimage::StoreImage(std::string FolderName, std::string ImageName, cv::M
     Param.push_back(cv::IMWRITE_JPEG_QUALITY);
     Param.push_back(100);
 
-    std::string OutputImageName =  FolderName+ "/" +ImageName;
+    std::string OutputImageName =  FolderName+ ImageName;//"/" +ImageName;
 
     if(EnableResize)
     {

@@ -197,9 +197,14 @@ void RahdariService::getInfoHandler()
             if(it != Images_map.end()){
 
                 info.PlateImageBase64 = it->second;
-            }
-            else{
-                info.error = "There Is No Image For This RecordId : "+std::to_string(info.TTOInfoId);
+
+                if(it->second == "Image Not Available" )  
+                    info.error = "Image Not Available" ;
+
+                else if(it->second == "null" || it->second == "NULL"  )
+                    info.error = "Image Is NULL" ;
+            }else{
+                info.error = "There Is No Image For This RecordId ." ;
             }
 
         }
@@ -393,39 +398,6 @@ void RahdariService::run()
                 continue;
             }
 
-            // ////////////////////////TEST???????????????//
-            // TTOInfo info;
-            // info.Allowed            = "";
-            // info.CompanyID          = "200";
-            // info.DeviceId           = "6226"  ;
-            // info.LineNumber         = "1";
-            // info.PassDateTime       = "2024-10-21T11:06:39";
-            // info.ReceiveDateTime    = "";
-            // info.RegisterDateTime   = "";
-            // info.SystemD            = "";
-            // info.TTOInfoId          = 18693441477    ;
-            // info.VehicleClass       = "";
-            // info.VehiclePlate       = "441536859";
-            // info.VehicleSpeed       = "70";
-            // info.WrongDirection     = "";
-            // info.HasColorImage      = "";
-            // info.HasPlateImage      = "";
-            // info.HasCrime           = "";
-            // info.CrimeCode          = "";
-            // info.PoliceCode         = "";
-            // info.PlateImageBase64   = "";
-            // info.error              = "";
-            // std::ifstream file("/home/amiri/data/Image.txt"); // Open the file
-            // std::stringstream buffer; // Create a stringstream to hold the content
-
-            // if (file) { // Check if the file opened successfully
-            //     buffer << file.rdbuf(); // Read the file content into the stringstream
-            //     info.PlateImageBase64 = buffer.str(); // Convert stringstream to 
-            // }
-            // info.PlateImageBase64.erase(std::remove(info.PlateImageBase64.begin(), info.PlateImageBase64.end(), '\n'), info.PlateImageBase64.end());
-
-            // Info.push_back(info);
-
 
             int CheckOpObjectIndex = 0;
             int j = 0;
@@ -480,14 +452,27 @@ void RahdariService::run()
                 DH->ProcessedInputData.ReceivedTimeLocal = stringToTm(DH->Input.ReceivedTime);
                 DH->Input.PlateImageBase64 = Info[i].PlateImageBase64;
 
+                if(DH->Input.PlateValue == "000000000")
+                {
+                    DH->Response.HTTPCode = 400;
+                    DH->Response.errorCode = INVALIDMASTERPLATE;
+                    DH->Response.Description = "The Value of MasterPlate Is Invalid.";
+                }
+
                 //getImages
-                if(Info[i].error != "")
+                if(Info[i].error != "")//TODO
                 {
                     DH->Response.HTTPCode = 400;
                     DH->Response.errorCode = CANNOTFINDIMAGE;
                     DH->Response.Description = Info[i].error;
 
-                }
+                    this->m_pChOpObjects[j]->ProcessInputVecMutex.lock();
+                    this->m_pChOpObjects[j]->ProcessInputVec.push_back(DH);
+                    this->m_pChOpObjects[j]->ProcessInputVecMutex.unlock();
+                    
+                continue;
+                } //TODO VALIDATION
+
 
                 DH->ProcessedInputData.PlateImageMat = createMatImage(DH->Input.PlateImageBase64,std::to_string(DH->Input.PassedVehicleRecordsId)); 
 
@@ -497,19 +482,13 @@ void RahdariService::run()
                     DH->Response.HTTPCode = 400;
                     DH->Response.errorCode = INVALIDPLATEIMAGE;
                     DH->Response.Description = "The Value of PlateImage Is Invalid.";
-                }
-
-                if(DH->Input.PlateValue == "000000000")
-                {
-                    DH->Response.HTTPCode = 400;
-                    DH->Response.errorCode = INVALIDMASTERPLATE;
-                    DH->Response.Description = "The Value of MasterPlate Is Invalid.";
+                    
+                    // continue;
                 }
 
                 this->m_pChOpObjects[j]->ProcessInputVecMutex.lock();
                 this->m_pChOpObjects[j]->ProcessInputVec.push_back(DH);
                 this->m_pChOpObjects[j]->ProcessInputVecMutex.unlock();
-                // this->m_pChOpObjects[j]->preprocess();
 
 
                 j++;
@@ -562,47 +541,63 @@ RahdariService::getImagesResultStruct RahdariService::parsePlateImages(const std
     //     return result; // Return early on error presence //TODO
     // }
 
-    if (document.IsArray()) {
-        // Reserve space in the map if you have an idea of the number of records
-        result.PlateImages_map.reserve(document.Size());
-
-        for (const auto& item : document.GetArray()) {
-            if (item.HasMember("tid") && item["tid"].IsUint64()) {
-                uint64_t tid = item["tid"].GetUint64();
-                std::string plate_image;
-
-                if (item.HasMember("plate_image")){ 
-                    if(item["plate_image"].IsString()){
-                        plate_image = item["plate_image"].GetString();
-                        if(this->CurlServiceConfig.MonitorMode){
-                            mtx_ValidImage.lock();
-                            validImagesCount++;
-                            mtx_ValidImage.unlock();
-                        }
-
-                    }else if(item["plate_image"].IsString() && item["plate_image"].GetString() == "The Value of PlateImage Is Invalid." )
-                    {
-                        result.Error = "Image Not Available";
-                        plate_image = "null";
-                        if(this->CurlServiceConfig.DebugMode)
-                            Logger::getInstance().logWarning(result.Error); //TODO RETURN CODE TYPE;
-                    }
-
-                    else if(item["plate_image"].IsNull()){
-                        result.Error = "Image Is NULL";
-                        plate_image = "null";
-                        if(this->CurlServiceConfig.DebugMode)
-                            Logger::getInstance().logWarning(result.Error); //TODO RETURN CODE TYPE;
-                    }   
-                    // Efficiently remove newline characters
-                    plate_image.erase(std::remove(plate_image.begin(), plate_image.end(), '\n'), plate_image.end());
-                }
-
-                result.PlateImages_map[tid] = std::move(plate_image); // Move instead of copy
-            }
-        }
+    if (!document.IsArray()) {
+        Logger::getInstance().logError("The record received is not in the correct format !!! ");
+        result.Error = "Invalid JSON structure";
+        return result; // Return early if top-level JSON is not an array
     }
 
+    // Reserve space in the map if you have an idea of the number of records
+    result.PlateImages_map.reserve(document.Size());
+
+    for (const auto& item : document.GetArray()) {
+        // Validate that each element is an object
+        if (!item.IsObject()) {
+            Logger::getInstance().logWarning("Invalid record format: Expected an object. Skipping record...");
+            continue; // Skip non-object elements
+        }
+
+        // Validate the presence and types of required fields
+        if (!item.HasMember("tid") || !item["tid"].IsUint64() ||
+            !item.HasMember("plate_image") || !item["plate_image"].IsString()) {
+            Logger::getInstance().logWarning("Record missing required fields or invalid field types. Skipping record...");
+            continue; // Skip records with missing or invalid fields
+        }
+
+        // if (item.HasMember("tid") && item["tid"].IsUint64()) {
+            uint64_t tid = item["tid"].GetUint64();
+            std::string plate_image;
+
+            if(item["plate_image"].IsString()){ 
+
+                plate_image = item["plate_image"].GetString();
+
+// Efficiently remove newline characters
+                plate_image.erase(std::remove(plate_image.begin(), plate_image.end(), '\n'), plate_image.end());
+
+                if(this->CurlServiceConfig.MonitorMode){//TODO
+                    mtx_ValidImage.lock();
+                    validImagesCount++;
+                    mtx_ValidImage.unlock();
+                }
+            
+
+            }else if(item["plate_image"].IsNull()){
+                // result.Error = "Image Is NULL";
+                plate_image = "null";
+                if(this->CurlServiceConfig.DebugMode)
+                    Logger::getInstance().logWarning(result.Error + " With tid : " +std::to_string(tid)); //TODO RETURN CODE TYPE;
+            }
+
+        result.PlateImages_map[tid] = std::move(plate_image); // Move instead of copy
+
+        // }else{
+        //         Logger::getInstance().logWarning( "Record does not conform to the standard format for traffic records "); //TODO RETURN CODE TYPE;
+        //         continue;
+        //     }
+
+        }
+        
     return result; // Return the result struct
 }
 
@@ -664,7 +659,7 @@ std::unordered_map< uint64_t, std::string> RahdariService::getImageBase64_bulk(c
         if(this->CurlServiceConfig.MonitorMode)
         {
             mtx_Image.lock();
-            totalImageFetchingTime += duration_Image; // Use regular addition
+            totalImageFetchingTime += duration_Image; 
             ImagefetchingCount++;
             // Logger.getInstance().logInfo("Images Request time: " + duration_Image + " ms");
             // Logger.getInstance().logInfo("Images JSON parsing time: " + parseDuration + " ms");
