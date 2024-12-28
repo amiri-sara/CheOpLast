@@ -190,6 +190,8 @@ void RahdariService::getInfoHandler()
         //getplateimages
 
         std::unordered_map<uint64_t, std::string> Images_map = getImageBase64_bulk(Url, minIdLocal, minIdLocal+InfoCount-1);
+        if(Images_map.empty())
+            continue;
 
         for (auto& info : Info)
         {
@@ -526,7 +528,7 @@ void RahdariService::run()
     // return 0; //TODO ERROR HANDLING FOR VIOD FUNC
 }
 
-RahdariService::getImagesResultStruct RahdariService::parsePlateImages(const std::string& jsonString) {
+RahdariService::getImagesResultStruct RahdariService::parsePlateImages(const std::string& jsonString, uint64_t MinId) {
 
     getImagesResultStruct result; // Initialize the result struct
 
@@ -542,59 +544,61 @@ RahdariService::getImagesResultStruct RahdariService::parsePlateImages(const std
     // }
 
     if (!document.IsArray()) {
-        Logger::getInstance().logError("The record received is not in the correct format !!! ");
+        Logger::getInstance().logError("The record received is not in the correct format !!! ["+ std::to_string(MinId)+"]");
         result.Error = "Invalid JSON structure";
         return result; // Return early if top-level JSON is not an array
+    }
+
+        // Log if the array is empty
+    if (document.Empty()) {
+        Logger::getInstance().logError("The document array is empty. Skipping record... [" + std::to_string(MinId) + "]");
+        result.Error = "Empty document array";
+        return result; // Return early if array is empty
     }
 
     // Reserve space in the map if you have an idea of the number of records
     result.PlateImages_map.reserve(document.Size());
 
     for (const auto& item : document.GetArray()) {
-        // Validate that each element is an object
+        // Validate that each element is an json object
         if (!item.IsObject()) {
-            Logger::getInstance().logWarning("Invalid record format: Expected an object. Skipping record...");
+            Logger::getInstance().logWarning("Invalid record format: Expected an json object. Skipping record...["+ std::to_string(MinId)+"]");
             continue; // Skip non-object elements
         }
 
         // Validate the presence and types of required fields
-        if (!item.HasMember("tid") || !item["tid"].IsUint64() ||
-            !item.HasMember("plate_image") || !item["plate_image"].IsString()) {
-            Logger::getInstance().logWarning("Record missing required fields or invalid field types. Skipping record...");
+        if (!item.HasMember("tid") ||!item.HasMember("plate_image") ){ //|| !item["plate_image"].IsString()) {
+            
+            Logger::getInstance().logWarning("Record missing required fields or invalid field types. Skipping record...["+ std::to_string(MinId)+"]");
             continue; // Skip records with missing or invalid fields
         }
 
-        // if (item.HasMember("tid") && item["tid"].IsUint64()) {
-            uint64_t tid = item["tid"].GetUint64();
-            std::string plate_image;
+        uint64_t tid = item["tid"].GetUint64();
+        std::string plate_image;
 
-            if(item["plate_image"].IsString()){ 
+        if(item["plate_image"].IsString()){ 
 
-                plate_image = item["plate_image"].GetString();
+            plate_image = item["plate_image"].GetString();
 
 // Efficiently remove newline characters
-                plate_image.erase(std::remove(plate_image.begin(), plate_image.end(), '\n'), plate_image.end());
+            plate_image.erase(std::remove(plate_image.begin(), plate_image.end(), '\n'), plate_image.end());
 
-                if(this->CurlServiceConfig.MonitorMode){//TODO
-                    mtx_ValidImage.lock();
-                    validImagesCount++;
-                    mtx_ValidImage.unlock();
-                }
-            
-
-            }else if(item["plate_image"].IsNull()){
-                // result.Error = "Image Is NULL";
-                plate_image = "null";
-                if(this->CurlServiceConfig.DebugMode)
-                    Logger::getInstance().logWarning(result.Error + " With tid : " +std::to_string(tid)); //TODO RETURN CODE TYPE;
+            if(this->CurlServiceConfig.MonitorMode){
+                mtx_ValidImage.lock();
+                validImagesCount++;
+                mtx_ValidImage.unlock();
             }
+        
+
+        }else if(item["plate_image"].IsNull()){
+            // result.Error = "Image Is NULL";
+            plate_image = "null";
+            if(this->CurlServiceConfig.DebugMode)
+                Logger::getInstance().logWarning("Image Is NULL With tid : " +std::to_string(tid)); //TODO RETURN CODE TYPE;
+        }
 
         result.PlateImages_map[tid] = std::move(plate_image); // Move instead of copy
 
-        // }else{
-        //         Logger::getInstance().logWarning( "Record does not conform to the standard format for traffic records "); //TODO RETURN CODE TYPE;
-        //         continue;
-        //     }
 
         }
         
@@ -603,7 +607,7 @@ RahdariService::getImagesResultStruct RahdariService::parsePlateImages(const std
 
 std::unordered_map< uint64_t, std::string> RahdariService::getImageBase64_bulk(const std::string& Url, uint64_t MinId, uint64_t MaxId)
 {
-    //    ImageInfo Img;
+    // ImageInfo Img;
     getImagesResultStruct resVal;
     std::string requestUrl = Url + "/getplateimages/";
     CURL* curl = curl_easy_init();
@@ -623,9 +627,9 @@ std::unordered_map< uint64_t, std::string> RahdariService::getImageBase64_bulk(c
         std::string response;
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeToString);
-                // Set connection timeout (in seconds)
+        // Set connection timeout (in seconds)
         curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 30L); 
-                // Set timeout
+        // Set timeout
         curl_easy_setopt(curl, CURLOPT_TIMEOUT, 60L);
 
         // Start timing the request
@@ -648,10 +652,10 @@ std::unordered_map< uint64_t, std::string> RahdariService::getImageBase64_bulk(c
 
         }
     
-                // Start timing the JSON parsing
+        // Start timing the JSON parsing
         auto parseStartTime = std::chrono::high_resolution_clock::now();
 
-        resVal =  parsePlateImages(response); // Handle parsing errors within this function
+        resVal =  parsePlateImages(response, MinId); // Handle parsing errors within this function
 
         // End timing the JSON parsing
         auto parseEndTime = std::chrono::high_resolution_clock::now();

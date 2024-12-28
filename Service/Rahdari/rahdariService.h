@@ -99,7 +99,7 @@ private:
     uint64_t getMaxId(const std::string& Url);
     std::vector<TTOInfo> getInfo(const std::string& Url, uint64_t MinId, uint64_t MaxId);
     ImageInfo getImageBase64(std::string Url, uint64_t Id);
-    getImagesResultStruct parsePlateImages(const std::string& jsonString);
+    getImagesResultStruct parsePlateImages(const std::string& jsonString, uint64_t MinId);
     std::unordered_map<uint64_t, std::string> getImageBase64_bulk(const std::string& Url, uint64_t MinId, uint64_t MaxId);
     std::string exec(std::string cmd);
     bool isExistsFile(std::string FilePath);
