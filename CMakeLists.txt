@@ -35,6 +35,10 @@ if(BUILDUBUNTU22)
     add_definitions(-DCREATEMONGOINSTANCE)
 endif()
 
+if(BUILDUBUNTU20)
+    add_definitions(-DCREATEMONGOINSTANCE)
+endif()
+
 if(CURLSERVICE)
     add_definitions(-DCURLSERVICE)
 endif()
