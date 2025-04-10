@@ -74,9 +74,9 @@ int main(int argc, char *argv[])
     Configurate* ConfigurateObj = Configurate::getInstance();
     // boost::thread UpdateServiceThread(&Configurate::RunUpdateService, ConfigurateObj); #TODO
     // UpdateServiceThread.detach();
-#ifdef CURLSERVICE
-    auto CurlServiceConfig = ConfigurateObj->getCurlServiceConfig();
-    for( auto& config : CurlServiceConfig)
+#ifdef CLIENTSERVICE
+    auto ClientServiceConfig = ConfigurateObj->getClientServiceConfig();
+    for( auto& config : ClientServiceConfig)
     {
         config.DebugMode = DebugMode;
         config.MonitorMode = MonitorMode;
@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
         boost::thread (&RahdariService::run, service3).detach();
 
     }
-#endif //CURLSERVICE
+#endif //CLIENTSERVICE
 
 #ifdef WEBSERVICE
     auto WebServicesConfig = ConfigurateObj->getWebServiceConfig();

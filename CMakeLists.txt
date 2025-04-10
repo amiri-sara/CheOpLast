@@ -9,7 +9,7 @@ message(STATUS "CXX Compiler: ${CMAKE_CXX_COMPILER}")
 OPTION(BUILDUBUNTU22 "Build in Ubuntu22" ON)
 OPTION(BUILDUBUNTU20 "Build in Ubuntu20" OFF)
 
-OPTION(CURLSERVICE "Run curl service" ON)
+OPTION(CLIENTSERVICE "Run client service" ON)
 OPTION(WEBSERVICE "Run Web service" OFF)
 OPTION(KAFKASERVICE "Run Kafka service" OFF)
 OPTION(INSERTDATABASE "Insert the data into the database" ON)
@@ -39,8 +39,8 @@ if(BUILDUBUNTU20)
     add_definitions(-DCREATEMONGOINSTANCE)
 endif()
 
-if(CURLSERVICE)
-    add_definitions(-DCURLSERVICE)
+if(CLIENTSERVICE)
+    add_definitions(-DCLIENTSERVICE)
 endif()
 
 if(WEBSERVICE)
@@ -173,7 +173,7 @@ if(KAFKASERVICE OR KAFKAOUTPUT)
                     Kafka/KafkaProsumer.cpp)
 endif()
 
-if(CURLSERVICE)
+if(CLIENTSERVICE)
     set(SRC_LIST    ${SRC_LIST}
                     Service/Rahdari/rahdariService.cpp)
 endif()

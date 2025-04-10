@@ -30,6 +30,9 @@ Boost_INCLUDE_DIR:PATH=/usr/include
 
 Boost_SYSTEM_LIBRARY_RELEASE:STRING=/usr/lib/x86_64-linux-gnu/libboost_system.so.1.74.0
 
+//Run client service
+CLIENTSERVICE:BOOL=ON
+
 //Path to a program.
 CMAKE_ADDR2LINE:FILEPATH=/usr/bin/addr2line
 

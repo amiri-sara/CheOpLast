@@ -259,7 +259,7 @@ ChOp::OutputStruct ChOp::run(const ChOp::InputStruct& input)
 {
     ChOp::OutputStruct output;
     output.PlateImageBase64 = input.plateImageBase64;//TODO must remove only for test
-    std::cout<<input.plateImageBase64<<std::endl;
+    // std::cout<<input.plateImageBase64<<std::endl;
     if(input.plateImage.empty())
     {
         output.codeType      = ChOp::CodeTypes::NULL_IMAGE;

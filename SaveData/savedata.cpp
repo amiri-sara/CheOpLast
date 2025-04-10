@@ -266,6 +266,7 @@ bool savedata::InsertDatabase(const std::shared_ptr<DataHandler::DataHandlerStru
         {  
             MongoDB::Field CodeTypeField = {"CodeType", std::to_string(DH->Input.CodeType), MongoDB::FieldType::Integer};
             fields.push_back(CodeTypeField);
+            
         }
     }
 
@@ -360,14 +361,20 @@ bool savedata::InsertDatabase(const std::shared_ptr<DataHandler::DataHandlerStru
         }
     }
 
-    auto InsertReturn = DH->InsertDatabase->Insert(DH->InsertDatabaseInfo.DatabaseName, DH->InsertDatabaseInfo.CollectionName, fields);
-    if(InsertReturn.Code != MongoDB::MongoStatus::InsertSuccessful) //TODO
+    if(DH->Input.CodeType == 20 || DH->Input.CodeType == -2) //TODO
     {
-        DH->Response.HTTPCode = 500;
-        DH->Response.errorCode = DATABASEERROR;
-        DH->Response.Description = InsertReturn.Description;
-        return false;
-    }
+        auto InsertReturn = DH->InsertDatabase->Insert(DH->InsertDatabaseInfo.DatabaseName, DH->InsertDatabaseInfo.CollectionName, fields);
+        if(InsertReturn.Code != MongoDB::MongoStatus::InsertSuccessful) //TODO
+        {
+            DH->Response.HTTPCode = 500;
+            DH->Response.errorCode = DATABASEERROR;
+            DH->Response.Description = InsertReturn.Description;
+            return false;
+        }
+    } 
+    
+      
+
 
     return true;
 }

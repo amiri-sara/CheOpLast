@@ -39,7 +39,7 @@ public:
         int Port;
     };
 
-    struct CurlServiceInfoStruct
+    struct ClientServiceInfoStruct
     {
         std::string URI                  = "";
         std::string IP                   = "";
@@ -53,15 +53,15 @@ public:
         int threadNumber;
     };
 
-    struct CurlServiceConfigStruct
+    struct ClientServiceConfigStruct
     {
-        CurlServiceInfoStruct CurlServiceInfo;
+        ClientServiceInfoStruct ClientServiceInfo;
         int ThreadNumber;
         int ThresholdFetchedRecors;
         bool DebugMode;
         bool MonitorMode;
         bool ReadFromMinIdTXT;
-        std::vector<Configurate::CurlServiceInfoStruct> OtherService;
+        std::vector<Configurate::ClientServiceInfoStruct> OtherService;
 
     };
     struct WebServiceConfigStruct
@@ -231,7 +231,7 @@ public:
     std::shared_ptr<MongoDB> getInsertDatabase();
     std::shared_ptr<MongoDB> getFailedDatabase();
     std::vector<WebServiceConfigStruct> getWebServiceConfig();
-    std::vector<CurlServiceConfigStruct> getCurlServiceConfig();
+    std::vector<ClientServiceConfigStruct> getClientServiceConfig();
     StoreImageConfigStruct getStoreImageConfig();
     KafkaConfigStruct getInputKafkaConfig();
     KafkaConfigStruct getOutputKafkaConfig();
@@ -255,7 +255,7 @@ private:
     std::shared_ptr<MongoDB> FailedDatabase;
     ReadConfigServiceStruct ReadConfigServiceConfig;
     std::vector<WebServiceConfigStruct> WebServiceConfig;
-    std::vector<CurlServiceConfigStruct> CurlServiceConfig;
+    std::vector<ClientServiceConfigStruct> ClientServiceConfig;
     StoreImageConfigStruct StoreImageConfig;
     KafkaConfigStruct InputKafkaConfig;
     KafkaConfigStruct OutputKafkaConfig;

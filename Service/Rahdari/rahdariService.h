@@ -13,7 +13,7 @@
 class RahdariService : public Service
 {
 public:
-    RahdariService(Configurate::CurlServiceConfigStruct ServiceConfig);
+    RahdariService(Configurate::ClientServiceConfigStruct ServiceConfig);
     void monitor();
     int init();
     void run() override;
@@ -93,7 +93,7 @@ private:
     boost::mutex batchMetaData_mutex;
     boost::mutex batchImages_mutex;
 
-    Configurate::CurlServiceConfigStruct CurlServiceConfig;
+    Configurate::ClientServiceConfigStruct ClientServiceConfig;
     std::vector<std::vector<TTOInfo>> batchMetaData_vec;
     std::vector<std::unordered_map<uint64_t, std::string>> batchImagesMap_vec;
     uint64_t getMaxId(const std::string& Url);

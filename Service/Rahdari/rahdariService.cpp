@@ -168,7 +168,7 @@ void RahdariService::getInfoHandler()
     int sleep_duration = 1000; // Start with 1 second
     std::chrono::steady_clock::time_point last_check_time = std::chrono::steady_clock::now();
     const std::chrono::seconds check_interval(5); // Check every 5 seconds
-    const size_t threshold = this->CurlServiceConfig.ThresholdFetchedRecors; // Set threshold
+    const size_t threshold = this->ClientServiceConfig.ThresholdFetchedRecors; // Set threshold
     
 
     while (true)
@@ -280,13 +280,13 @@ void RahdariService::getInfoHandler()
     
 }
 
-RahdariService::RahdariService(Configurate::CurlServiceConfigStruct ServiceConfig)
+RahdariService::RahdariService(Configurate::ClientServiceConfigStruct ServiceConfig)
 {
-    this->CurlServiceConfig = ServiceConfig;
+    this->ClientServiceConfig = ServiceConfig;
 }
 int RahdariService::init()
 {
-    if(!this->CurlServiceConfig.ReadFromMinIdTXT)
+    if(!this->ClientServiceConfig.ReadFromMinIdTXT)
     {
         Configurate* ConfigurateObj = Configurate::getInstance();
         this->MinId = ConfigurateObj->getMeta().last_processed_id;
@@ -323,14 +323,16 @@ int RahdariService::init()
         }
         std::cout << "********************" << std::endl;   
     }
+    Url = this->ClientServiceConfig.ClientServiceInfo.URI;
+
 
     curl_global_init(CURL_GLOBAL_ALL);
     
-    for(int i = 0;i < this->CurlServiceConfig.ThreadNumber; i++){
+    for(int i = 0;i < this->ClientServiceConfig.ThreadNumber; i++){
         boost::thread(&RahdariService::getInfoHandler, this).detach(); 
     }
         
-    if(this->CurlServiceConfig.MonitorMode)
+    if(this->ClientServiceConfig.MonitorMode)
         boost::thread (&RahdariService::monitor, this).detach();
 
 
@@ -339,7 +341,6 @@ int RahdariService::init()
 void RahdariService::run()
 {
     bool cont;
-    Url = this->CurlServiceConfig.CurlServiceInfo.URI;
 
     while(true)
     {
@@ -419,7 +420,7 @@ void RahdariService::run()
                 DH->StoreImageConfig     =  ConfigurateObj->getStoreImageConfig();
                 DH->ViolationMap         =  ConfigurateObj->getViolationMap();
                 DH->Cameras              =  ConfigurateObj->getCameras();
-                // DH->DaysforPassedTimeAcceptable = this->CurlServiceConfig.DaysforPassedTimeAcceptable;
+                // DH->DaysforPassedTimeAcceptable = this->ClientServiceConfig.DaysforPassedTimeAcceptable;
                 DH->InsertDatabase       =  ConfigurateObj->getInsertDatabase();
                 DH->InsertDatabaseInfo   =  ConfigurateObj->getInsertDatabaseInfo();
                 DH->FailedDatabase       =  ConfigurateObj->getFailedDatabase();
@@ -427,8 +428,8 @@ void RahdariService::run()
                 DH->Modules              =  ConfigurateObj->getModules();
                 DH->ConfigDatabase       =  ConfigurateObj->getConfigDatabase();
                 DH->ConfigDatabaseInfo   =  ConfigurateObj->getConfigDatabaseInfo();
-                DH->DebugMode            =  this->CurlServiceConfig.DebugMode;
-                DH->MonitorMode          = this->CurlServiceConfig.MonitorMode;
+                DH->DebugMode            =  this->ClientServiceConfig.DebugMode;
+                DH->MonitorMode          = this->ClientServiceConfig.MonitorMode;
 
                 crow::json::wvalue Response;
                 DH->Input.DeviceID        =  Info[i].DeviceId;
@@ -584,7 +585,7 @@ RahdariService::getImagesResultStruct RahdariService::parsePlateImages(const std
 // Efficiently remove newline characters
             plate_image.erase(std::remove(plate_image.begin(), plate_image.end(), '\n'), plate_image.end());
 
-            if(this->CurlServiceConfig.MonitorMode){
+            if(this->ClientServiceConfig.MonitorMode){
                 mtx_ValidImage.lock();
                 validImagesCount++;
                 mtx_ValidImage.unlock();
@@ -594,7 +595,7 @@ RahdariService::getImagesResultStruct RahdariService::parsePlateImages(const std
         }else if(item["plate_image"].IsNull()){
             // result.Error = "Image Is NULL";
             plate_image = "null";
-            if(this->CurlServiceConfig.DebugMode)
+            if(this->ClientServiceConfig.DebugMode)
                 Logger::getInstance().logWarning("Image Is NULL With tid : " +std::to_string(tid)); //TODO RETURN CODE TYPE;
         }
 
@@ -661,12 +662,14 @@ std::unordered_map< uint64_t, std::string> RahdariService::getImageBase64_bulk(c
         // End timing the JSON parsing
         auto parseEndTime = std::chrono::high_resolution_clock::now();
         double parseDuration = std::chrono::duration_cast<std::chrono::milliseconds>(parseEndTime - parseStartTime).count();
-        if(this->CurlServiceConfig.MonitorMode)
+        if(this->ClientServiceConfig.MonitorMode)
         {
             mtx_Image.lock();
             totalImageFetchingTime += duration_Image; 
             ImagefetchingCount++;
-            // Logger.getInstance().logInfo("Images Request time: " + duration_Image + " ms");
+            Logger::getInstance().logInfo("Images Request time: " + std::to_string(totalImageFetchingTime) + " ms");
+            Logger::getInstance().logInfo("Images batch count: " + std::to_string(ImagefetchingCount) );
+
             // Logger.getInstance().logInfo("Images JSON parsing time: " + parseDuration + " ms");
             mtx_Image.unlock();
 
@@ -842,7 +845,7 @@ std::vector<RahdariService::TTOInfo> RahdariService::getInfo(const std::string& 
     else
         std::cerr<<"Could not get TTOInfo "<<ResVal.Error<<std::endl;
 
-    if(this->CurlServiceConfig.MonitorMode)
+    if(this->ClientServiceConfig.MonitorMode)
     {
         mtx_Info.lock();
         totalInfoFetchingTime += duration_Info; // Use regular addition

@@ -164,21 +164,21 @@ Configurate::Configurate()
             this->InputKafkaConfig.DaysforPassedTimeAcceptable = KafkaDocConfigJSON["DaysforPassedTimeAcceptable"].i();
 #endif // KAFKASERVICE
 
-#ifdef CURLSERVICE
-            crow::json::rvalue CurlServiceArray = AggregationInputJSON["CurlService"];
-            std::size_t curlarraySize = CurlServiceArray.size();
-            for(std::size_t i =0 ; i < curlarraySize; ++i)
+#ifdef CLIENTSERVICE
+            crow::json::rvalue ClientServiceArray = AggregationInputJSON["ClientService"];
+            std::size_t clientArraySize = ClientServiceArray.size();
+            for(std::size_t i =0 ; i < clientArraySize; ++i)
             {
-                crow::json::rvalue CurlserviceConfigJSON = CurlServiceArray[i];
-                Configurate::CurlServiceConfigStruct CurlServiceConf;
-                CurlServiceConf.CurlServiceInfo.URI = CurlserviceConfigJSON["URI"].s();
-                CurlServiceConf.CurlServiceInfo.Port = CurlserviceConfigJSON["Port"].i();
-                CurlServiceConf.ThreadNumber = CurlserviceConfigJSON["ThreadNumber"].i();
-                CurlServiceConf.ThresholdFetchedRecors = CurlserviceConfigJSON["ThresholdFetchedRecors"].i();
-                this->CurlServiceConfig.push_back(CurlServiceConf);
+                crow::json::rvalue ClientServiceConfigJSON = ClientServiceArray[i];
+                Configurate::ClientServiceConfigStruct ClientServiceConf;
+                ClientServiceConf.ClientServiceInfo.URI = ClientServiceConfigJSON["URI"].s();
+                ClientServiceConf.ClientServiceInfo.Port = ClientServiceConfigJSON["Port"].i();
+                ClientServiceConf.ThreadNumber = ClientServiceConfigJSON["ThreadNumber"].i();
+                ClientServiceConf.ThresholdFetchedRecors = ClientServiceConfigJSON["ThresholdFetchedRecors"].i();
+                this->ClientServiceConfig.push_back(ClientServiceConf);
 
             }
-#endif // CURLSERVICE
+#endif // CLIENTSERVICE
 #ifdef WEBSERVICE   
             crow::json::rvalue WebServiceArray = AggregationInputJSON["WebService"];
             std::size_t arraySize = WebServiceArray.size();
@@ -803,9 +803,9 @@ std::vector<Configurate::WebServiceConfigStruct> Configurate::getWebServiceConfi
 {
     return this->WebServiceConfig;
 }
-std::vector<Configurate::CurlServiceConfigStruct> Configurate::getCurlServiceConfig()
+std::vector<Configurate::ClientServiceConfigStruct> Configurate::getClientServiceConfig()
 {
-    return this->CurlServiceConfig;
+    return this->ClientServiceConfig;
 }
 
 Configurate::StoreImageConfigStruct Configurate::getStoreImageConfig()
