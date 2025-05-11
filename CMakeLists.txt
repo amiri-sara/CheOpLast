@@ -13,12 +13,19 @@ OPTION(CLIENTSERVICE "Run client service" ON)
 OPTION(WEBSERVICE "Run Web service" OFF)
 OPTION(KAFKASERVICE "Run Kafka service" OFF)
 OPTION(INSERTDATABASE "Insert the data into the database" ON)
-OPTION(FAILEDDATABASE "failed database" ON)
+OPTION(FAILEDDATABASE "failed database" OFF)
 OPTION(STOREIMAGE "Store Image" ON)
 OPTION(KAFKAOUTPUT "Add the output data to the Kafka" OFF)
 OPTION(VALUEVALIDATION "Validation value of input" OFF)
 
-find_package(Boost COMPONENTS system filesystem  REQUIRED)
+# find_package(Boost COMPONENTS system filesystem  REQUIRED)
+find_package(Boost 1.71 REQUIRED COMPONENTS system filesystem thread chrono)
+if(Boost_FOUND)
+    message(STATUS "Boost found: ${Boost_VERSION}")
+else()
+    message(FATAL_ERROR "Boost not found. Please install Boost 1.71 or higher.")
+endif()
+
 
 set(WITH_GPU OFF)
 if(WITH_GPU)
@@ -81,22 +88,42 @@ list(REMOVE_DUPLICATES HEADER_DIRS)
 include_directories(${HEADER_DIRS})
 
 set(inc_dir /usr/local/include)
+set(lib_dir /usr/local/lib)
+
+set(INFERENCELIB_dir ${lib_dir}/kmodules)
+
 if(BUILDUBUNTU20)
     include_directories(/etc/programs/opencv-_pervios/4.2.0/include/opencv4)
-    set(OPENCVLIB_dir /usr/local/lib)
+    set(OPENCVLIB_dir ${lib_dir})
+    set(Boost_INCLUDE_DIRS /usr/include/boost1.71)
+    # set(Boost_LIBRARIES /usr/lib/x86_64-linux-gnu/boost1.71)
 elseif(BUILDUBUNTU22)
     include_directories(${inc_dir}/opencv/4.7.0/opencv4)
-    set(OPENCVLIB_dir /usr/local/lib/opencv/4.7.0)
+    set(OPENCVLIB_dir ${lib_dir}/opencv/4.7.0)
+    set(Boost_INCLUDE_DIRS /usr/include/boost)
+    # set(Boost_LIBRARIES /usr/lib/x86_64-linux-gnu/)
 endif()
+
+# ONNX Runtime
+set(onnxlib_dir   ${lib_dir}/onnx/1.17.1)
+set(onnxlib     ${onnxlib_dir}/libonnxruntime.so) 
+
 
 include_directories(.
                     /home/amiri/programs/rapidjson/include
-                    /usr/local/include/mongocxx/v_noabi
-                    /usr/local/include/bsoncxx/v_noabi
-                    /usr/local/include/bsoncxx/v_noabi/bsoncxx/third_party/mnmlstc
-                    /usr/local/include/libmongoc-1.0
-                    /usr/local/include/libbson-1.0
-                    ${inc_dir}/onnx/1.17.1)
+                    ${inc_dir}/mongocxx/v_noabi
+                    ${inc_dir}/bsoncxx/v_noabi
+                    ${inc_dir}/bsoncxx/v_noabi/bsoncxx/third_party/mnmlstc
+                    ${inc_dir}/libmongoc-1.0
+                    ${inc_dir}/libbson-1.0
+                    # /home/amiri/projects/c++/models/PlateClassifierPackage/inference_pipeline_v2.2.0/sources
+                    # /home/amiri/projects/c++/models/PlateClassifierPackage/inference_pipeline_v2.2.0/sources/nn
+                    ${inc_dir}/sources
+                    ${inc_dir}/sources/nn
+                    ${Boost_INCLUDE_DIRS}
+                    ${inc_dir}/onnx/1.17.1
+                    )
+
 
 set(OPENCVLIB       ${OPENCVLIB_dir}/libopencv_imgcodecs.so
                     ${OPENCVLIB_dir}/libopencv_core.so
@@ -113,7 +140,7 @@ if(KAFKASERVICE OR KAFKAOUTPUT)
     else ()
         find_file(LIBRDKAFKA_HEADER
                 NAMES rdkafka.h
-                HINTS /usr/include/librdkafka /usr/local/include/librdkafka /opt/homebrew/include/librdkafka)
+                HINTS /usr/include/librdkafka ${inc_dir}/librdkafka /opt/homebrew/include/librdkafka)
                     
         cmake_path(GET LIBRDKAFKA_HEADER PARENT_PATH LIBRDKAFKA_INCLUDE_DIR)
         cmake_path(GET LIBRDKAFKA_INCLUDE_DIR PARENT_PATH LIBRDKAFKA_INCLUDE_DIR)
@@ -157,15 +184,16 @@ if(KAFKASERVICE OR KAFKAOUTPUT)
 endif()
 
 set(SRC_LIST main.cpp
-             checkop/chop.cpp #TODO must remove make .so
-             ReadConfigurations/configurate.cpp
-             Cryptography/cipher.cpp
-             Cryptography/cryptotools.cpp
-             Cryptography/systemkeys.cpp
-             Database/MongoDB.cpp
-             Validator/validator.cpp
-             Time/timetools.cpp
-             Service/Service.cpp)
+            ocr/ocr.cpp
+            checkop/chop.cpp #TODO must remove make .so
+            ReadConfigurations/configurate.cpp
+            Cryptography/cipher.cpp
+            Cryptography/cryptotools.cpp
+            Cryptography/systemkeys.cpp
+            Database/MongoDB.cpp
+            Validator/validator.cpp
+            Time/timetools.cpp
+            Service/Service.cpp)
 
 if(KAFKASERVICE OR KAFKAOUTPUT)
     set(SRC_LIST    ${SRC_LIST}
@@ -195,16 +223,6 @@ endif()
 
 add_executable(${PROJECT_NAME} ${SRC_LIST})
 
-set(onnxlib_dir  /usr/local/lib/onnx/1.17.1)
-
-set(INFERENCELIB_dir /usr/local/lib/kmodules)
-set(INFERENCELIB     ${INFERENCELIB_dir}/libInference.so)
-
-# set(CHOPLIB_dir /usr/local/lib/kmodules)#TODO
-# set(CHOPLIB     ${CHOPLIB_dir}/libchop.so)
-
-set(CLASSIFIERLIB_dir /usr/local/lib/kmodules)
-set(CLASSIFIERLIB     ${CLASSIFIERLIB_dir}/libclassifier.so)
 
 target_link_libraries(${PROJECT_NAME} 
                       curl
@@ -213,15 +231,16 @@ target_link_libraries(${PROJECT_NAME}
                       boost_thread 
                       boost_chrono
                       boost_filesystem 
-                      ${DEEP_CORES}
                       ${OPENCVLIB}
-                      ${INFERENCELIB}
-                      ${CHOPLIB}
-                      ${CLASSIFIERLIB}
-                      ${onnxlib_dir}/libonnxruntime.so
                       /usr/lib/x86_64-linux-gnu/libssl.so.3 
                       /usr/lib/x86_64-linux-gnu/libcrypto.so.3
-                      /usr/lib/x86_64-linux-gnu/libfreeimage.so)
+                      /usr/lib/x86_64-linux-gnu/libfreeimage.so
+                      ${Boost_LIBRARIES}
+                      ${INFERENCELIB_dir}/libkodnn.so
+                    #   /home/amiri/projects/c++/models/KonectNeuralNetworkLibrary-v3.0-onnx1.17/examples/build/libkodnn.so
+                      ${INFERENCELIB_dir}/libInference.so
+                      ${onnxlib}
+                      )
 
                       
 if(KAFKASERVICE OR KAFKAOUTPUT)
@@ -243,3 +262,8 @@ if(BUILDUBUNTU20)
 elseif(BUILDUBUNTU22)
     target_link_libraries(${PROJECT_NAME} /usr/local/lib/banner/libbannerapi.so)
 endif()
+
+# Set output directory
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)

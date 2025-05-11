@@ -7,6 +7,30 @@
 #include "../SaveData/savedata.h"
 #include "../crow.h"
 
+#include <opencv2/opencv.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/bind/bind.hpp> 
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <string>
+#include "base.h"
+#include "common.h"
+#include "error_codes.h"
+#include "nn/onnx_inference/onnxinference.h"
+#include "ocr.h"
+
+
+using namespace std;
+using namespace cv;
+using namespace aivision::nn;
+using namespace boost::placeholders;
+using namespace gocr;
+
+
+
+
+
 #define SIZE 10  // Size of the circular buffer
 
 
@@ -36,9 +60,11 @@ public:
         SURE = 20
     };
 
-    struct ModelConfigStruct : public inference::ConfigStruct
+    struct ModelConfigStruct 
     {
         bool active = true;
+        std::string model; // Model value or .onnx file path
+        std::string modelConfig;
     };
 
     struct ConfigStruct 
@@ -58,7 +84,7 @@ public:
         cv::Mat plateImage;
         std::string plateImageBase64;
         std::string plateValue;
-        int plateType = static_cast<int>(inference::standards::PlateType::UNKNOWN);
+        int plateType = static_cast<int>(gocr::PlateType::UNKNOWN);
     };
 
     struct OutputStruct
@@ -115,26 +141,64 @@ public:
     ChOp() = delete;
     ChOp(const ChOp::ConfigStruct& conf);
     OutputStruct run(const ChOp::InputStruct& input);
-    void process();
     static std::string getVersion();
     size_t getSize();
     boost::mutex MinId_mutex;
-    std::vector<MongoDB::Field> MetaFindFields = { 
-    {"_id", "last_processed_id", MongoDB::FieldType::String, "eq"}
-};
+
 
 
 private:
 
+
+    struct checkOpPlateResult {
+        // Rect2d bbox;
+        string plateClass;
+        float classConfidence;
+        // std::string newPlateValue = "";
+        // int newPlateType;
+        // int codeType = ChOp::CodeTypes::NOT_PROCESSED;
+        // float probability = 0;
+        string plateNumber;
+        int plateType;
+    }m_results;
+
+
+    struct ModelOutputStruct 
+    {
+        cv::Rect box;
+        int label;
+        int labelScore; // 0 < Score < 100
+        std::string labelType;
+    };
+
+    struct OCROutputStruct
+    {
+        std::string plateValue = "";
+        std::string plateTemplate = "";
+        int plateType = -1;
+    };
+
+    struct oldOutputStruct
+    {
+        std::vector<ModelOutputStruct> modelOutputs;
+        OCROutputStruct OCRResult;
+    };
+
+    std::unique_ptr<NNModel> getModel(BaseNNConfig& conf, const std::string& modelData, const string& path);
+
     struct ModelsStruct
     {
-        std::shared_ptr<inference::Handler> PD      = nullptr;
-        std::shared_ptr<inference::Handler> PC      = nullptr;
+
+        std::unique_ptr<NNModel> PD = nullptr;
+        std::unique_ptr<NNModel> PC = nullptr;
+        std::unique_ptr<NNModel> FROCR = nullptr;
+        // std::shared_ptr<inference::Handler> PD      = nullptr;
+        // std::shared_ptr<inference::Handler> PC      = nullptr;
         std::shared_ptr<inference::Handler> IROCR   = nullptr;
         std::shared_ptr<inference::Handler> MBOCR   = nullptr;
         std::shared_ptr<inference::Handler> TZOCR   = nullptr;
         std::shared_ptr<inference::Handler> FZOCR   = nullptr;
-        std::shared_ptr<inference::Handler> FROCR   = nullptr;
+        // std::shared_ptr<inference::Handler> FROCR   = nullptr;
     } m_models;
 
 
@@ -144,7 +208,9 @@ private:
     int desiredNumberOfRecords = 100;
     void fixRectDimension(cv::Rect& candRect,int row, int col);
     int calculateIrCodeType(const std::string& newPlateValue, const std::string& oldPlateValue);
-    int calculateProbability(const inference::OutputStruct& modelOutput);
+    int calculateProbability(const std::vector<double,std::allocator<double> > probVec);
+    int calculateProbabilityStr(const inference::OutputStruct& modelOutput);
+
 
 };
 

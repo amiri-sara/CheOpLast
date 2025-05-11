@@ -57,10 +57,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/amiri/projects/c++/check_rahdari/check_try/Aggregation_V1.0.0/Aggregation/v.2.0.5/SourceCode
+CMAKE_SOURCE_DIR = /home/amiri/projects/c++/check_rahdari/check_try/Aggregation_V1.0.0/Aggregation/v2.0.7/CheOpLast
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/amiri/projects/c++/check_rahdari/check_try/Aggregation_V1.0.0/Aggregation/v.2.0.5/SourceCode/build
+CMAKE_BINARY_DIR = /home/amiri/projects/c++/check_rahdari/check_try/Aggregation_V1.0.0/Aggregation/v2.0.7/CheOpLast/build
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -87,9 +87,9 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/amiri/projects/c++/check_rahdari/check_try/Aggregation_V1.0.0/Aggregation/v.2.0.5/SourceCode/build/CMakeFiles /home/amiri/projects/c++/check_rahdari/check_try/Aggregation_V1.0.0/Aggregation/v.2.0.5/SourceCode/build//CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/amiri/projects/c++/check_rahdari/check_try/Aggregation_V1.0.0/Aggregation/v2.0.7/CheOpLast/build/CMakeFiles /home/amiri/projects/c++/check_rahdari/check_try/Aggregation_V1.0.0/Aggregation/v2.0.7/CheOpLast/build//CMakeFiles/progress.marks
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/amiri/projects/c++/check_rahdari/check_try/Aggregation_V1.0.0/Aggregation/v.2.0.5/SourceCode/build/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/amiri/projects/c++/check_rahdari/check_try/Aggregation_V1.0.0/Aggregation/v2.0.7/CheOpLast/build/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
@@ -441,6 +441,30 @@ main.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/main.cpp.s
 .PHONY : main.cpp.s
 
+ocr/ocr.o: ocr/ocr.cpp.o
+.PHONY : ocr/ocr.o
+
+# target to build an object file
+ocr/ocr.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/ocr/ocr.cpp.o
+.PHONY : ocr/ocr.cpp.o
+
+ocr/ocr.i: ocr/ocr.cpp.i
+.PHONY : ocr/ocr.i
+
+# target to preprocess a source file
+ocr/ocr.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/ocr/ocr.cpp.i
+.PHONY : ocr/ocr.cpp.i
+
+ocr/ocr.s: ocr/ocr.cpp.s
+.PHONY : ocr/ocr.s
+
+# target to generate assembly for a file
+ocr/ocr.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/ocr/ocr.cpp.s
+.PHONY : ocr/ocr.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -489,6 +513,9 @@ help:
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"
+	@echo "... ocr/ocr.o"
+	@echo "... ocr/ocr.i"
+	@echo "... ocr/ocr.s"
 .PHONY : help
 
 

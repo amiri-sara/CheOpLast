@@ -26,6 +26,7 @@
 #include <mongocxx/v_noabi/mongocxx/exception/bulk_write_exception.hpp>
 
 #include <boost/thread.hpp>
+#include <boost/bind.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/foreach.hpp>
@@ -107,6 +108,10 @@ private:
 // Error Code
 #define SUCCESSFUL                                          0
 #define INVALIDJSON                                         600
+#define MISSINGFIELD                                        660
+#define INVALIDTYPE                                         661
+#define EMPTYRESPONSE                                       662
+#define SERVERERROR                                         663
 #define INVALIDUSERPASS                                     601
 #define INVALIDTOKEN                                        602
 #define EXPIREDTOKEN                                        603

@@ -53,7 +53,7 @@ void WebService::InsertRoute()
         
         std::shared_ptr<DataHandler::DataHandlerStruct> DH = std::make_shared<DataHandler::DataHandlerStruct>();
         Configurate* ConfigurateObj = Configurate::getInstance();
-        DH->hasInputFields = ConfigurateObj->getInputFields();
+        DH->hasInputFields = ConfigurateObj->getInputFelds();
         DH->hasOutputFields = ConfigurateObj->getOutputFields();
         DH->StoreImageConfig = ConfigurateObj->getStoreImageConfig();
         DH->ViolationMap = ConfigurateObj->getViolationMap();

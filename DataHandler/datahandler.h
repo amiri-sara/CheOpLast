@@ -44,7 +44,7 @@ namespace DataHandler
         int Probability;
         std::string MasterPlate;
 
-        std::string RecordID;
+        uint64_t RecordID;
         std::string ReceivedTime;
     };
 

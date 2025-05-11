@@ -299,9 +299,9 @@ bool savedata::InsertDatabase(const std::shared_ptr<DataHandler::DataHandlerStru
     // RecordID
     if(DH->hasOutputFields.RecordID)
     {  
-        if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+        if(DH->hasInputFields.DeviceID )//&& DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
         {
-            MongoDB::Field RecordIDField = {"RecordID", DH->ProcessedInputData.MongoID, MongoDB::FieldType::ObjectId};
+            MongoDB::Field RecordIDField = {"RecordID", std::to_string(DH->Input.RecordID), MongoDB::FieldType::Int64};
             fields.push_back(RecordIDField);
         }
     }
@@ -361,8 +361,7 @@ bool savedata::InsertDatabase(const std::shared_ptr<DataHandler::DataHandlerStru
         }
     }
 
-    if(DH->Input.CodeType == 20 || DH->Input.CodeType == -2) //TODO
-    {
+
         auto InsertReturn = DH->InsertDatabase->Insert(DH->InsertDatabaseInfo.DatabaseName, DH->InsertDatabaseInfo.CollectionName, fields);
         if(InsertReturn.Code != MongoDB::MongoStatus::InsertSuccessful) //TODO
         {
@@ -371,7 +370,7 @@ bool savedata::InsertDatabase(const std::shared_ptr<DataHandler::DataHandlerStru
             DH->Response.Description = InsertReturn.Description;
             return false;
         }
-    } 
+    
     
       
 

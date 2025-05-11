@@ -101,30 +101,29 @@ Service::Service()
         for(int i = 0; i < this->CheckOpNumberOfObjectPerService; i++)
         {
             this->m_pChOpObjects.push_back(std::make_shared<ChOp>(chopConf));
-            boost::thread checkOPTread(&ChOp::process,this->m_pChOpObjects[i]);
 
             this->FreeCheckOpVec.push_back(true);
         }
     }
 
-    if(Modules.Classifier.active)
-    {
-        this->ClassifierNumberOfObjectPerService = Modules.Classifier.NumberOfObjectPerService;
-        std::vector<Classifier::ConfigStruct> classifierModelsConfig;
-        for(int i = 0; i < Modules.Classifier.Models.size(); i++)
-        {   
-            Classifier::ConfigStruct conf;
-            conf.model = decryptFile(Modules.Classifier.ModelsPath + "/" + Modules.Classifier.Models[i].model, ServerKey, ClientKey).DecryptedMessage;
-            conf.modelConfig = decryptFile(Modules.Classifier.ModelsPath + "/" + Modules.Classifier.Models[i].modelConfigPath, ServerKey, ClientKey).DecryptedMessage;
-            classifierModelsConfig.push_back(conf);
-        }
+    // if(Modules.Classifier.active)
+    // {
+    //     this->ClassifierNumberOfObjectPerService = Modules.Classifier.NumberOfObjectPerService;
+    //     std::vector<Classifier::ConfigStruct> classifierModelsConfig;
+    //     for(int i = 0; i < Modules.Classifier.Models.size(); i++)
+    //     {   
+    //         Classifier::ConfigStruct conf;
+    //         conf.model = decryptFile(Modules.Classifier.ModelsPath + "/" + Modules.Classifier.Models[i].model, ServerKey, ClientKey).DecryptedMessage;
+    //         conf.modelConfig = decryptFile(Modules.Classifier.ModelsPath + "/" + Modules.Classifier.Models[i].modelConfigPath, ServerKey, ClientKey).DecryptedMessage;
+    //         classifierModelsConfig.push_back(conf);
+    //     }
         
-        for(int i = 0; i < this->ClassifierNumberOfObjectPerService; i++)
-        {
-            this->m_pClassifierObjects.push_back(std::make_shared<Classifier>(classifierModelsConfig));
-            this->FreeClassifierVec.push_back(true);
-        }
-    }
+    //     for(int i = 0; i < this->ClassifierNumberOfObjectPerService; i++)
+    //     {
+    //         this->m_pClassifierObjects.push_back(std::make_shared<Classifier>(classifierModelsConfig));
+    //         this->FreeClassifierVec.push_back(true);
+    //     }
+    // }
 }
 
 

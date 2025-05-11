@@ -326,6 +326,7 @@ Configurate::Configurate()
             crow::json::rvalue CheckOperatorJSON = ModulesConfigJSON["CheckOperator"];
             this->Modules.CheckOperator.active = CheckOperatorJSON["active"].b();
             this->Modules.CheckOperator.NumberOfObjectPerService = CheckOperatorJSON["NumberOfObjectPerService"].i();
+            this->Modules.CheckOperator.NumberOfThreadPerService = CheckOperatorJSON["NumberOfThreadPerService"].i();
             this->Modules.CheckOperator.ModelsPath = CheckOperatorJSON["ModelsPath"].s();
             this->Modules.CheckOperator.IgnoreInputPlateType = CheckOperatorJSON["IgnoreInputPlateType"].b();
             if(this->Modules.CheckOperator.active)

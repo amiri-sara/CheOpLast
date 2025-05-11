@@ -14,20 +14,50 @@ std::atomic<uint32_t> ChOp::savingCount(0); // Initialize savingCount
 
 std::string ChOp::getVersion(){return "1.0.2";}
 
+
+
+std::unique_ptr<NNModel> ChOp::getModel(BaseNNConfig& conf, const std::string& modelData, const string& path) {
+    if (conf.read(path) != 0) {
+        cerr << "Failed to read config: " << path << endl;
+        throw runtime_error("Config read failed");
+    }
+    aivision::ModelFactory factory;
+    auto model = factory.get(conf);
+    int read = 0;
+    char* pChars = readAllBytes(modelData, &read);//readAllBytes(conf.modelPath.c_str(), &read);
+    if (!pChars || read == 0) {
+        cerr << "Failed to read model file: " << conf.modelPath << endl;
+        throw runtime_error("Model file read failed");
+    }
+    conf.modelData = pChars;
+    conf.modelByteSize = read;
+    if (model->init(conf) != 0) {
+        cerr << "Failed to init model: " << conf.modelPath << endl;
+        delete[] pChars;
+        throw runtime_error("Model init failed");
+    }
+    delete[] pChars;
+    return model;
+}
+
+
 ChOp::ChOp(const ChOp::ConfigStruct& conf)
 {
     try
     {
         if(conf.PDConfig.active)
         {
-            inference::ConfigStruct modelConfig = {conf.PDConfig.model, conf.PDConfig.modelConfig};
-            this->m_models.PD = std::make_shared<inference::Handler>(modelConfig);
+            BaseNNConfig detConfig;
+            this->m_models.PD = getModel(detConfig, conf.PDConfig.model,conf.PDConfig.modelConfig);
+
         }
 
         if(conf.PCConfig.active)
         {
-            inference::ConfigStruct modelConfig = {conf.PCConfig.model, conf.PCConfig.modelConfig};
-            this->m_models.PC = std::make_shared<inference::Handler>(modelConfig);
+            BaseNNConfig PCConfig;
+            // string PCConfigPath = "/home/amiri/projects/c++/models/PlateClassifierPackage/inference_pipeline_v2.1.0/models/plateClassification/info.json";
+            this->m_models.PC = getModel(PCConfig, conf.PCConfig.model , conf.PCConfig.modelConfig);
+
         }
 
         if(conf.IROCRConfig.active)
@@ -56,8 +86,9 @@ ChOp::ChOp(const ChOp::ConfigStruct& conf)
 
         if(conf.FROCRConfig.active)
         {
-            inference::ConfigStruct modelConfig = {conf.FROCRConfig.model, conf.FROCRConfig.modelConfig};
-            this->m_models.FROCR = std::make_shared<inference::Handler>(modelConfig);
+            BaseNNConfig FROCRConfig;
+            this->m_models.FROCR = getModel(FROCRConfig, conf.FROCRConfig.model,conf.FROCRConfig.modelConfig);
+
         }
 
         this->m_ignoreInputPlateType = conf.ignoreInputPlateType;
@@ -74,315 +105,172 @@ size_t ChOp::getSize() {
     return sizeQueue;
 }
 
-void ChOp::process()
-{
-    while (true)
-    {
-        if(ProcessInputVec.size() > 0)
-        {
-            // ProcessInputStruct Input;
-            std::shared_ptr<DataHandler::DataHandlerStruct> DH = std::make_shared<DataHandler::DataHandlerStruct>();
-            ProcessInputVecMutex.lock();
-            if(ProcessInputVec.size() > 0)
-            {
-                DH = ProcessInputVec[0];
-                ProcessInputVec.erase(ProcessInputVec.begin());
-                ProcessInputVecMutex.unlock();
-            }
-            else
-            {
-                ProcessInputVecMutex.unlock();
-                continue;
-            }
-
-            crow::json::wvalue Response;
-            ChOp::InputStruct inputChOp;
-
-            inputChOp.plateImage = DH->ProcessedInputData.PlateImageMat;
-            inputChOp.plateValue = DH->Input.PlateValue;
-            inputChOp.plateImageBase64 = DH->Input.PlateImageBase64;
-            inputChOp.plateType = DH->hasInputFields.PlateType ? DH->Input.PlateType : static_cast<int>(inference::standards::PlateType::UNKNOWN);//#TODO WHAT IS PLATETYPE?
-            OutputStruct OutPutchOp;
-            auto CheckOpStartTime = std::chrono::high_resolution_clock::now();
-            try
-            {
-                OutPutchOp = run(inputChOp);
-                auto CheckOpFinishTime = std::chrono::high_resolution_clock::now();
-                double CheckOpTime =  std::chrono::duration_cast<std::chrono::milliseconds>(CheckOpFinishTime - CheckOpStartTime).count();
-                // SHOW_IMPORTANTLOG("CheckOpTime: (ms)" << CheckOpTime << " >>>>>  Record ID : " << DH->Input.PassedVehicleRecordsId << " >>>>> thredID: " <<boost::this_thread::get_id());
-                DH->Input.MasterPlate = DH->Input.PlateValue;
-                DH->Input.PlateValue = OutPutchOp.newPlateValue;
-                DH->Input.CodeType = OutPutchOp.codeType;
-                DH->Input.Probability = OutPutchOp.probability;
-                DH->Input.PlateType = OutPutchOp.newPlateType;
-                DH->ProcessedInputData.croppedPlateImage = OutPutchOp.croppedPlateImage;
-
-
-                if(DH->MonitorMode)
-                {
-                    mtx_ChOp.lock();
-                    // SHOW_IMPORTANTLOG("CheckOpTime: (ms)" << CheckOpTime << " >>>>>  Record ID : " << DH->Input.PassedVehicleRecordsId << " >>>>> thredID: " <<boost::this_thread::get_id());
-                    totalChOpTime += CheckOpTime;
-                    ChOpCount++;
-                    mtx_ChOp.unlock();
-
-                }
-
-            }
-            catch(const std::exception& e)
-            {
-                
-                Response["Status"] = CHECKOPERROR;
-                Response["Description"] = e.what();
-                // if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
-                Response["RecordID"] = DH->Input.PassedVehicleRecordsId; //DH->ProcessedInputData.MongoID;
-                Response["CompanyCode"] = DH->Input.CompanyCode;
-                if(DH->FailedDatabaseInfo.Enable)
-                {
-                    std::vector<MongoDB::Field> fields = {
-                        {"Status", std::to_string(CHECKOPERROR), MongoDB::FieldType::Integer},
-                        {"Description", e.what(), MongoDB::FieldType::String},
-                        {"CompanyCode", std::to_string(DH->Input.CompanyCode), MongoDB::FieldType::Integer}
-                    };
-
-                    // if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
-                    // {
-                    MongoDB::Field RecordIDField = {"RecordID", std::to_string(DH->Input.PassedVehicleRecordsId), MongoDB::FieldType::Int64};
-                    fields.push_back(RecordIDField);
-                    // }
-
-                    DH->FailedDatabase ->Insert(DH->FailedDatabaseInfo.DatabaseName, DH->FailedDatabaseInfo.CollectionName, fields);
-                }
-                if(DH->DebugMode)
-                    Logger::getInstance().logError(crow::json::dump(Response));
-            }
-
-            // 5- Store Image
-            std::shared_ptr<storeimage> storeimageobj = std::make_shared<storeimage>();
-
-            auto SaveStartTime = std::chrono::high_resolution_clock::now();
-
-            if(!(storeimageobj->run(DH)))
-            {
-                Response["Status"] = DH->Response.errorCode;
-                Response["Description"] = DH->Response.Description;
-                // if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
-                Response["RecordID"] = DH->Input.PassedVehicleRecordsId;//DH->ProcessedInputData.MongoID;
-                Response["CompanyCode"] = DH->Input.CompanyCode;
-                if(DH->FailedDatabaseInfo.Enable)
-                {
-                    std::vector<MongoDB::Field> fields = {
-                    {"Status", std::to_string(DH->Response.errorCode), MongoDB::FieldType::Integer},
-                    {"Description", DH->Response.Description, MongoDB::FieldType::String},
-                    {"CompanyCode", std::to_string(DH->Input.CompanyCode), MongoDB::FieldType::Integer}
-                };
-                //                 if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
-                // {
-                MongoDB::Field RecordIDField = {"RecordID", std::to_string(DH->Input.PassedVehicleRecordsId), MongoDB::FieldType::Int64};
-                fields.push_back(RecordIDField);
-                // }
-
-                DH->FailedDatabase ->Insert(DH->FailedDatabaseInfo.DatabaseName, DH->FailedDatabaseInfo.CollectionName, fields);
-
-                }
-                if(DH->DebugMode)
-                    Logger::getInstance().logError(crow::json::dump(Response));
-
-            }
-
-            // 6- Save Data
-            std::shared_ptr<savedata> savedataobj = std::make_shared<savedata>();   
-            if(!(savedataobj->run(DH)))
-            {
-                Response["Status"] = DH->Response.errorCode;
-                Response["Description"] = DH->Response.Description;
-                // if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
-                Response["RecordID"] = DH->Input.PassedVehicleRecordsId;
-                Response["CompanyCode"] = DH->Input.CompanyCode;
-                if(DH->FailedDatabaseInfo.Enable)
-                {
-                    std::vector<MongoDB::Field> fields = {
-                    {"Status", std::to_string(DH->Response.errorCode), MongoDB::FieldType::Integer},
-                    {"Description", DH->Response.Description, MongoDB::FieldType::String},
-                    {"CompanyCode", std::to_string(DH->Input.CompanyCode), MongoDB::FieldType::Integer}
-                };
-                //                 if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
-                // {
-                MongoDB::Field RecordIDField = {"RecordID", std::to_string(DH->Input.PassedVehicleRecordsId), MongoDB::FieldType::Int64};
-                fields.push_back(RecordIDField);
-                // }
-
-                DH->FailedDatabase ->Insert(DH->FailedDatabaseInfo.DatabaseName, DH->FailedDatabaseInfo.CollectionName, fields);
-
-                }
-
-                Logger::getInstance().logError(crow::json::dump(Response));
-
-            }
-
-            auto SaveEndTime = std::chrono::high_resolution_clock::now();
-            double durationSaveTime = std::chrono::duration_cast<std::chrono::milliseconds>(SaveEndTime - SaveStartTime).count();
-
-            // MinId_mutex.lock();
-            std::vector<MongoDB::Field> MetaUpdateFields = { 
-                {"PassedVehicleRecordsId", std::to_string(DH->Input.PassedVehicleRecordsId), MongoDB::FieldType::Int64, "set"} //TODO  Think for better 
-            };
-            DH->ConfigDatabase->Update_one(DH->ConfigDatabaseInfo.DatabaseName,"Meta",MetaFindFields,MetaUpdateFields);
-
-            // MinId_mutex.unlock();
-
-
-            if(DH->MonitorMode)
-            {
-                mtx_Saving.lock();
-                totalSavingTime += durationSaveTime; // Use regular addition
-                savingCount++;
-                mtx_Saving.unlock();
-                
-            }
-        }
-        else
-        {
-            boost::this_thread::sleep_for(boost::chrono::microseconds(100));
-            continue;
-        }
-        
-       
-    }
-    boost::this_thread::sleep_for(boost::chrono::milliseconds(100));
-    
-
-}
-int count = 0;
 
 ChOp::OutputStruct ChOp::run(const ChOp::InputStruct& input)
 {
     ChOp::OutputStruct output;
-    output.PlateImageBase64 = input.plateImageBase64;//TODO must remove only for test
+
+    cv::Mat PlateImageMat = createMatImage(input.plateImageBase64); 
     // std::cout<<input.plateImageBase64<<std::endl;
-    if(input.plateImage.empty())
+    if(PlateImageMat.total() == 0)
     {
         output.codeType      = ChOp::CodeTypes::NULL_IMAGE;
         output.newPlateValue = input.plateValue;
         output.probability   = 0;
-        output.newPlateType  = static_cast<int>(inference::standards::PlateType::UNKNOWN);
+        output.newPlateType  = static_cast<int>(gocr::PlateType::UNKNOWN);
         return output;
     }
+
     
     try
     {
-        cv::Mat PDImage = input.plateImage;
-        if(PDImage.channels() < 3)
-            cv::cvtColor(PDImage, PDImage, cv::COLOR_GRAY2BGR);
-        if(PDImage.channels() == 4)
-            cv::cvtColor(PDImage, PDImage, cv::COLOR_BGRA2BGR); 
+        if(PlateImageMat.channels() < 3)
+            cv::cvtColor(PlateImageMat, PlateImageMat, cv::COLOR_GRAY2BGR);
+        if(PlateImageMat.channels() == 4)
+            cv::cvtColor(PlateImageMat, PlateImageMat, cv::COLOR_BGRA2BGR); 
         
+        std::vector<aivision::nn::ObjectAttributes> dets;
         // Step 1 : Plate Detection 
-        inference::OutputStruct PDOutput;
         if(this->m_models.PD)
         {
-            float AspectRatio = (float)PDImage.cols / (float)PDImage.rows;
+            float AspectRatio = (float)PlateImageMat.cols / (float)PlateImageMat.rows;
             if(AspectRatio < 2.5)
             {
-                int topbot = std::round(PDImage.rows / 2);
-                int rileft = std::round(PDImage.cols / 2);
-                cv::copyMakeBorder(PDImage, PDImage, topbot, topbot, rileft, rileft, 0);
+                NNModel* detectorModel = this->m_models.PD.get();
+                auto detStream = make_shared<DataModel>();
+                detStream->addView({Point2f(0,0), Point2f(1,0), Point2f(1,1), Point2f(0,1)}, "offline");
+                detStream->SetFrame(PlateImageMat);
+                detStream->SetActivePreset(1);
+                vector<shared_ptr<DataModel>> detStreams = {detStream};
+                detectorModel->forward(detStreams);
+                dets = detStream->getResults();
+                if(dets.empty()){
+                    std::cerr << "no boxes found" << std::endl;
+                }
 
-                inference::InputStruct PDInput;
-                PDInput.Image = PDImage;
-
-                this->m_models.PD->run(PDInput);
-                PDOutput = this->m_models.PD->getOutput();
-
-                if(PDOutput.modelOutputs.size() == 0)
+                if(dets.size() == 0)
                 {
                     output.codeType = ChOp::CodeTypes::NOT_PLATE;
                     output.newPlateValue = input.plateValue;
                     output.probability = 0;
-                    output.croppedPlateImage = PDInput.Image;
+                    output.croppedPlateImage = PlateImageMat;
                     return output;
                 }
             }
+            
+
         }
 
         cv::Mat ocrImage;
-        if(PDOutput.modelOutputs.size() > 0)
+        if(dets.size() > 0)
         {
             std::vector<int> scores;
-            for(auto& object : PDOutput.modelOutputs)
-                scores.push_back(object.labelScore);
-
+            for (const auto& det : dets)
+                scores.push_back(det.score * 100);
+            
             int maxIndex = std::max_element(scores.begin(), scores.end()) - scores.begin();
-            cv::Rect plateRect = PDOutput.modelOutputs[maxIndex].box;
-            /////////////////////////////////////////////////////////////////
+            Rect2d plateRect = dets[maxIndex].bbox;
 
-
-            // cv::imwrite(std::to_string(count)+".jpg", PDImage(plateRect));
-
-                //////////////////////////////////////////////////////////////////
-            // plateRect.x       -= (0.1 * plateRect.width);
-            // plateRect.width   *= 1.15;
-            // plateRect.height  *= 1.15;
-            // this->fixRectDimension(plateRect, PDImage.rows, PDImage.cols);
-            ocrImage = PDImage(plateRect);
-            // cv::imwrite("ocr"+std::to_string(count)+".jpg", ocrImage);
-
-        } else 
-        {
-            ocrImage = PDImage;
+            //Validate the ROI Parameters:
+            if (plateRect.x >= 0 && plateRect.y >= 0 && 
+                plateRect.width > 0 && plateRect.height > 0 && 
+                plateRect.x + plateRect.width <= PlateImageMat.cols && 
+                plateRect.y + plateRect.height <= PlateImageMat.rows) {
+                ocrImage = PlateImageMat(plateRect).clone(); // Safe to use ROI
+            }
+            else{
+                ocrImage = PlateImageMat.clone();
+            }
+        }
+        else{
+            ocrImage = PlateImageMat.clone();
         }
 
         // Step 2 : Plate Classifier
-        int plateType;
+
+        int Type = -1;
+        int CPlateType;
         if(this->m_models.PC)
-        {            
-            if(this->m_ignoreInputPlateType || (input.plateType == static_cast<int>(inference::standards::PlateType::UNKNOWN)))
-            {
-                inference::InputStruct PCInput;
-                PCInput.Image = ocrImage;
-                this->m_models.PC->run(PCInput);
-                auto PCOutput = this->m_models.PC->getOutput();
+        {
+            NNModel* plateClassifierModel = this->m_models.PC.get();
+            auto plateStream = make_shared<DataModel>();
+            plateStream->addView({Point2f(0,0), Point2f(1,0), Point2f(1,1), Point2f(0,1)}, "offline");
+            plateStream->SetFrame(ocrImage);
+            plateStream->SetActivePreset(1);
+            vector<shared_ptr<DataModel>> plateStreams = {plateStream};
+            plateClassifierModel->forward(plateStreams);
+            auto platePreds = plateStream->getResults();
+
+
+            string plateClass = "Unknown";
+            float classConfidence = 0.0f;
+            if (!platePreds.empty()) {
+                // plateClass = platePreds[0].class_name.empty() ? to_string(platePreds[0].label) : platePreds[0].class_name;
+                // classConfidence = platePreds[0].score;
 
                 std::vector<int> scores;
-                for(auto& object : PCOutput.modelOutputs)
-                    scores.push_back(object.labelScore);
+                for(auto& object : platePreds)
+                    scores.push_back(object.score * 100);
                 
                 int maxIndex = std::max_element(scores.begin(), scores.end()) - scores.begin();
-                if(scores[maxIndex] < 70)//TODO PrimaryThreshold
-                    plateType = 0 ;
-                else
-                    plateType = PCOutput.modelOutputs[maxIndex].label;
-            } else
+                CPlateType = platePreds[maxIndex].label;
+            }
+    //match lables
+            switch (CPlateType)
             {
-                plateType = input.plateType;
+            case 1:
+            {
+                Type = 3;
+                break;
             }
 
-        } else 
-        {
-            plateType = input.plateType;
+            case 2:
+            {
+                Type = 1;
+                break;
+            }
+
+            case 3:
+            {
+                Type = 4;//TODO OLD OR NEW
+                break;
+            }
+
+            case 4 :
+            {
+                Type = 2;
+                break;
+            }
+
+            case 5:
+            {
+                Type = 0;
+                break;
+            }
+
+            default:
+                Type = 5;
+                break;
+            }
+
         }
-        output.newPlateType = plateType;
 
-        // cv::imwrite("ocr"+std::to_string(count)+"newPlateType_ "+std::to_string(output.newPlateType)+".jpg", ocrImage);
-        // std::string cmd = "echo \"newPlateType: " + std::to_string(output.newPlateType) + "_ plateValue: " + input.plateValue + "_ image: " + output.PlateImageBase64 + "\" >> out1.txt";        
-        // system(cmd.c_str());
-
-
-    //     count++;
-
-        // Step 3 : OCR
+        output.newPlateType = Type;
+        
+// Step 3 : OCR
         inference::InputStruct ocrInput;
         ocrInput.Image = ocrImage;
-        switch(plateType) 
-        {
-            case static_cast<int>(inference::standards::PlateType::UNKNOWN) :
+        switch(Type) 
+        {   
+            case static_cast<int>(gocr::PlateType::UNKNOWN) :
             {
                 output.codeType = ChOp::CodeTypes::NOT_PROCESSED;
                 output.newPlateValue = input.plateValue;
                 output.probability = 0;
-                output.croppedPlateImage = ocrInput.Image;
+                output.croppedPlateImage = ocrImage;
                 break;
             }
+
             case static_cast<int>(inference::standards::PlateType::IR) :
             {
                 if(this->m_models.IROCR)
@@ -394,7 +282,7 @@ ChOp::OutputStruct ChOp::run(const ChOp::InputStruct& input)
                     {
                         output.codeType = this->calculateIrCodeType(IROCROutput.OCRResult.plateValue, input.plateValue);
                         output.newPlateValue = IROCROutput.OCRResult.plateValue;
-                        output.probability = this->calculateProbability(IROCROutput);
+                        output.probability = this->calculateProbabilityStr(IROCROutput);
                         output.croppedPlateImage = ocrInput.Image;
                     } else 
                     {
@@ -424,7 +312,7 @@ ChOp::OutputStruct ChOp::run(const ChOp::InputStruct& input)
                     if(MBOCROutput.modelOutputs.size() != 0)
                     {
                         output.newPlateValue = MBOCROutput.OCRResult.plateValue;
-                        output.probability = this->calculateProbability(MBOCROutput);
+                        output.probability = this->calculateProbabilityStr(MBOCROutput);
                         output.croppedPlateImage = ocrInput.Image;
                     } else 
                     {
@@ -453,7 +341,7 @@ ChOp::OutputStruct ChOp::run(const ChOp::InputStruct& input)
                     if(FZOCROutput.modelOutputs.size() != 0)
                     {
                         output.newPlateValue = FZOCROutput.OCRResult.plateValue;
-                        output.probability = this->calculateProbability(FZOCROutput);
+                        output.probability = this->calculateProbabilityStr(FZOCROutput);
                         output.croppedPlateImage = ocrInput.Image;
                     } else 
                     {
@@ -483,7 +371,7 @@ ChOp::OutputStruct ChOp::run(const ChOp::InputStruct& input)
                     if(TZOCROutput.modelOutputs.size() != 0)
                     {
                         output.newPlateValue = TZOCROutput.OCRResult.plateValue;
-                        output.probability = this->calculateProbability(TZOCROutput);
+                        output.probability = this->calculateProbabilityStr(TZOCROutput);
                         output.croppedPlateImage = ocrInput.Image;
                     } else 
                     {
@@ -505,34 +393,100 @@ ChOp::OutputStruct ChOp::run(const ChOp::InputStruct& input)
             {
                 if(this->m_models.FROCR)
                 {
-                    this->m_models.FROCR->run(ocrInput);
-                    auto FROCROutput = this->m_models.FROCR->getOutput();
+                    string plateNumber = "";
+                    int plateType = static_cast<int>(gocr::PlateType::UNKNOWN);
 
-                    output.codeType = ChOp::CodeTypes::FOREIGN;
-                    if(FROCROutput.modelOutputs.size() != 0)
+                    // Run OCR model
+                    NNModel* ocrModel = this->m_models.FROCR.get();
+                    auto ocrStream = make_shared<DataModel>();
+                    ocrStream->addView({Point2f(0,0), Point2f(1,0), Point2f(1,1), Point2f(0,1)}, "offline");
+                    ocrStream->SetFrame(ocrImage);
+                    ocrStream->SetActivePreset(1);
+                    vector<shared_ptr<DataModel>> ocrStreams = {ocrStream};
+                    ocrModel->forward(ocrStreams);
+
+                    // Convert OCR model output to ObjAttributes for GlobalPlateRecognition
+                    auto ocrPreds = ocrStream->getResults();
+                    vector<aivision::ObjAttributes> ocrAttributes;
+                    for (const auto& pred : ocrPreds) {
+                        aivision::ObjAttributes attr;
+                        attr.label = pred.label;
+                        attr.score = pred.score;
+                        attr.bbox = pred.bbox;
+                        ocrAttributes.push_back(attr);
+                        // cout << "OCR char: label=" << attr.label << ", score=" << attr.score
+                        //      << ", box=(" << attr.bbox.x << "," << attr.bbox.y << "," << attr.bbox.width << "," << attr.bbox.height << ")" << endl;
+                    }
+
+
+
+                    // Use GlobalPlateRecognition to process OCR results
+                    shared_ptr<GlobalPlateRecognition> plateRecognitionEngine{new GlobalPlateRecognition()};
+                    auto ocrResult = plateRecognitionEngine->Run(ocrAttributes , "");
+
+
+                    // Map country to plateType (you may need to adjust this mapping based on your requirements)
+                    if (ocrResult.Country == "None") {
+                        plateType = static_cast<int>(gocr::PlateType::UNKNOWN);
+                    } else if (ocrResult.Country == "IranFreeZone") {
+                        plateType = static_cast<int>(gocr::PlateType::FREE_ZONE);
+                    } else if (ocrResult.Country == "Iran") {
+                        plateType = static_cast<int>(gocr::PlateType::IR);
+                    } else if (ocrResult.Country == "IranTransit") { //TODO
+                        plateType = static_cast<int>(PlateType::NEW_TRANSIT);
+                    }
+                    else{
+                        plateType = static_cast<int>(PlateType::FOREIGN);
+                    }
+
+                    if(ocrResult.PlateValue.empty())
                     {
-                        output.newPlateValue = FROCROutput.OCRResult.plateValue;
-                        output.probability = this->calculateProbability(FROCROutput);
-                        output.newPlateType = FROCROutput.OCRResult.plateType;
-                        output.croppedPlateImage = ocrInput.Image;
-                    } else 
-                    {
+                        output.codeType = ChOp::CodeTypes::FOREIGN;
                         output.newPlateValue = input.plateValue;
                         output.probability = 0;
-                        output.croppedPlateImage = ocrInput.Image;
+                        output.croppedPlateImage = ocrImage;
+                        output.newPlateType = plateType;
+                        return output;
                     }
-                    
-                } else
+                    else
+                        plateNumber = ocrResult.PlateValue;
+
+
+                output.codeType = this->calculateIrCodeType(plateNumber, input.plateValue);
+                output.newPlateValue = plateNumber;
+                output.probability = this->calculateProbability(ocrResult.ProbabilityVector);
+                output.newPlateType = plateType;
+                output.croppedPlateImage = ocrImage;
+                }
+
+                else
                 {
                     output.codeType = ChOp::CodeTypes::NOT_PROCESSED;
                     output.newPlateValue = input.plateValue;
                     output.probability = 0;
-                    output.croppedPlateImage = ocrInput.Image;
+                    output.croppedPlateImage = ocrImage;
                 }
-
                 break;
             }
+
         }
+
+
+        // int maxIndex = -1;
+        // float maxConfidence = -1.0f; // Assuming classConfidence is a float; adjust type if needed
+        // for (size_t i = 0; i < results.size(); ++i) {
+        //     if (results[i].classConfidence > maxConfidence) {
+        //         maxConfidence = results[i].classConfidence;
+        //         maxIndex = i;
+        //     }
+        // }
+        //     // Now maxIndex holds the index with the highest classConfidence
+        // if (maxIndex != -1) {
+        //     output.codeType = calculateIrCodeType(results[maxIndex].plateNumber, input.plateValue);
+        //     output.newPlateValue = results[maxIndex].plateNumber;
+        //     output.probability = results[maxIndex].classConfidence;
+        //     output.newPlateType = results[maxIndex].plateType;
+        // }
 
     }
     catch (const std::exception& e)
@@ -543,6 +497,7 @@ ChOp::OutputStruct ChOp::run(const ChOp::InputStruct& input)
 
     return output;
 }
+
 
 void ChOp::fixRectDimension(cv::Rect& candRect,int row, int col)
 {
@@ -560,7 +515,14 @@ int ChOp::calculateIrCodeType(const std::string& newPlateValue, const std::strin
     if(newPlateValue == oldPlateValue)
     {
         return ChOp::CodeTypes::SURE;
-    } else if(newPlateValue.substr(2,2) != oldPlateValue.substr(2,2))
+    }
+    const size_t minLength = 9; // Adjust based on your actual requirements
+    if (newPlateValue.size() < minLength || oldPlateValue.size() < minLength)
+    {
+        return ChOp::CodeTypes::OTHER; // Or define a new CodeType for invalid input
+    }
+    
+    else if(newPlateValue.substr(2,2) != oldPlateValue.substr(2,2))
     {
         return ChOp::CodeTypes::DIFFERENT_ALPH;
     } else if(newPlateValue.substr(7,2) != oldPlateValue.substr(7,2))
@@ -578,7 +540,18 @@ int ChOp::calculateIrCodeType(const std::string& newPlateValue, const std::strin
     }
 }
 
-int ChOp::calculateProbability(const inference::OutputStruct& modelOutput)
+int ChOp::calculateProbability(std::vector<double,std::allocator<double> > probVec)
+{
+    std::vector<int> scores;
+    for(auto& object : probVec)
+        scores.push_back(static_cast<int>(object* 100));
+    
+    int sum = std::accumulate(scores.begin(), scores.end(), 0);
+    int mean = sum / scores.size();
+    return mean;
+}
+
+int ChOp::calculateProbabilityStr(const inference::OutputStruct& modelOutput)
 {
     std::vector<int> scores;
     for(auto& object : modelOutput.modelOutputs)

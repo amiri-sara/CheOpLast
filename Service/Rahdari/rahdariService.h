@@ -3,13 +3,17 @@
 
 
 #include "../Service.h"
+
 #include <condition_variable>
 // Include a faster JSON library, e.g., RapidJSON or simdjson
 #include <rapidjson/document.h>
 #include <rapidjson/error/en.h>
-#include "../crow.h"
+// #include <nlohmann/json.hpp>
+
+// #include "../crow.h"
 #define batchMetaData_vec_sizeThresold 100
-#define monitorInterval 10
+
+
 class RahdariService : public Service
 {
 public:
@@ -18,22 +22,10 @@ public:
     int init();
     void run() override;
 
-    // std::shared_ptr<DataHandler::DataHandlerStruct> DH;
     std::string getCurrentTimeSec();
     size_t getSize();
 
-    static std::atomic<uint32_t> totalInfoFetchingTime; // Total fetching time
-    static std::atomic<uint32_t> InfofetchingCount; // Count of fetching operations
-    static std::atomic<uint32_t> validImagesCount ;
-    static boost::mutex mtx_Info; // Mutex for synchronizing access to shared data
-    static boost::mutex mtx_ValidImage;
-    static std::atomic<uint32_t> totalImageFetchingTime; // Total fetching time
-    static std::atomic<uint32_t> ImagefetchingCount; // Count of fetching operations
-    static boost::condition_variable batchMetaData_cv; // Use Boost condition variable
-
-
     
-    static boost::mutex mtx_Image; // Mutex for synchronizing access to shared data
 private:
     int InfoCount = 100;
     // std::string Url = "http://172.30.8.170:8000";
@@ -42,7 +34,10 @@ private:
     boost::mutex MinId_mtx; // Mutex for MinId access
     uint64_t MaxId = 0;
     uint64_t TmpMaxId = 0;
-    //std::string StorePath = "/home/c-anpr/Images/";
+    // std::shared_ptr<DataHandler::DataHandlerStruct> DH;
+    std::vector<MongoDB::Field> MetaFindFields = { 
+    {"_id", "last_processed_id", MongoDB::FieldType::String, "eq"}
+};
     struct TTOInfo
     {
         std::string Allowed            = "";
@@ -80,18 +75,26 @@ private:
         uint64_t MaxIdResult;
         std::vector<TTOInfo> TTOInfoResult;
         std::string Error = "";
+        int ErrorCode = 0;
         ImageInfo ImageResult;
     };
     
     struct getImagesResultStruct {
     std::unordered_map<uint64_t, std::string> PlateImages_map; // Parsed data
     std::string Error; // Error message, if any
+    int ErrorCode = 0;
     };
 
-    bool batchMetaData_ready = false;
-    boost::condition_variable cvar;
-    boost::mutex batchMetaData_mutex;
-    boost::mutex batchImages_mutex;
+    std::condition_variable queue_not_full;
+    int NumberOfProducerThread = 0;
+    int ThresholdFetchedRecors = 0;
+    bool use_batch_queueing = false;
+    bool use_batch_consume = false;
+
+        // Global queue for producer-consumer
+    std::queue<TTOInfo> record_queue;
+    std::mutex queue_mutex;
+    // std::atomic<bool> running;
 
     Configurate::ClientServiceConfigStruct ClientServiceConfig;
     std::vector<std::vector<TTOInfo>> batchMetaData_vec;
@@ -105,6 +108,7 @@ private:
     bool isExistsFile(std::string FilePath);
     static size_t writeToString(void *ptr, size_t size, size_t count, void *stream);
     void getInfoHandler();
+    void producerThread();
     ResponseValue getResponseValue(const std::string& jsonString, std::string ResType);
     int& convertVehcileType(int& InputVehicleType);
 

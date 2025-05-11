@@ -323,7 +323,7 @@ cv::Mat convertBase64ToMatImage(std::string Base64Str)
     Img = cv::imdecode(bufferToCompress, cv::IMREAD_UNCHANGED);
     return Img;
 }
-cv::Mat createMatImage(std::string &Image, std::string tto)
+cv::Mat createMatImage(const std::string &Image)
 {
 
     //cv::Mat test = cv::imdecode(Image, 0);
@@ -351,7 +351,7 @@ cv::Mat createMatImage(std::string &Image, std::string tto)
         }
         catch(...)
         {
-            Logger::getInstance().logWarning("Couldn't Convert Base64 to cv::Mat for TToInfoID : " + tto);
+            Logger::getInstance().logWarning("Couldn't Convert Base64 to cv::Mat ");
         }
     }
 

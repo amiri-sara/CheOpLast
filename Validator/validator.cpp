@@ -1420,54 +1420,54 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
     }
 
     // RecordID
-    if(DH->hasInputFields.RecordID)
-    {
-        std::string RecordID;
-        try
-        {
-            RecordID = DH->Request.JsonRvalue["RecordID"].s();
-        }catch(...)
-        {
-            DH->Response.HTTPCode = 400;
-            DH->Response.errorCode = INVALIDRECORDID;
-            DH->Response.Description = "The type of RecordID is invalid.";
-            return false; 
-        }
+    // if(DH->hasInputFields.RecordID)
+    // {
+    //     std::string RecordID;
+    //     try
+    //     {
+    //         RecordID = DH->Request.JsonRvalue["RecordID"].s();
+    //     }catch(...)
+    //     {
+    //         DH->Response.HTTPCode = 400;
+    //         DH->Response.errorCode = INVALIDRECORDID;
+    //         DH->Response.Description = "The type of RecordID is invalid.";
+    //         return false; 
+    //     }
 
-        if(RecordID.empty() || RecordID.length() != 24)
-        {
-            DH->Response.HTTPCode = 400;
-            DH->Response.errorCode = INVALIDRECORDID;
-            DH->Response.Description = "The value of RecordID is invalid.";
-            return false;
-        }
+    //     if(RecordID.empty() || RecordID.length() != 24)
+    //     {
+    //         DH->Response.HTTPCode = 400;
+    //         DH->Response.errorCode = INVALIDRECORDID;
+    //         DH->Response.Description = "The value of RecordID is invalid.";
+    //         return false;
+    //     }
 
-        if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
-        {
-            std::string MOngoIdPlate = DH->hasInputFields.MasterPlate ? DH->Input.MasterPlate : DH->Input.PlateValue;
-            std::string CalculatedRecordID = this->GeneratMongoIDHash(DH->ProcessedInputData.PassedTimeLocal, MOngoIdPlate, DH->Input.ViolationID, DH->Input.DeviceID);
+    //     if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+    //     {
+    //         std::string MOngoIdPlate = DH->hasInputFields.MasterPlate ? DH->Input.MasterPlate : DH->Input.PlateValue;
+    //         std::string CalculatedRecordID = this->GeneratMongoIDHash(DH->ProcessedInputData.PassedTimeLocal, MOngoIdPlate, DH->Input.ViolationID, DH->Input.DeviceID);
             
-            if(CalculatedRecordID != RecordID)
-            {
-                DH->Response.HTTPCode = 400;
-                DH->Response.errorCode = INVALIDRECORDID;
-                DH->Response.Description = "The RecordID value does not match the other values.";
-                return false;
-            }
-        }
+    //         if(CalculatedRecordID != RecordID)
+    //         {
+    //             DH->Response.HTTPCode = 400;
+    //             DH->Response.errorCode = INVALIDRECORDID;
+    //             DH->Response.Description = "The RecordID value does not match the other values.";
+    //             return false;
+    //         }
+    //     }
 
-        DH->Input.RecordID = RecordID;
-        DH->ProcessedInputData.MongoID = RecordID;
-    }else
-    {
-        if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
-        {
-            std::string MOngoIdPlate = DH->hasInputFields.MasterPlate ? DH->Input.MasterPlate : DH->Input.PlateValue;
-            std::string CalculatedRecordID = this->GeneratMongoIDHash(DH->ProcessedInputData.PassedTimeLocal, MOngoIdPlate, DH->Input.ViolationID, DH->Input.DeviceID);
+    //     DH->Input.RecordID = RecordID;
+    //     DH->ProcessedInputData.MongoID = RecordID;
+    // }else
+    // {
+    //     if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+    //     {
+    //         std::string MOngoIdPlate = DH->hasInputFields.MasterPlate ? DH->Input.MasterPlate : DH->Input.PlateValue;
+    //         std::string CalculatedRecordID = this->GeneratMongoIDHash(DH->ProcessedInputData.PassedTimeLocal, MOngoIdPlate, DH->Input.ViolationID, DH->Input.DeviceID);
 
-            DH->ProcessedInputData.MongoID = CalculatedRecordID;
-        }
-    }
+    //         DH->ProcessedInputData.MongoID = CalculatedRecordID;
+    //     }
+    // }
 
     // ReceivedTime
     if(DH->hasInputFields.ReceivedTime)

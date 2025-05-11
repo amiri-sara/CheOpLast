@@ -2,9 +2,9 @@
 
 bool storeimage::run(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH)
 {
-    // Read Violation Info
-    if(!(this->ReadViolationInfo(DH)))
-        return false;
+    // // Read Violation Info
+    // if(!(this->ReadViolationInfo(DH)))
+    //     return false;
 
     // Create Address for save image
     if(!(this->CreateAddress(DH)))
@@ -101,9 +101,9 @@ bool storeimage::CreateAddress(const std::shared_ptr<DataHandler::DataHandlerStr
     std::string Min = (DH->ProcessedInputData.PassedTimeLocal.tm_min < 10) ? "0" + std::to_string(DH->ProcessedInputData.PassedTimeLocal.tm_min) : std::to_string(DH->ProcessedInputData.PassedTimeLocal.tm_min);
     std::string Sec = (DH->ProcessedInputData.PassedTimeLocal.tm_sec < 10) ? "0" + std::to_string(DH->ProcessedInputData.PassedTimeLocal.tm_sec) : std::to_string(DH->ProcessedInputData.PassedTimeLocal.tm_sec);
     
-    DH->StoreImageAddress.ImageFolder = std::to_string(DH->Input.PlateType)+ "/" +std::to_string(DH->Input.CodeType) + "/" + Year + "/" + Month + "/" + Day + "/" + Hour + "/" + Min + "/" + Sec + "/";//std::to_string(DH->Input.DeviceID) + "/" + Year + "/" + Month + "/" + Day + "/" + Hour + "/" + Min + "/" + Sec + "/"; //+ DH->ProcessedInputData.MongoID + "/";//TODO mongoID
+    DH->StoreImageAddress.ImageFolder = std::to_string(DH->Input.PlateType)+ "/" +std::to_string(DH->Input.CodeType) + "/" ;// + Year + "/" + Month + "/" + Day + "/" + Hour + "/" + Min + "/" + Sec + "/";//std::to_string(DH->Input.DeviceID) + "/" + Year + "/" + Month + "/" + Day + "/" + Hour + "/" + Min + "/" + Sec + "/"; //+ DH->ProcessedInputData.MongoID + "/";//TODO mongoID
     
-    DH->StoreImageAddress.ImageName = DH->Input.PlateValue;
+    DH->StoreImageAddress.ImageName = DH->Input.PlateValue + "_" +std::to_string(DH->Input.Probability);
     DH->StoreImageAddress.ImageAddress = DH->StoreImageAddress.ImageFolder + DH->StoreImageAddress.ImageName + "_P.jpg";//DH->ViolationInfo.ImageSuffix + ".jpg";//TODO when add colorImage ans banner uncomment this 
 
     return true;

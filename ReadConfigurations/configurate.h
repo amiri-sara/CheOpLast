@@ -61,6 +61,8 @@ public:
         bool DebugMode;
         bool MonitorMode;
         bool ReadFromMinIdTXT;
+        bool UseBatchProduce = false;
+        bool UseBatchConsume = false;
         std::vector<Configurate::ClientServiceInfoStruct> OtherService;
 
     };
@@ -173,6 +175,7 @@ public:
     {
         bool active;
         int NumberOfObjectPerService;
+        int NumberOfThreadPerService;
         std::string ModelsPath;
         bool IgnoreInputPlateType;
         Configurate::ModelConfigStruct PD;
