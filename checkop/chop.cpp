@@ -16,21 +16,51 @@ std::string ChOp::getVersion(){return "1.0.2";}
 
 
 
-std::unique_ptr<NNModel> ChOp::getModel(BaseNNConfig& conf, const std::string& modelData, const string& path) {
+// std::unique_ptr<NNModel> ChOp::getModel(BaseNNConfig& conf, const std::string& modelData, const string& path) {
+//     if (conf.read(path) != 0) {
+//         cerr << "Failed to read config: " << path << endl;
+//         throw runtime_error("Config read failed");
+//     }
+//     aivision::ModelFactory factory;
+//     auto model = factory.get(conf);
+//     int read = 0;
+//     char* pChars = readAllBytes(modelData, &read);//readAllBytes(conf.modelPath.c_str(), &read);
+//     if (!pChars || read == 0) {
+//         cerr << "Failed to read model file: " << conf.modelPath << endl;
+//         throw runtime_error("Model file read failed");
+//     }
+//     conf.modelData = pChars;
+//     conf.modelByteSize = read;
+//     if (model->init(conf) != 0) {
+//         cerr << "Failed to init model: " << conf.modelPath << endl;
+//         delete[] pChars;
+//         throw runtime_error("Model init failed");
+//     }
+//     delete[] pChars;
+//     return model;
+// }
+
+std::unique_ptr<NNModel> ChOp::getModel(BaseNNConfig& conf, const string& path) {
+    cout << "Loading config: " << path << endl;
     if (conf.read(path) != 0) {
         cerr << "Failed to read config: " << path << endl;
         throw runtime_error("Config read failed");
     }
     aivision::ModelFactory factory;
     auto model = factory.get(conf);
+    if (!model) {
+        cerr << "Failed to create model from config: " << path << endl;
+        throw runtime_error("Model creation failed");
+    }
     int read = 0;
-    char* pChars = readAllBytes(modelData, &read);//readAllBytes(conf.modelPath.c_str(), &read);
+    char* pChars = readAllBytes(conf.modelPath.c_str(), &read);
     if (!pChars || read == 0) {
         cerr << "Failed to read model file: " << conf.modelPath << endl;
         throw runtime_error("Model file read failed");
     }
     conf.modelData = pChars;
     conf.modelByteSize = read;
+    cout << "Initializing model: " << conf.modelPath << endl;
     if (model->init(conf) != 0) {
         cerr << "Failed to init model: " << conf.modelPath << endl;
         delete[] pChars;
@@ -40,7 +70,6 @@ std::unique_ptr<NNModel> ChOp::getModel(BaseNNConfig& conf, const std::string& m
     return model;
 }
 
-
 ChOp::ChOp(const ChOp::ConfigStruct& conf)
 {
     try
@@ -48,15 +77,16 @@ ChOp::ChOp(const ChOp::ConfigStruct& conf)
         if(conf.PDConfig.active)
         {
             BaseNNConfig detConfig;
-            this->m_models.PD = getModel(detConfig, conf.PDConfig.model,conf.PDConfig.modelConfig);
+            std::string detConfigPath = "/home/amiri/projects/c++/models/PlateClassifierPackage/inference_pipeline_v2.2.0_backup/models/plateDetection_checkOP/info.json";
+            this->m_models.PD = getModel(detConfig, detConfigPath);
 
         }
 
         if(conf.PCConfig.active)
         {
             BaseNNConfig PCConfig;
-            // string PCConfigPath = "/home/amiri/projects/c++/models/PlateClassifierPackage/inference_pipeline_v2.1.0/models/plateClassification/info.json";
-            this->m_models.PC = getModel(PCConfig, conf.PCConfig.model , conf.PCConfig.modelConfig);
+            string PCConfigPath = "/home/amiri/projects/c++/models/PlateClassifierPackage/inference_pipeline_v2.2.0_backup/models/plateClassification/info.json";
+            this->m_models.PC = getModel(PCConfig, PCConfigPath);
 
         }
 
@@ -87,7 +117,8 @@ ChOp::ChOp(const ChOp::ConfigStruct& conf)
         if(conf.FROCRConfig.active)
         {
             BaseNNConfig FROCRConfig;
-            this->m_models.FROCR = getModel(FROCRConfig, conf.FROCRConfig.model,conf.FROCRConfig.modelConfig);
+            std::string FROCRConfigPath = "/home/amiri/projects/c++/models/PlateClassifierPackage/inference_pipeline_v2.2.0_backup/models/GOCR/info.json";
+            this->m_models.FROCR = getModel(FROCRConfig, FROCRConfigPath);
 
         }
 
@@ -109,9 +140,9 @@ size_t ChOp::getSize() {
 ChOp::OutputStruct ChOp::run(const ChOp::InputStruct& input)
 {
     ChOp::OutputStruct output;
+    // std::cout<<"base64" <<input.plateImageBase64<<std::endl;
 
     cv::Mat PlateImageMat = createMatImage(input.plateImageBase64); 
-    // std::cout<<input.plateImageBase64<<std::endl;
     if(PlateImageMat.total() == 0)
     {
         output.codeType      = ChOp::CodeTypes::NULL_IMAGE;

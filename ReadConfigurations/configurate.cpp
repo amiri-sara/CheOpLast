@@ -154,6 +154,8 @@ Configurate::Configurate()
             this->InputFields.ReceivedTime    = InputFieldsJSON["ReceivedTime"].b();
             this->InputFields.SystemCode      = InputFieldsJSON["SystemCode"].b();
             this->InputFields.CompanyCode     = InputFieldsJSON["CompanyCode"].b();
+            // this->InputFields.EmsInfoId       = InputFieldsJSON["EmsInfoId"].b();
+
 
 #ifdef KAFKASERVICE
             crow::json::rvalue KafkaDocConfigJSON = AggregationInputJSON["KafkaService"];
@@ -546,49 +548,66 @@ Configurate::Configurate()
 
             if(this->Modules.Classifier.active)
             {
-                crow::json::rvalue ModelsArray = ClassifierJSON["Models"];
-                std::size_t arraySize = ModelsArray.size();
-                for(std::size_t i = 0; i < arraySize; ++i)
+                crow::json::rvalue CDConfig = ClassifierJSON["CD"];
+                std::string CDid = CDConfig["model"]["$oid"].s();
+                std::vector<MongoDB::Field> Modelfilter = {
+                    // equal
+                    {"_id", CDid, MongoDB::FieldType::ObjectId, "$gte"},
+                    {"_id", CDid, MongoDB::FieldType::ObjectId, "$lte"}
+
+                };
+                std::vector<std::string> CDResultDoc;
+                FindReturn = this->ConfigDatabase->Find(this->ConfigDatabaseInfo.DatabaseName, "Models", Modelfilter, Option, CDResultDoc);
+
+                if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
                 {
-                    crow::json::rvalue ClassifierModelConfigJSON = ModelsArray[i];
-                    Configurate::ClassifierModelConfigStruct ModelConfig;
-
-                    ModelConfig.active = ClassifierModelConfigJSON["active"].b();
-                    if(ModelConfig.active)
+                    if(CDResultDoc.size() != 1)
                     {
-                        std::string Modelid = ClassifierModelConfigJSON["model"]["$oid"].s();
-                        std::vector<MongoDB::Field> Modelfilter = {
-                            // equal
-                            {"_id", Modelid, MongoDB::FieldType::ObjectId, "$gte"},
-                            {"_id", Modelid, MongoDB::FieldType::ObjectId, "$lte"}
-
-                        };
-                        std::vector<std::string> modelResultDoc;
-                        FindReturn = this->ConfigDatabase->Find(this->ConfigDatabaseInfo.DatabaseName, "Models", Modelfilter, Option, modelResultDoc);
-                        if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
-                        {
-                            if(modelResultDoc.size() != 1)
-                            {
-                                SHOW_ERROR(Modelid << " Model does not exist");
-                                throw;
-                            }
-                            for(auto& doc : modelResultDoc)
-                            {
-                                crow::json::rvalue ModelsConfigJSON = crow::json::load(doc);
-                                ModelConfig.model = ModelsConfigJSON["Name"].s();
-                                ModelConfig.modelConfigPath = ModelsConfigJSON["Config"].s();
-                                ModelConfig.InputImageType = ClassifierModelConfigJSON["InputImageType"].i();
-                                ModelConfig.UseRect = ClassifierModelConfigJSON["UseRect"].b();
-                                ModelConfig.InputRectField = ClassifierModelConfigJSON["InputRectField"].i();
-                                this->Modules.Classifier.Models.push_back(ModelConfig);
-                            }
-                        }else
-                        {
-                            SHOW_ERROR(FindReturn.Description);
-                            throw;
-                        }
+                        SHOW_ERROR(CDid << " Model does not exist");
+                        throw;
                     }
-                } 
+                    for(auto& doc : CDResultDoc)
+                    {
+                        crow::json::rvalue ModelsConfigJSON = crow::json::load(doc);
+                        this->Modules.Classifier.CD.model = ModelsConfigJSON["Name"].s();
+                        this->Modules.Classifier.CD.modelConfigPath = ModelsConfigJSON["Config"].s(); 
+                        this->Modules.Classifier.CD.active = CDConfig["active"].b();
+                    }
+                }else
+                {
+                    SHOW_ERROR(FindReturn.Description);
+                    throw;
+                }
+                
+                crow::json::rvalue LCCConfig = ClassifierJSON["LCC"];
+                std::string LCCid = LCCConfig["model"]["$oid"].s();
+                Modelfilter = {
+                    // equal
+                    {"_id", LCCid, MongoDB::FieldType::ObjectId, "$gte"},
+                    {"_id", LCCid, MongoDB::FieldType::ObjectId, "$lte"}
+
+                };
+                std::vector<std::string> LCCResultDoc;
+                FindReturn = this->ConfigDatabase->Find(this->ConfigDatabaseInfo.DatabaseName, "Models", Modelfilter, Option, LCCResultDoc);
+                if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful)
+                {
+                    if(LCCResultDoc.size() != 1)
+                    {
+                        SHOW_ERROR(LCCid << " Model does not exist");
+                        throw;
+                    }
+                    for(auto& doc : LCCResultDoc)
+                    {
+                        crow::json::rvalue ModelsConfigJSON = crow::json::load(doc);
+                        this->Modules.Classifier.LCC.model = ModelsConfigJSON["Name"].s();
+                        this->Modules.Classifier.LCC.modelConfigPath = ModelsConfigJSON["Config"].s(); 
+                        this->Modules.Classifier.LCC.active = LCCConfig["active"].b();
+                    }
+                }else
+                {
+                    SHOW_ERROR(FindReturn.Description);
+                    throw;
+                }
             }  
         }
     }else
