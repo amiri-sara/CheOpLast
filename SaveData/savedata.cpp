@@ -138,6 +138,9 @@ bool savedata::InsertDatabase(const std::shared_ptr<DataHandler::DataHandlerStru
         {  
             MongoDB::Field VehicleModelField = {"VehicleModel", std::to_string(DH->Input.VehicleModel), MongoDB::FieldType::Integer};
             fields.push_back(VehicleModelField);
+        }else{
+            MongoDB::Field VehicleModelField = {"VehicleModel", std::to_string(DH->ProcessedInputData.VehicleModel), MongoDB::FieldType::Integer};
+            fields.push_back(VehicleModelField);
         }
     }
 
@@ -257,6 +260,10 @@ bool savedata::InsertDatabase(const std::shared_ptr<DataHandler::DataHandlerStru
             MongoDB::Field CarRectField = {"CarRect", DH->Input.CarRect, MongoDB::FieldType::String};
             fields.push_back(CarRectField);
         }
+        else{
+            MongoDB::Field CarRectField = {"CarRect", DH->ProcessedInputData.CarRect, MongoDB::FieldType::String};
+            fields.push_back(CarRectField);
+        }
     }
 
     // CodeType
@@ -304,6 +311,7 @@ bool savedata::InsertDatabase(const std::shared_ptr<DataHandler::DataHandlerStru
             MongoDB::Field RecordIDField = {"RecordID", std::to_string(DH->Input.RecordID), MongoDB::FieldType::Int64};
             fields.push_back(RecordIDField);
         }
+
     }
 
     // SystemCode

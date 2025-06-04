@@ -7,7 +7,7 @@ bool Validator::run(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH)
         return false;
 
     // Check Input fields exist in request or not
-    if(DH->InsertRoute)
+    if(DH->InsertRoute) //TODO uncomment
     {
         if(DH->DecryptedData)
         {
@@ -24,9 +24,9 @@ bool Validator::run(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH)
             return false;
     }
 
-    // Check Number of Input fields
-    if(!(this->CheckNumberOfJSONFields(DH)))
-        return false;
+    // // Check Number of Input fields
+    // if(!(this->CheckNumberOfJSONFields(DH)))  //TODO uncomment
+    //     return false;
 
     // Check Request values
     if(DH->InsertRoute)
@@ -55,7 +55,8 @@ bool Validator::CheckRequstFormatJSON(const std::shared_ptr<DataHandler::DataHan
     try {
         if(DH->DecryptedData)
         {
-            DH->Request.JsonRvalue = crow::json::load(DH->Request.body);
+            auto req =crow::json::load(DH->Request.body);
+            DH->Request.JsonRvalue = key_mapper_->mapKey(req);
         } else 
         {   
             DH->Request.enJsonRvalue = crow::json::load(DH->Request.body);
@@ -119,6 +120,30 @@ bool Validator::checkDataExistOrNo(const std::shared_ptr<DataHandler::DataHandle
             DH->Response.HTTPCode = 400;
             DH->Response.errorCode = INVALIDVIOLATIONID;
             DH->Response.Description = "ViolationID Dont Exist In Body Of JSON";
+            return allDataExist;
+        }
+    }
+
+    if(DH->hasInputFields.SystemCode)
+    {
+        DH->Request.NumberofInputFields++;
+        if(!(DH->Request.JsonRvalue.has("SystemCode")))
+        {
+            DH->Response.HTTPCode = 400;
+            DH->Response.errorCode = INVALIDSYSTEMCODE;
+            DH->Response.Description = "SystemCode Dont Exist In Body Of JSON";
+            return allDataExist;
+        }
+    }
+
+    if(DH->hasInputFields.CompanyCode)
+    {
+        DH->Request.NumberofInputFields++;
+        if(!(DH->Request.JsonRvalue.has("CompanyCode")))
+        {
+            DH->Response.HTTPCode = 400;
+            DH->Response.errorCode = INVALIDCOMPANYCODE;
+            DH->Response.Description = "SystemCode Dont Exist In Body Of JSON";
             return allDataExist;
         }
     }
@@ -387,6 +412,18 @@ bool Validator::checkDataExistOrNo(const std::shared_ptr<DataHandler::DataHandle
         }
     }
 
+    // if(DH->hasInputFields.EmsInfoId)
+    // {
+    //     DH->Request.NumberofInputFields++;
+    //     if(!(DH->Request.JsonRvalue.has("EmsInfoId")))
+    //     {
+    //         DH->Response.HTTPCode = 400;
+    //         DH->Response.errorCode = INVALIDRECORDID;
+    //         DH->Response.Description = "RecordID Dont Exist In Body Of JSON";
+    //         return allDataExist;
+    //     }
+    // }
+
     if(DH->hasInputFields.ReceivedTime)
     {
         DH->Request.NumberofInputFields++;
@@ -492,6 +529,7 @@ bool Validator::CheckNumberOfJSONFields(const std::shared_ptr<DataHandler::DataH
     return false;
 }
 
+
 bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH)
 {
     // DeviceID
@@ -551,6 +589,57 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
 
         DH->Input.DeviceID = DeviceID;
     }
+
+    if(DH->hasInputFields.SystemCode)
+    {
+        int SystemCode;
+        try
+        {
+            SystemCode = DH->Request.JsonRvalue["SystemCode"].i();
+        }
+        catch(const std::exception& e)
+        {
+            DH->Response.HTTPCode = 400;
+            DH->Response.errorCode = INVALIDSYSTEMCODE;
+            DH->Response.Description = "The type of SystemCode is invalid.";
+            return false; 
+        }
+        
+    }
+
+    if(DH->hasInputFields.CompanyCode)
+    {
+        int SystemCode;
+        try
+        {
+            SystemCode = DH->Request.JsonRvalue["CompanyCode"].i();
+        }
+        catch(const std::exception& e)
+        {
+            DH->Response.HTTPCode = 400;
+            DH->Response.errorCode = INVALIDCOMPANYCODE;
+            DH->Response.Description = "The type of CompanyCode is invalid.";
+            return false; 
+        }
+        
+    }
+
+    // if(DH->hasInputFields.EmsInfoId)
+    // {
+    //     uint64_t EmsInfoId;
+    //     try
+    //     {
+    //         EmsInfoId = DH->Request.JsonRvalue["EmsInfoId"].i();
+    //     }
+    //     catch(...)
+    //     {
+    //         DH->Response.HTTPCode = 400;
+    //         DH->Response.errorCode = INVALIDRECORDID;
+    //         DH->Response.Description = "The type of EmsInfoId is invalid.";
+    //         return false; 
+    //     }
+        
+    // }
 
     // UserID
     if(DH->hasInputFields.UserID)
@@ -1278,11 +1367,11 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
 #endif // VALUEVALIDATION
 
         DH->Input.CarRect = CarRect;
-        int x = 0, y = 0, width = 0, height = 0;
-        char delimiter;
-        std::stringstream ss(CarRect);
-        ss >> x >> delimiter >> y >> delimiter >> width >> delimiter >> height;
-        DH->ProcessedInputData.CarRect = cv::Rect(x, y, width, height);
+        // int x = 0, y = 0, width = 0, height = 0; //TODO CarRect  string to RECT
+        // char delimiter;
+        // std::stringstream ss(CarRect);
+        // ss >> x >> delimiter >> y >> delimiter >> width >> delimiter >> height;
+        // DH->ProcessedInputData.CarRect = cv::Rect(x, y, width, height);
     }
 
     // CodeType
@@ -1347,7 +1436,7 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
         std::string MasterPlate;
         try
         {
-            MasterPlate = DH->Request.JsonRvalue["MasterPlate"].s();
+            MasterPlate = std::to_string(DH->Request.JsonRvalue["MasterPlate"].i());
         }catch(...)
         {
             DH->Response.HTTPCode = 400;
@@ -1420,45 +1509,46 @@ bool Validator::CheckRequestValues(const std::shared_ptr<DataHandler::DataHandle
     }
 
     // RecordID
-    // if(DH->hasInputFields.RecordID)
-    // {
-    //     std::string RecordID;
-    //     try
-    //     {
-    //         RecordID = DH->Request.JsonRvalue["RecordID"].s();
-    //     }catch(...)
-    //     {
-    //         DH->Response.HTTPCode = 400;
-    //         DH->Response.errorCode = INVALIDRECORDID;
-    //         DH->Response.Description = "The type of RecordID is invalid.";
-    //         return false; 
-    //     }
+    if(DH->hasInputFields.RecordID)
+    {
+        uint64_t RecordID;
+        try
+        {
+            RecordID = DH->Request.JsonRvalue["RecordID"].i();
+        }catch(...)
+        {
+            DH->Response.HTTPCode = 400;
+            DH->Response.errorCode = INVALIDRECORDID;
+            DH->Response.Description = "The type of RecordID is invalid.";
+            return false; 
+        }
 
-    //     if(RecordID.empty() || RecordID.length() != 24)
-    //     {
-    //         DH->Response.HTTPCode = 400;
-    //         DH->Response.errorCode = INVALIDRECORDID;
-    //         DH->Response.Description = "The value of RecordID is invalid.";
-    //         return false;
-    //     }
+        // if(RecordID.empty() || RecordID.length() != 24)
+        // {
+        //     DH->Response.HTTPCode = 400;
+        //     DH->Response.errorCode = INVALIDRECORDID;
+        //     DH->Response.Description = "The value of RecordID is invalid.";
+        //     return false;
+        // }
 
-    //     if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
-    //     {
-    //         std::string MOngoIdPlate = DH->hasInputFields.MasterPlate ? DH->Input.MasterPlate : DH->Input.PlateValue;
-    //         std::string CalculatedRecordID = this->GeneratMongoIDHash(DH->ProcessedInputData.PassedTimeLocal, MOngoIdPlate, DH->Input.ViolationID, DH->Input.DeviceID);
+        // if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+        // {
+        //     std::string MOngoIdPlate = DH->hasInputFields.MasterPlate ? DH->Input.MasterPlate : DH->Input.PlateValue;
+        //     std::string CalculatedRecordID = this->GeneratMongoIDHash(DH->ProcessedInputData.PassedTimeLocal, MOngoIdPlate, DH->Input.ViolationID, DH->Input.DeviceID);
             
-    //         if(CalculatedRecordID != RecordID)
-    //         {
-    //             DH->Response.HTTPCode = 400;
-    //             DH->Response.errorCode = INVALIDRECORDID;
-    //             DH->Response.Description = "The RecordID value does not match the other values.";
-    //             return false;
-    //         }
-    //     }
+        //     if(CalculatedRecordID != RecordID)
+        //     {
+        //         DH->Response.HTTPCode = 400;
+        //         DH->Response.errorCode = INVALIDRECORDID;
+        //         DH->Response.Description = "The RecordID value does not match the other values.";
+        //         return false;
+        //     }
+        // }
 
-    //     DH->Input.RecordID = RecordID;
-    //     DH->ProcessedInputData.MongoID = RecordID;
-    // }else
+        DH->Input.RecordID = RecordID;
+        // DH->ProcessedInputData.MongoID = RecordID;
+    }
+    // else
     // {
     //     if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
     //     {
@@ -1539,7 +1629,14 @@ bool Validator::CheckTokenRequestValues(const std::shared_ptr<DataHandler::DataH
     int DeviceID;
     try
     {
+    if (DH->Request.JsonRvalue["DeviceID"])
+    {
         DeviceID = DH->Request.JsonRvalue["DeviceID"].i();
+    }
+    else if (DH->Request.JsonRvalue["DeviceId"])
+    {
+        DeviceID = DH->Request.JsonRvalue["DeviceId"].i();
+    }
     }catch(...)
     {
         DH->Response.HTTPCode = 400;
@@ -1693,3 +1790,4 @@ std::string Validator::GeneratMongoIDHash(const std::tm &PassedTime, const std::
 
     return HashID;
 }
+

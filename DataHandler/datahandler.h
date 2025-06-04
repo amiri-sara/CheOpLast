@@ -46,10 +46,15 @@ namespace DataHandler
 
         uint64_t RecordID;
         std::string ReceivedTime;
+
+        //Load
+        uint64_t EmsInfoId;
     };
 
     struct ProcessedInputDataStruct
     {
+        int VehicleModel;
+        int VehicleType;
         cv::Mat ColorImageMat;
         cv::Mat PlateImageMat;
         cv::Mat ThumbnailImage;
@@ -60,7 +65,7 @@ namespace DataHandler
         std::tm PassedTimeLocal;
         std::tm ReceivedTimeLocal;
         std::string MongoID;
-        cv::Rect CarRect;
+        std::string CarRect;
         cv::Rect PlateRect;
         std::unordered_map<std::string,int> ClassifierModuleOutput;
     };
@@ -70,6 +75,7 @@ namespace DataHandler
         std::string ImageFolder;
         std::string ImageName;
         std::string ImageAddress;
+        std::string ImageSuffix;
     };
 
     struct RequestStruct
@@ -77,6 +83,7 @@ namespace DataHandler
         std::string remoteIP = "";
         std::string body = "";
         crow::json::rvalue JsonRvalue;
+        // crow::json::wvalue JsonWvalue;
         crow::json::rvalue enJsonRvalue;
         int NumberofInputFields;
     };

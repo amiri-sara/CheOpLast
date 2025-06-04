@@ -57,10 +57,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/amiri/projects/c++/check_rahdari/check_try/Aggregation_V1.0.0/Aggregation/v2.0.7/CheOpLast
+CMAKE_SOURCE_DIR = /home/amiri/projects/c++/check_rahdari/check_try/Aggregation_V1.0.0/Aggregation/v2.1.0/loadDetection/webserviceLoad
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/amiri/projects/c++/check_rahdari/check_try/Aggregation_V1.0.0/Aggregation/v2.0.7/CheOpLast/build
+CMAKE_BINARY_DIR = /home/amiri/projects/c++/check_rahdari/check_try/Aggregation_V1.0.0/Aggregation/v2.1.0/loadDetection/webserviceLoad/build
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -87,9 +87,9 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/amiri/projects/c++/check_rahdari/check_try/Aggregation_V1.0.0/Aggregation/v2.0.7/CheOpLast/build/CMakeFiles /home/amiri/projects/c++/check_rahdari/check_try/Aggregation_V1.0.0/Aggregation/v2.0.7/CheOpLast/build//CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/amiri/projects/c++/check_rahdari/check_try/Aggregation_V1.0.0/Aggregation/v2.1.0/loadDetection/webserviceLoad/build/CMakeFiles /home/amiri/projects/c++/check_rahdari/check_try/Aggregation_V1.0.0/Aggregation/v2.1.0/loadDetection/webserviceLoad/build//CMakeFiles/progress.marks
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/amiri/projects/c++/check_rahdari/check_try/Aggregation_V1.0.0/Aggregation/v2.0.7/CheOpLast/build/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/amiri/projects/c++/check_rahdari/check_try/Aggregation_V1.0.0/Aggregation/v2.1.0/loadDetection/webserviceLoad/build/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
@@ -128,6 +128,30 @@ checkOperator: cmake_check_build_system
 checkOperator/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/build
 .PHONY : checkOperator/fast
+
+Classifier/classifier.o: Classifier/classifier.cpp.o
+.PHONY : Classifier/classifier.o
+
+# target to build an object file
+Classifier/classifier.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/Classifier/classifier.cpp.o
+.PHONY : Classifier/classifier.cpp.o
+
+Classifier/classifier.i: Classifier/classifier.cpp.i
+.PHONY : Classifier/classifier.i
+
+# target to preprocess a source file
+Classifier/classifier.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/Classifier/classifier.cpp.i
+.PHONY : Classifier/classifier.cpp.i
+
+Classifier/classifier.s: Classifier/classifier.cpp.s
+.PHONY : Classifier/classifier.s
+
+# target to generate assembly for a file
+Classifier/classifier.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/Classifier/classifier.cpp.s
+.PHONY : Classifier/classifier.cpp.s
 
 Cryptography/cipher.o: Cryptography/cipher.cpp.o
 .PHONY : Cryptography/cipher.o
@@ -249,30 +273,6 @@ ReadConfigurations/configurate.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/ReadConfigurations/configurate.cpp.s
 .PHONY : ReadConfigurations/configurate.cpp.s
 
-SaveData/savedata.o: SaveData/savedata.cpp.o
-.PHONY : SaveData/savedata.o
-
-# target to build an object file
-SaveData/savedata.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/SaveData/savedata.cpp.o
-.PHONY : SaveData/savedata.cpp.o
-
-SaveData/savedata.i: SaveData/savedata.cpp.i
-.PHONY : SaveData/savedata.i
-
-# target to preprocess a source file
-SaveData/savedata.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/SaveData/savedata.cpp.i
-.PHONY : SaveData/savedata.cpp.i
-
-SaveData/savedata.s: SaveData/savedata.cpp.s
-.PHONY : SaveData/savedata.s
-
-# target to generate assembly for a file
-SaveData/savedata.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/SaveData/savedata.cpp.s
-.PHONY : SaveData/savedata.cpp.s
-
 Service/Rahdari/rahdariService.o: Service/Rahdari/rahdariService.cpp.o
 .PHONY : Service/Rahdari/rahdariService.o
 
@@ -321,29 +321,29 @@ Service/Service.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/Service/Service.cpp.s
 .PHONY : Service/Service.cpp.s
 
-StoreImage/storeimage.o: StoreImage/storeimage.cpp.o
-.PHONY : StoreImage/storeimage.o
+SystemMonitor/monitor.o: SystemMonitor/monitor.cpp.o
+.PHONY : SystemMonitor/monitor.o
 
 # target to build an object file
-StoreImage/storeimage.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/StoreImage/storeimage.cpp.o
-.PHONY : StoreImage/storeimage.cpp.o
+SystemMonitor/monitor.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/SystemMonitor/monitor.cpp.o
+.PHONY : SystemMonitor/monitor.cpp.o
 
-StoreImage/storeimage.i: StoreImage/storeimage.cpp.i
-.PHONY : StoreImage/storeimage.i
+SystemMonitor/monitor.i: SystemMonitor/monitor.cpp.i
+.PHONY : SystemMonitor/monitor.i
 
 # target to preprocess a source file
-StoreImage/storeimage.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/StoreImage/storeimage.cpp.i
-.PHONY : StoreImage/storeimage.cpp.i
+SystemMonitor/monitor.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/SystemMonitor/monitor.cpp.i
+.PHONY : SystemMonitor/monitor.cpp.i
 
-StoreImage/storeimage.s: StoreImage/storeimage.cpp.s
-.PHONY : StoreImage/storeimage.s
+SystemMonitor/monitor.s: SystemMonitor/monitor.cpp.s
+.PHONY : SystemMonitor/monitor.s
 
 # target to generate assembly for a file
-StoreImage/storeimage.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/StoreImage/storeimage.cpp.s
-.PHONY : StoreImage/storeimage.cpp.s
+SystemMonitor/monitor.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/SystemMonitor/monitor.cpp.s
+.PHONY : SystemMonitor/monitor.cpp.s
 
 Time/timetools.o: Time/timetools.cpp.o
 .PHONY : Time/timetools.o
@@ -474,6 +474,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... checkOperator"
+	@echo "... Classifier/classifier.o"
+	@echo "... Classifier/classifier.i"
+	@echo "... Classifier/classifier.s"
 	@echo "... Cryptography/cipher.o"
 	@echo "... Cryptography/cipher.i"
 	@echo "... Cryptography/cipher.s"
@@ -489,18 +492,15 @@ help:
 	@echo "... ReadConfigurations/configurate.o"
 	@echo "... ReadConfigurations/configurate.i"
 	@echo "... ReadConfigurations/configurate.s"
-	@echo "... SaveData/savedata.o"
-	@echo "... SaveData/savedata.i"
-	@echo "... SaveData/savedata.s"
 	@echo "... Service/Rahdari/rahdariService.o"
 	@echo "... Service/Rahdari/rahdariService.i"
 	@echo "... Service/Rahdari/rahdariService.s"
 	@echo "... Service/Service.o"
 	@echo "... Service/Service.i"
 	@echo "... Service/Service.s"
-	@echo "... StoreImage/storeimage.o"
-	@echo "... StoreImage/storeimage.i"
-	@echo "... StoreImage/storeimage.s"
+	@echo "... SystemMonitor/monitor.o"
+	@echo "... SystemMonitor/monitor.i"
+	@echo "... SystemMonitor/monitor.s"
 	@echo "... Time/timetools.o"
 	@echo "... Time/timetools.i"
 	@echo "... Time/timetools.s"

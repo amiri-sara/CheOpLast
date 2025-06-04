@@ -1,0 +1,5 @@
+DH->hasOutputFields
+DH->Input
+DH->ProcessedInputData.CarRect
+DH->ProcessedInputData.ReceivedTimeLocal
+DH->ProcessedInputData.VehicleModel
