@@ -385,8 +385,7 @@ bool storeimage::AddPlateCrop(const std::shared_ptr<DataHandler::DataHandlerStru
 //     return true;
 // }
 
-bool storeimage::StoreImage(std::string FolderName, std::string ImageName, cv::Mat Image, bool EnableResize, int MaxSize)
-{
+bool storeimage::StoreImage(std::string FolderName, std::string ImageName, const cv::Mat& Image, bool EnableResize, int MaxSize){
     if(Image.total() == 0)
     {
         return false;

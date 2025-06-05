@@ -273,6 +273,30 @@ ReadConfigurations/configurate.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/ReadConfigurations/configurate.cpp.s
 .PHONY : ReadConfigurations/configurate.cpp.s
 
+SaveData/savedata.o: SaveData/savedata.cpp.o
+.PHONY : SaveData/savedata.o
+
+# target to build an object file
+SaveData/savedata.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/SaveData/savedata.cpp.o
+.PHONY : SaveData/savedata.cpp.o
+
+SaveData/savedata.i: SaveData/savedata.cpp.i
+.PHONY : SaveData/savedata.i
+
+# target to preprocess a source file
+SaveData/savedata.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/SaveData/savedata.cpp.i
+.PHONY : SaveData/savedata.cpp.i
+
+SaveData/savedata.s: SaveData/savedata.cpp.s
+.PHONY : SaveData/savedata.s
+
+# target to generate assembly for a file
+SaveData/savedata.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/SaveData/savedata.cpp.s
+.PHONY : SaveData/savedata.cpp.s
+
 Service/Rahdari/rahdariService.o: Service/Rahdari/rahdariService.cpp.o
 .PHONY : Service/Rahdari/rahdariService.o
 
@@ -320,6 +344,30 @@ Service/Service.s: Service/Service.cpp.s
 Service/Service.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/Service/Service.cpp.s
 .PHONY : Service/Service.cpp.s
+
+StoreImage/storeimage.o: StoreImage/storeimage.cpp.o
+.PHONY : StoreImage/storeimage.o
+
+# target to build an object file
+StoreImage/storeimage.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/StoreImage/storeimage.cpp.o
+.PHONY : StoreImage/storeimage.cpp.o
+
+StoreImage/storeimage.i: StoreImage/storeimage.cpp.i
+.PHONY : StoreImage/storeimage.i
+
+# target to preprocess a source file
+StoreImage/storeimage.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/StoreImage/storeimage.cpp.i
+.PHONY : StoreImage/storeimage.cpp.i
+
+StoreImage/storeimage.s: StoreImage/storeimage.cpp.s
+.PHONY : StoreImage/storeimage.s
+
+# target to generate assembly for a file
+StoreImage/storeimage.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/StoreImage/storeimage.cpp.s
+.PHONY : StoreImage/storeimage.cpp.s
 
 SystemMonitor/monitor.o: SystemMonitor/monitor.cpp.o
 .PHONY : SystemMonitor/monitor.o
@@ -492,12 +540,18 @@ help:
 	@echo "... ReadConfigurations/configurate.o"
 	@echo "... ReadConfigurations/configurate.i"
 	@echo "... ReadConfigurations/configurate.s"
+	@echo "... SaveData/savedata.o"
+	@echo "... SaveData/savedata.i"
+	@echo "... SaveData/savedata.s"
 	@echo "... Service/Rahdari/rahdariService.o"
 	@echo "... Service/Rahdari/rahdariService.i"
 	@echo "... Service/Rahdari/rahdariService.s"
 	@echo "... Service/Service.o"
 	@echo "... Service/Service.i"
 	@echo "... Service/Service.s"
+	@echo "... StoreImage/storeimage.o"
+	@echo "... StoreImage/storeimage.i"
+	@echo "... StoreImage/storeimage.s"
 	@echo "... SystemMonitor/monitor.o"
 	@echo "... SystemMonitor/monitor.i"
 	@echo "... SystemMonitor/monitor.s"
