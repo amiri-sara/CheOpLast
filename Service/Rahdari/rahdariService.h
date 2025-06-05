@@ -118,6 +118,23 @@ private:
     int& convertVehcileType(int& InputVehicleType);
 
 
+    // --- شروع تغییرات برای بهینه‌سازی بارگذاری پیکربندی ---
+    // اضافه کردن متغیرهای عضو برای ذخیره پیکربندی‌ها
+    Configurate::FieldsStruct m_hasInputFields;
+    Configurate::FieldsStruct m_hasOutputFields;
+    Configurate::StoreImageConfigStruct m_StoreImageConfig;
+    std::unordered_map<int, Configurate::ViolationStruct> m_ViolationMap;
+    std::vector<Configurate::CameraStruct> m_Cameras;
+    Configurate::InfoDatabaseStruct m_InsertDatabaseInfo;
+    Configurate::InfoDatabaseStruct m_FailedDatabaseInfo;
+    Configurate::ModulesStruct m_Modules;
+    std::shared_ptr<MongoDB> m_InsertDatabase;
+    std::shared_ptr<MongoDB> m_FailedDatabase;
+    std::shared_ptr<MongoDB> m_ConfigDatabase; // برای به‌روزرسانی MinId در Meta
+    Configurate::InfoDatabaseStruct m_ConfigDatabaseInfo;
+    // --- پایان تغییرات برای بهینه‌سازی بارگذاری پیکربندی ---
+
+
 protected:
 
 };

@@ -14,7 +14,7 @@
 #endif //CLIENTSERVICE
 
 
-#define CHECKOP_VERSION "2.1.0"
+#define CHECKOP_VERSION "2.1.1"
 #define LOAD_DETECTION_VERSION "2.0.0"
 
 

@@ -172,13 +172,42 @@ void RahdariService::producerThread() {
 RahdariService::RahdariService(Configurate::ClientServiceConfigStruct ServiceConfig)
 {
     this->ClientServiceConfig = ServiceConfig;
+
+        // بارگذاری پیکربندی‌ها از Configurate Singleton به متغیرهای عضو
+    Configurate* ConfigurateObj = Configurate::getInstance();
+    m_hasInputFields = ConfigurateObj->getInputFields(); //
+    m_hasOutputFields = ConfigurateObj->getOutputFields(); //
+    m_StoreImageConfig = ConfigurateObj->getStoreImageConfig(); //
+    m_ViolationMap = ConfigurateObj->getViolationMap(); //
+    m_Cameras = ConfigurateObj->getCameras(); //
+    m_InsertDatabaseInfo = ConfigurateObj->getInsertDatabaseInfo(); //
+    m_FailedDatabaseInfo = ConfigurateObj->getFailedDatabaseInfo(); //
+    m_Modules = ConfigurateObj->getModules(); //
+    m_InsertDatabase = ConfigurateObj->getInsertDatabase(); //
+    m_FailedDatabase = ConfigurateObj->getFailedDatabase(); //
+    m_ConfigDatabase = ConfigurateObj->getConfigDatabase(); //
+    m_ConfigDatabaseInfo = ConfigurateObj->getConfigDatabaseInfo();
 }
 int RahdariService::init()
 {
     if(!this->ClientServiceConfig.ReadFromMinIdTXT)
     {
-        Configurate* ConfigurateObj = Configurate::getInstance();
-        this->MinId = ConfigurateObj->getMeta().last_processed_id;
+        // --- استفاده از متغیر عضو m_ConfigDatabaseInfo ---
+        std::vector<MongoDB::Field> MetaFindFields = {
+            {"_id", "last_processed_id", MongoDB::FieldType::String, "eq"}
+        };
+        MongoDB::FindOptionStruct Option;
+        std::vector<std::string> MetaDoc;
+        MongoDB::ResponseStruct FindReturn = m_ConfigDatabase->Find(m_ConfigDatabaseInfo.DatabaseName, "Meta", MetaFindFields, Option, MetaDoc); //
+
+        if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful && !MetaDoc.empty()) {
+            crow::json::rvalue AggregationConfigJSON = crow::json::load(MetaDoc[0]);
+            this->MinId = static_cast<uint64_t>(AggregationConfigJSON["PassedVehicleRecordsId"].i()); //
+        } else {
+            Logger::getInstance().logError("Could not find 'last_processed_id' in Meta collection. Starting from 0.");
+            this->MinId = 0;
+        }
+
         std::cout << "********************" << std::endl;
         std::cout<<"MinId: " <<this->MinId<<std::endl;
         std::cout << "********************" << std::endl;   
@@ -190,15 +219,12 @@ int RahdariService::init()
         }
         std::ifstream t("MinId.txt");
         std::cout << "********************" << std::endl;
-            // Read the entire file content into a string
         std::string minIdStr;
         t.seekg(0, std::ios::end);
         minIdStr.reserve(t.tellg());
         t.seekg(0, std::ios::beg);
         minIdStr.assign((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
-        // Output the raw string read from the file
         std::cout << "Raw MinId from file: " << minIdStr << std::endl;
-        // Convert string to long long
         try{
             this->MinId = std::stoll(minIdStr);
             std::cout << "Converted MinId: " << this->MinId << std::endl;
@@ -208,7 +234,6 @@ int RahdariService::init()
             } catch (const std::out_of_range& e) {
                 Logger::getInstance().logError("MinId value is out of range.");
                 return -1;
-            
         }
         std::cout << "********************" << std::endl;   
     }
@@ -216,13 +241,11 @@ int RahdariService::init()
 
     curl_global_init(CURL_GLOBAL_ALL);
 
-
     std::vector<boost::thread> threads;
     this->NumberOfProducerThread = this->ClientServiceConfig.ThreadNumber;
     this->ThresholdFetchedRecors = this->ClientServiceConfig.ThresholdFetchedRecors;
-    this->use_batch_consume      = this->ClientServiceConfig.UseBatchConsume;
-    this->use_batch_queueing     = this->ClientServiceConfig.UseBatchProduce;
-    this->use_bulk_images        = this->ClientServiceConfig.UseBulkImages;
+    this->use_batch_consume = this->ClientServiceConfig.UseBatchConsume;
+    this->use_batch_queueing = this->ClientServiceConfig.UseBatchProduce;
     
     for (int i = 0; i < this->NumberOfProducerThread; ++i) {
         threads.emplace_back(boost::bind(&RahdariService::producerThread, this)  );
@@ -232,13 +255,12 @@ int RahdariService::init()
         thread.detach();
     }
 
-
     return 0; // Success
 }
 void RahdariService::run()
 {
 
-    while(true)
+    while(!stop.load())
     {
         TTOInfo record;
         std::vector<TTOInfo> recordsVec;
@@ -274,21 +296,22 @@ void RahdariService::run()
         for (auto& record : recordsVec) {
             auto processStartTime = std::chrono::high_resolution_clock::now();
             std::shared_ptr<DataHandler::DataHandlerStruct> DH = std::make_shared<DataHandler::DataHandlerStruct>();
-            Configurate* ConfigurateObj = Configurate::getInstance();
-            DH->hasInputFields = ConfigurateObj->getInputFields();
-            DH->hasOutputFields = ConfigurateObj->getOutputFields();
-            DH->StoreImageConfig = ConfigurateObj->getStoreImageConfig();
-            DH->ViolationMap = ConfigurateObj->getViolationMap();
-            DH->Cameras = ConfigurateObj->getCameras();
-            // DH->DaysforPassedTimeAcceptable = this->WebServiceConfig.DaysforPassedTimeAcceptable;
-            DH->ConfigDatabase = ConfigurateObj->getConfigDatabase();
-            DH->ConfigDatabaseInfo = ConfigurateObj->getConfigDatabaseInfo();
-            DH->InsertDatabase = ConfigurateObj->getInsertDatabase();
-            DH->InsertDatabaseInfo = ConfigurateObj->getInsertDatabaseInfo();
-            DH->FailedDatabase = ConfigurateObj->getFailedDatabase();
-            DH->FailedDatabaseInfo = ConfigurateObj->getFailedDatabaseInfo();
-            DH->Modules = ConfigurateObj->getModules();
+            // --- شروع تغییرات برای بهینه‌سازی بارگذاری پیکربندی ---
+            // استفاده از متغیرهای عضو به جای بارگذاری مجدد از Configurate Singleton
+            DH->hasInputFields = m_hasInputFields; //
+            DH->hasOutputFields = m_hasOutputFields; //
+            DH->StoreImageConfig = m_StoreImageConfig; //
+            DH->ViolationMap = m_ViolationMap; //
+            DH->Cameras = m_Cameras; //
+            DH->InsertDatabase = m_InsertDatabase; //
+            DH->InsertDatabaseInfo = m_InsertDatabaseInfo; //
+            DH->FailedDatabase = m_FailedDatabase; //
+            DH->FailedDatabaseInfo = m_FailedDatabaseInfo; //
+            DH->Modules = m_Modules; //
             DH->DebugMode = this->ClientServiceConfig.DebugMode;
+            DH->ConfigDatabase = m_ConfigDatabase; //
+            DH->ConfigDatabaseInfo = m_ConfigDatabaseInfo; //
+            // --- پایان تغییرات برای بهینه‌سازی بارگذاری پیکربندی ---
 
             DH->Input.DeviceID        =     record.DeviceId;
             DH->Input.Lane            =     record.LineNumber;
