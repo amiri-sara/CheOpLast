@@ -514,7 +514,7 @@ RahdariService::getImagesResultStruct RahdariService::parsePlateImages(const std
         if (item["plate_image"].IsString()) {
             plate_image = item["plate_image"].GetString();
             // Efficiently remove newline characters
-            plate_image.erase(std::remove(plate_image.begin(), plate_image.end(), '\n'), plate_image.end());
+            // plate_image.erase(std::remove(plate_image.begin(), plate_image.end(), '\n'), plate_image.end());
         } else if (item["plate_image"].IsNull()) {
             plate_image = "null";
             nullImageCounter++;

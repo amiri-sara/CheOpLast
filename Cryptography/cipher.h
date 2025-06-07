@@ -39,6 +39,7 @@ public:
     std::string DecryptRSA(RSA* Key,std::string Message,bool PrivateKey=false);
     std::string EncryptAES(std::string Message, std::string EncryptHeader);   //Great for large size files
     std::string DecryptAES(std::string Message, std::string Key, std::string Iv);
+    // std::string base64_decode(std::string const& encoded_string);
     std::string base64_decode(std::string const& encoded_string);
     std::string base64_encode(unsigned char * bytes_to_encode, unsigned int in_len);
     std::string generateHash(std::string Input);

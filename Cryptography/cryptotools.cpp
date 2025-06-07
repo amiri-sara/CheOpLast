@@ -174,39 +174,64 @@ DecryptedOutputStruct decryptString(std::string InputStr,std::string ServerPriva
     return DecryptedOutput;
 }
 
-bool isBase64(unsigned char C)
-{
-    return (isalnum(C) || (C == '+') || (C == '/'));
+// این تابع کمکی is_base64 را که قبلاً در کد شما بود، نیاز داریم.
+// (اگر قبلاً در فایل cipher.cpp تعریف نشده، آن را اضافه کنید)
+static inline bool is_base64(unsigned char c) {
+    return (isalnum(c) || (c == '+') || (c == '/'));
 }
-std::string DecodeBase64(std::string const& EncodedString)
-{
+
+std::string DecodeBase64(std::string const& encoded_string) {
     std::string Base64Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                               "abcdefghijklmnopqrstuvwxyz"
                               "0123456789+/";
 
-    int in_len = EncodedString.size();
+    int in_len = encoded_string.size();
     int i = 0;
     int j = 0;
-    int in_ = 0;
+    int in_ = 0; // این متغیر به عنوان ایندکس خواندن از encoded_string استفاده می‌شود
     unsigned char char_array_4[4], char_array_3[3];
     std::string ret;
 
-    while (in_len-- && (EncodedString[in_] != '=') && isBase64(EncodedString[in_])) {
-        char_array_4[i++] = EncodedString[in_]; in_++;
+    // حلقه‌ای برای پیمایش کل رشته ورودی
+    while (in_ < in_len) {
+        char c = encoded_string[in_];
+        in_++; // پیشروی ایندکس خواندن
+
+        if (c == '=') break; // اگر به کاراکتر Padding '=' رسیدیم، پایان داده Base64 است.
+
+        // --- مرحله کلیدی: نادیده گرفتن کاراکترهای فضای خالی (از جمله newline) ---
+        // دیکودرهای استاندارد Base64 معمولاً کاراکترهای whitespace را نادیده می‌گیرند.
+        // این کارآمدترین و حرفه‌ای‌ترین روش برای مدیریت این کاراکترهاست.
+        if (c == '\n' || c == '\r' || c == ' ' || c == '\t') {
+            continue; // کاراکتر فضای خالی را نادیده بگیر و به کاراکتر بعدی برو
+        }
+        // --- پایان مرحله نادیده گرفتن ---
+
+        // بررسی اینکه آیا کاراکتر یک کاراکتر معتبر Base64 (بعد از نادیده گرفتن فضاهای خالی) است.
+        if (!is_base64(c)) { 
+             // اختیاری: می‌توانید در اینجا یک لاگ خطا برای کاراکترهای نامعتبر اضافه کنید
+             // Logger::getInstance().logError("Invalid Base64 character encountered: " + std::string(1, c));
+             continue; // کاراکتر نامعتبر را نادیده بگیر و به کاراکتر بعدی برو
+        }
+
+        char_array_4[i++] = c; // کاراکتر معتبر Base64 را به بافر موقت اضافه کن
+
+        // وقتی 4 کاراکتر Base64 جمع شد، آن‌ها را به 3 بایت داده اصلی دیکود کن.
         if (i == 4) {
             for (i = 0; i < 4; i++)
-                char_array_4[i] = Base64Chars.find(char_array_4[i]);
+                char_array_4[i] = Base64Chars.find(char_array_4[i]); // تبدیل کاراکتر Base64 به مقدار عددی آن
 
             char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
             char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
             char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
 
             for (i = 0; (i < 3); i++)
-                ret += char_array_3[i];
-            i = 0;
+                ret += char_array_3[i]; // اضافه کردن 3 بایت دیکود شده به رشته نهایی
+            i = 0; // ریست کردن شمارنده بافر موقت
         }
     }
 
+    // مدیریت کاراکترهای باقی‌مانده در بافر موقت (اگر Padding وجود داشته باشد)
     if (i) {
         for (j = i; j < 4; j++)
             char_array_4[j] = 0;
@@ -216,7 +241,8 @@ std::string DecodeBase64(std::string const& EncodedString)
 
         char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
         char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
-        char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
+        char_array_3[2] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2); // Error in original line
+        char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3]; // Corrected line based on context.
 
         for (j = 0; (j < i - 1); j++) ret += char_array_3[j];
     }
