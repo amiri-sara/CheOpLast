@@ -1,7 +1,49 @@
 #include "savedata.h"
 
+// سازنده: منابع جدید را مقداردهی اولیه کرده و رشته تایمر را آغاز می‌کند.
+savedata::savedata() : m_running_flush_thread(true), m_is_flushing(false), m_io_thread(boost::bind(&boost::asio::io_service::run, &m_io_service))
+{
+    // --- اضافه کردن work_guard ---
+    // این خط io_service را فعال نگه می‌دارد تا حتی بدون کارهای pending هم run() خارج نشود.
+    m_work_guard = std::make_unique<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>>(m_io_service.get_executor());
+    // --- پایان اضافه ---
+
+    m_flush_timer = std::make_unique<boost::asio::deadline_timer>(m_io_service);
+    startFlushTimer(); // شروع تایمر برای فلش دوره‌ای
+}
+
+
+// تخریب‌کننده: تضمین می‌کند که رشته تایمر متوقف شده و منابع آزاد شوند.
+savedata::~savedata()
+{
+    m_running_flush_thread.store(false); // به رشته تایمر اطلاع می‌دهد که متوقف شود.
+    
+    // --- قبل از stop کردن io_service، work_guard را null می‌کنیم ---
+    m_work_guard.reset(); // آزادسازی work_guard تا io_service بتواند خارج شود.
+    // --- پایان تغییر ---
+
+    m_io_service.stop(); // io_service را متوقف می‌کند تا رشته آن پایان یابد.
+    if (m_io_thread.joinable()) {
+        m_io_thread.join(); // منتظر می‌ماند تا رشته تایمر کار خود را تمام کند.
+    }
+}
+
 bool savedata::run(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH)
 {
+
+    // --- در اولین فراخوانی `run`، client مربوط به MongoDB را ذخیره می‌کنیم ---
+    // این کار تضمین می‌کند که m_insert_database_client و m_insert_database_info فقط یک بار تنظیم شوند.
+    // همچنین، در اینجا چک می‌کنیم که DH->InsertDatabase معتبر باشد.
+    static std::once_flag init_flag;
+    std::call_once(init_flag, [&]() {
+        if (DH->InsertDatabase) { // بررسی معتبر بودن shared_ptr
+            m_insert_database_client = DH->InsertDatabase;
+            m_insert_database_info = DH->InsertDatabaseInfo;
+        } else {
+            Logger::getInstance().logError("DH->InsertDatabase is null. Bulk insert will not work.");
+        }
+    });
+
 #ifdef INSERTDATABASE
     // Insert Database
     if(!(this->InsertDatabase(DH)))
@@ -16,6 +58,69 @@ bool savedata::run(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH)
     
     return true;
 }
+
+// --- پیاده‌سازی متد flushBuffer ---
+void savedata::flushBuffer(bool force_flush)
+{
+    Logger::getInstance().logInfo("FlushBuffer called. force_flush: " + std::to_string(force_flush));
+    if (m_is_flushing.exchange(true)) { 
+        Logger::getInstance().logWarning("Flush already in progress. Skipping current flush request.");
+        return; 
+    }
+
+    std::vector<std::vector<MongoDB::Field>> documents_to_insert;
+    {
+        std::lock_guard<std::mutex> lock(m_buffer_mutex); 
+        Logger::getInstance().logInfo("Buffer locked. Current size: " + std::to_string(m_documents_buffer.size()));
+
+        if (!force_flush && m_documents_buffer.size() < BULK_INSERT_THRESHOLD && m_running_flush_thread.load()) {
+            Logger::getInstance().logInfo("Buffer size below threshold. Not flushing yet.");
+            m_is_flushing.store(false); 
+            return; 
+        }
+        if (m_documents_buffer.empty()) {
+            Logger::getInstance().logInfo("Buffer is empty. Nothing to flush.");
+            m_is_flushing.store(false); 
+            return; 
+        }
+        documents_to_insert.swap(m_documents_buffer); 
+        Logger::getInstance().logInfo("Swapped " + std::to_string(documents_to_insert.size()) + " documents for flushing.");
+    }
+
+    if (m_insert_database_client) {
+        MongoDB::ResponseStruct InsertReturn = m_insert_database_client->InsertMany(
+            m_insert_database_info.DatabaseName, 
+            m_insert_database_info.CollectionName, 
+            documents_to_insert
+        );
+
+        if(InsertReturn.Code != MongoDB::MongoStatus::InsertSuccessful) {
+            Logger::getInstance().logError("Failed bulk insert: " + InsertReturn.Description);
+            // می‌توانید در اینجا برای اسنادی که درج نشدند، منطق بازیابی اضافه کنید (مثلاً به FailedDatabase)
+        } else {
+            Logger::getInstance().logInfo("Successfully bulk inserted " + std::to_string(documents_to_insert.size()) + " documents.");
+        }
+    } else {
+        Logger::getInstance().logError("MongoDB client (m_insert_database_client) is null. Cannot perform bulk insert.");
+    }
+    m_is_flushing.store(false); 
+    Logger::getInstance().logInfo("Flush operation finished. m_is_flushing set to false.");
+}
+
+// پیاده‌سازی متد startFlushTimer
+void savedata::startFlushTimer()
+{
+    m_flush_timer->expires_from_now(boost::posix_time::seconds(FLUSH_INTERVAL_SECONDS));
+    m_flush_timer->async_wait([this](const boost::system::error_code& ec) {
+        if (!ec && m_running_flush_thread.load()) {
+            flushBuffer(true); // فلش اجباری بافر
+            startFlushTimer(); // دوباره تایمر را برای دوره بعدی شروع کنید
+        } else if (ec != boost::asio::error::operation_aborted) {
+            Logger::getInstance().logError("Flush timer error: " + ec.message());
+        }
+    });
+}
+// --- پایان پیاده‌سازی متد flushBuffer ---
 
 bool savedata::InsertDatabase(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH)
 {
@@ -370,14 +475,28 @@ bool savedata::InsertDatabase(const std::shared_ptr<DataHandler::DataHandlerStru
     }
 
 
-        auto InsertReturn = DH->InsertDatabase->Insert(DH->InsertDatabaseInfo.DatabaseName, DH->InsertDatabaseInfo.CollectionName, fields);
-        if(InsertReturn.Code != MongoDB::MongoStatus::InsertSuccessful) //TODO
-        {
-            DH->Response.HTTPCode = 500;
-            DH->Response.errorCode = DATABASEERROR;
-            DH->Response.Description = InsertReturn.Description;
-            return false;
-        }
+        // auto InsertReturn = DH->InsertDatabase->Insert(DH->InsertDatabaseInfo.DatabaseName, DH->InsertDatabaseInfo.CollectionName, fields);
+        // if(InsertReturn.Code != MongoDB::MongoStatus::InsertSuccessful) //TODO
+        // {
+        //     DH->Response.HTTPCode = 500;
+        //     DH->Response.errorCode = DATABASEERROR;
+        //     DH->Response.Description = InsertReturn.Description;
+        //     return false;
+        // }
+
+        // --- اضافه کردن سند به بافر ---
+    {
+        std::lock_guard<std::mutex> lock(m_buffer_mutex); // محافظت از بافر در هنگام اضافه کردن سند
+        m_documents_buffer.push_back(fields); // اضافه کردن سند به بافر
+    }
+
+    // اگر تعداد اسناد در بافر به حد نصاب رسید، اقدام به فلش می‌کنیم
+    if (m_documents_buffer.size() >= BULK_INSERT_THRESHOLD) {
+        // این فراخوانی غیرمسدودکننده است و فلش واقعی در رشته تایمر اجرا می‌شود،
+        // اما برای اطمینان از واکنش سریع به پر شدن بافر، آن را به این شکل فراخوانی می‌کنیم.
+        flushBuffer(true); // فلش اجباری بافر
+    }
+    // --- پایان اضافه ---
     
     
       

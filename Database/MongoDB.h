@@ -66,7 +66,10 @@ public:
     ResponseStruct Update(const std::string &DatabaseName, const std::string &CollectionName, const std::vector<Field>& findfields, const std::vector<Field>& updatefields);
     ResponseStruct Update_one(const std::string &DatabaseName, const std::string &CollectionName, const std::vector<Field>& findfields, const std::vector<Field>& updatefields);
     ResponseStruct Delete(const std::string &DatabaseName, const std::string &CollectionName, const std::vector<Field>& findfields);
-    
+        // --- افزودن متد InsertMany ---
+    ResponseStruct InsertMany(const std::string &DatabaseName, const std::string &CollectionName, const std::vector<std::vector<Field>>& documents_fields);
+    // --- پایان افزودن متد InsertMany ---
+
 
 private:
     std::shared_ptr<mongocxx::pool> mongoPool;

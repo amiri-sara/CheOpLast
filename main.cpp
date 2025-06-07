@@ -14,7 +14,7 @@
 #endif //CLIENTSERVICE
 
 
-#define CHECKOP_VERSION "2.1.1"
+#define CHECKOP_VERSION "2.1.0"
 #define LOAD_DETECTION_VERSION "2.0.0"
 
 
@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
                       << "  -d, -D                Enable Debug Mode\n"
                       << "  -m, -M                Enable Monitor Mode\n"
                       << "  -v, -V                Show binary version and exit\n"
-                      << "  -vv, -VV              Show detailed version info and exit\n"
+                      << "  -vv, -VV              Show detailed version info andls exit\n"
                       << "  -f, -F                Read MinId from MinId.txt\n"
                       << "  --use=batchConsume    Enable batch consuming for consumers\n"
                       << "  --use=batchProduce    Enable batch producing for producers\n"

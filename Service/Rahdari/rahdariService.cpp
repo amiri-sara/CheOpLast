@@ -246,6 +246,7 @@ int RahdariService::init()
     this->ThresholdFetchedRecors = this->ClientServiceConfig.ThresholdFetchedRecors;
     this->use_batch_consume = this->ClientServiceConfig.UseBatchConsume;
     this->use_batch_queueing = this->ClientServiceConfig.UseBatchProduce;
+    this->use_bulk_images = this->ClientServiceConfig.UseBulkImages;
     
     for (int i = 0; i < this->NumberOfProducerThread; ++i) {
         threads.emplace_back(boost::bind(&RahdariService::producerThread, this)  );
@@ -259,6 +260,12 @@ int RahdariService::init()
 }
 void RahdariService::run()
 {
+        // --- تغییرات: ایجاد اشیاء storeimageobj و savedataobj یک بار برای هر رشته Consumer ---
+    // این اشیاء در ابتدای اجرای تابع run توسط هر ترد Consumer ساخته می‌شوند
+    // و تا پایان عمر آن ترد/تابع پابرجا خواهند بود.
+    std::shared_ptr<storeimage> storeimageobj = std::make_shared<storeimage>();
+    std::shared_ptr<savedata> savedataobj = std::make_shared<savedata>();
+    // --- پایان تغییرات ---
 
     while(!stop.load())
     {
@@ -409,30 +416,13 @@ void RahdariService::run()
 
 
         // auto storeImageDH = std::make_shared<DataHandler::DataHandlerStruct>(DH); // Copy DH for thread safety
-        threadPool->enqueue([DH, this]() {
+        threadPool->enqueue([DH, this, storeimageobj, savedataobj]() {
            
 #ifdef STOREIMAGE
              auto storeImageStartTime = std::chrono::high_resolution_clock::now();
-            std::shared_ptr<storeimage> storeimageobj = std::make_shared<storeimage>();
+            // std::shared_ptr<storeimage> storeimageobj = std::make_shared<storeimage>();
             if (!storeimageobj->run(DH)) {
-                // crow::json::wvalue Response;
-                // Response["Status"] = DH->Response.errorCode;
-                // Response["Description"] = DH->Response.Description;
-                // if (DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
-                //     Response["RecordID"] = DH->ProcessedInputData.MongoID;
-                // Response["IP"] = DH->Request.remoteIP;
-                // if (DH->FailedDatabaseInfo.Enable) {
-                //     std::vector<MongoDB::Field> fields = {
-                //         {"Status", std::to_string(DH->Response.errorCode), MongoDB::FieldType::Integer},
-                //         {"Description", DH->Response.Description, MongoDB::FieldType::String},
-                //         {"IP", DH->Request.remoteIP, MongoDB::FieldType::String}
-                //     };
-                //     if (DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue) {
-                //         fields.push_back({"RecordID", DH->ProcessedInputData.MongoID, MongoDB::FieldType::ObjectId});
-                //     }
-                //     DH->FailedDatabase->Insert(DH->FailedDatabaseInfo.DatabaseName, DH->FailedDatabaseInfo.CollectionName, fields);
-                // }
-                // SHOW_ERROR(crow::json::dump(Response));
+
             }
         // });
             storeImageCounter++;
@@ -448,35 +438,11 @@ void RahdariService::run()
 #ifdef INSERTDATABASE
             auto saveDataStartTime = std::chrono::high_resolution_clock::now();
         // 6- Save Data
-            std::shared_ptr<savedata> savedataobj = std::make_shared<savedata>();
+            // std::shared_ptr<savedata> savedataobj = std::make_shared<savedata>();
 
                 if(!(savedataobj->run(DH)))
                 {
-                //     Response["Status"] = DH->Response.errorCode;
-                //     Response["Description"] = DH->Response.Description;
-                //     // if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
-                //     Response["RecordID"] = DH->Input.PassedVehicleRecordsId;
-                //     Response["CompanyCode"] = DH->Input.CompanyCode;
-                //     if(DH->FailedDatabaseInfo.Enable)
-                //     {
-                //         std::vector<MongoDB::Field> fields = {
-                //         {"Status", std::to_string(DH->Response.errorCode), MongoDB::FieldType::Integer},
-                //         {"Description", DH->Response.Description, MongoDB::FieldType::String},
-                //         {"CompanyCode", std::to_string(DH->Input.CompanyCode), MongoDB::FieldType::Integer}
-                //     };
-                //     //                 if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
-                //     // {
-                //     MongoDB::Field RecordIDField = {"RecordID", std::to_string(DH->Input.PassedVehicleRecordsId), MongoDB::FieldType::Int64};
-                //     fields.push_back(RecordIDField);
-                //     // }
 
-                //     DH->FailedDatabase ->Insert(DH->FailedDatabaseInfo.DatabaseName, DH->FailedDatabaseInfo.CollectionName, fields);
-
-                //     }
-
-                //     Logger::getInstance().logError(crow::json::dump(Response));
-
-                // }
 
                 }
                 processCounter++;

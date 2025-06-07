@@ -632,3 +632,84 @@ MongoDB::ResponseStruct MongoDB::Delete(const std::string &DatabaseName, const s
 
     return ResponseStruct{MongoStatus::DeleteSuccessful, "Delete Successful"};
 }
+
+// --- پیاده‌سازی متد InsertMany ---
+MongoDB::ResponseStruct MongoDB::InsertMany(const std::string &DatabaseName, const std::string &CollectionName, const std::vector<std::vector<Field>>& documents_fields)
+{
+    std::shared_ptr<mongocxx::pool::entry> client = std::make_shared<mongocxx::pool::entry>(this->mongoPool->acquire());    
+    
+    std::shared_ptr<mongocxx::database> db = std::make_shared<mongocxx::database>((*client)->database(DatabaseName.c_str()));
+    if (!db) {
+        return ResponseStruct{MongoStatus::Database, "Access Database Error"};
+    }
+
+    mongocxx::collection coll = (*(db))[CollectionName.c_str()];
+    if (!coll) {
+        return ResponseStruct{MongoStatus::Collection, "Access Collection Error"};
+    }
+    
+    try 
+    {
+        std::vector<bsoncxx::document::value> documents_to_insert;
+        documents_to_insert.reserve(documents_fields.size());
+
+        for (const auto& fields : documents_fields) {
+            bsoncxx::builder::basic::document BasicBuilder;
+            for (const auto& field : fields) {
+                switch (field.type) {
+                    case FieldType::ObjectId:
+                        BasicBuilder.append(bsoncxx::builder::basic::kvp(field.key, bsoncxx::oid(field.value)));
+                        break;
+                    case FieldType::String:
+                        BasicBuilder.append(bsoncxx::builder::basic::kvp(field.key, field.value));
+                        break;
+                    case FieldType::Integer:
+                        BasicBuilder.append(bsoncxx::builder::basic::kvp(field.key, std::stoi(field.value)));
+                        break;
+                    case FieldType::Double:
+                        BasicBuilder.append(bsoncxx::builder::basic::kvp(field.key, std::stod(field.value)));
+                        break;
+                    case FieldType::Int64:{
+                        int64_t value_int64 = std::stoll(field.value);
+                        BasicBuilder.append(bsoncxx::builder::basic::kvp(field.key, value_int64));//std::strtoll(field.value.c_str(),nullptr,10)));
+                        break;
+                    }
+                    case FieldType::Date:
+                    {
+                        std::tm tm{};
+                        std::istringstream ss(field.value);
+                        if (ss >> std::get_time(&tm, "%Y-%m-%d %H:%M:%S")) {
+                            time_t UnixSecond = std::mktime(&tm);
+                            std::chrono::system_clock::time_point tp = std::chrono::system_clock::from_time_t(UnixSecond);
+                            BasicBuilder.append(bsoncxx::builder::basic::kvp(field.key, bsoncxx::types::b_date(tp)));
+                        } else {
+                            return ResponseStruct{MongoStatus::FailedParseDataFromString, "Failed to parse date and time from string for field " + field.key};
+                        }                  
+                        break;
+                    }
+                    default:
+                        return ResponseStruct{MongoStatus::InvalidMongoType, "Invalid Mongo Type for field " + field.key + " with type " + std::to_string(static_cast<int>(field.type))};
+                }
+            }
+            documents_to_insert.push_back(BasicBuilder.extract());
+        }
+        
+        if (documents_to_insert.empty()) {
+            return ResponseStruct{MongoStatus::InsertSuccessful, "No documents to insert."};
+        }
+
+        auto result = coll.insert_many(documents_to_insert);
+        if (result) {
+            return ResponseStruct{MongoStatus::InsertSuccessful, "Documents inserted successfully. Count: " + std::to_string(result->inserted_count())};
+        } else {
+            return ResponseStruct{MongoStatus::InsertFailed, "Failed to insert documents."};
+        }
+    } catch (const mongocxx::exception& e) {
+        return ResponseStruct{MongoStatus::InsertError, std::string("MongoDB Exception during bulk insert: ") + e.what()};
+    } catch (const std::exception& e) {
+        return ResponseStruct{MongoStatus::InsertError, std::string("Standard exception during bulk insert: ") + e.what()};
+    } catch (...) {
+        return ResponseStruct{MongoStatus::InsertError, "An unknown exception occurred during bulk document insertion."};
+    }
+}
+// --- پایان پیاده‌سازی متد InsertMany ---
