@@ -264,8 +264,11 @@ void RahdariService::run()
     // این اشیاء در ابتدای اجرای تابع run توسط هر ترد Consumer ساخته می‌شوند
     // و تا پایان عمر آن ترد/تابع پابرجا خواهند بود.
     std::shared_ptr<storeimage> storeimageobj = std::make_shared<storeimage>();
-    std::shared_ptr<savedata> savedataobj = std::make_shared<savedata>();
+    // std::shared_ptr<savedata> savedataobj = std::make_shared<savedata>();
     // --- پایان تغییرات ---
+    // --- پاس دادن m_InsertDatabase و m_InsertDatabaseInfo به سازنده savedata ---
+    std::shared_ptr<savedata> savedataobj = std::make_shared<savedata>(this->m_InsertDatabase, this->m_InsertDatabaseInfo);
+    // --- پایان تغییر ---
 
     while(!stop.load())
     {

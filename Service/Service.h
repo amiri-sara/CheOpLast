@@ -97,6 +97,7 @@ protected:
     boost::mutex FreeClassifierMutex;
 
     std::shared_ptr<Validator> m_Validatorobj;
+
 };
 
 #endif //SERVICE_H

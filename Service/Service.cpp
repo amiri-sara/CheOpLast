@@ -44,6 +44,7 @@ void Service::ThreadPool::stop() {
 Service::Service()
 {
     Configurate* ConfigurateObj = Configurate::getInstance();
+
 #ifdef KAFKAOUTPUT
     std::shared_ptr<RdKafka::Conf> OutputKafkaconfiguration = std::shared_ptr<RdKafka::Conf>(RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL));
     std::string error;

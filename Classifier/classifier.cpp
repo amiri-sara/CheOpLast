@@ -60,18 +60,17 @@ Classifier::Classifier(const Classifier::ConfigStruct& configs)
     if(configs.CDConfig.active)
     {
         BaseNNConfig detConfig;
-        std::string detConfigPath = "/home/amiri/projects/c++/models/PlateClassifierPackage/inference_pipeline_v2.2.0_backup/models/carDetection/info.json"; 
+        std::string detConfigPath = "/home/amiri/projects/c++/models/LCC-Is-Here/inference_pipeline_v2.2.0_backup/models/carDetection/info.json"; 
         this->m_models.CD = getModel(detConfig,detConfigPath);
     }
     if(configs.LCCConfig.active)
     {
         BaseNNConfig LCConfig;
-        std::string LCCConfigPath = "/home/amiri/projects/c++/models/PlateClassifierPackage/inference_pipeline_v2.2.0_backup/models/loadDetection/info.json";
+        std::string LCCConfigPath = "/home/amiri/projects/c++/models/LCC-Is-Here/inference_pipeline_v2.2.0_backup/models/loadDetection/info.json";
         this->m_models.LCC = getModel(LCConfig, LCCConfigPath);
     }
 
-   }
-    catch (const std::exception& e)
+   }catch (const std::exception& e)
     {
         throw std::runtime_error(e.what());
     } 
@@ -126,7 +125,7 @@ int mapLabelToWebKey(int label) {
 std::vector<Classifier::OutputStruct> Classifier::run(const Classifier::InputStruct& input)
 {
     std::vector<Classifier::OutputStruct> outputVec;
-    cv::Mat ImageMat = createMatImage(input.ImageBase64); 
+    cv::Mat ImageMat = input.Image.clone(); 
     if(ImageMat.total() == 0)
     {
         // output.codeType      = ChOp::CodeTypes::NULL_IMAGE;
@@ -138,6 +137,8 @@ std::vector<Classifier::OutputStruct> Classifier::run(const Classifier::InputStr
     // std::vector<aivision::nn::ObjectAttributes> dets;
 
     // Detection
+    auto DetectionStartTime = std::chrono::high_resolution_clock::now();
+
     NNModel* detectorModel = this->m_models.CD.get();
     cout << "Running detection..." << endl;
     auto detStream = make_shared<DataModel>();
@@ -150,8 +151,16 @@ std::vector<Classifier::OutputStruct> Classifier::run(const Classifier::InputStr
     if (dets.empty()) {
         cerr << "No boxes found" << endl;
     }
+    auto DetectionEndTime = std::chrono::high_resolution_clock::now();
+    auto DetectionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(DetectionEndTime - DetectionStartTime);
+    SHOW_IMPORTANTLOG3("DetectionTime(ns) = " << std::to_string(DetectionTime.count()) << std::endl);
+
+
 
     for (const auto& det : dets) {
+
+        auto ClassificationStartTime = std::chrono::high_resolution_clock::now();
+
             Classifier::OutputStruct output;
 
        Rect2d bbox = det.bbox;
@@ -199,6 +208,11 @@ std::vector<Classifier::OutputStruct> Classifier::run(const Classifier::InputStr
         output.probability = classConfidence;
         output.box = bbox;
         outputVec.push_back(output);
+
+        auto ClassificationEndTime = std::chrono::high_resolution_clock::now();
+        auto ClassificationTime = std::chrono::duration_cast<std::chrono::nanoseconds>(ClassificationEndTime - ClassificationStartTime);
+        SHOW_IMPORTANTLOG3("ClassificationTime(ns) = " << std::to_string(ClassificationTime.count()) << std::endl);
+
 
 
     }

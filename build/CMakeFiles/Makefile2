@@ -63,7 +63,7 @@ CMAKE_BINARY_DIR = /home/amiri/projects/c++/check_rahdari/check_try/Aggregation_
 # Directory level rules for the build root directory
 
 # The main recursive "all" target.
-all: CMakeFiles/checkOperator.dir/all
+all: CMakeFiles/LoadDetection.dir/all
 .PHONY : all
 
 # The main recursive "preinstall" target.
@@ -71,34 +71,34 @@ preinstall:
 .PHONY : preinstall
 
 # The main recursive "clean" target.
-clean: CMakeFiles/checkOperator.dir/clean
+clean: CMakeFiles/LoadDetection.dir/clean
 .PHONY : clean
 
 #=============================================================================
-# Target rules for target CMakeFiles/checkOperator.dir
+# Target rules for target CMakeFiles/LoadDetection.dir
 
 # All Build rule for target.
-CMakeFiles/checkOperator.dir/all:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/depend
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/amiri/projects/c++/check_rahdari/check_try/Aggregation_V1.0.0/Aggregation/v2.1.0/loadDetection/optimized/LoadANDChop-v2.1.0/build/CMakeFiles --progress-num=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17 "Built target checkOperator"
-.PHONY : CMakeFiles/checkOperator.dir/all
+CMakeFiles/LoadDetection.dir/all:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/amiri/projects/c++/check_rahdari/check_try/Aggregation_V1.0.0/Aggregation/v2.1.0/loadDetection/optimized/LoadANDChop-v2.1.0/build/CMakeFiles --progress-num=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17 "Built target LoadDetection"
+.PHONY : CMakeFiles/LoadDetection.dir/all
 
 # Build rule for subdir invocation for target.
-CMakeFiles/checkOperator.dir/rule: cmake_check_build_system
+CMakeFiles/LoadDetection.dir/rule: cmake_check_build_system
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/amiri/projects/c++/check_rahdari/check_try/Aggregation_V1.0.0/Aggregation/v2.1.0/loadDetection/optimized/LoadANDChop-v2.1.0/build/CMakeFiles 17
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/checkOperator.dir/all
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/LoadDetection.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/amiri/projects/c++/check_rahdari/check_try/Aggregation_V1.0.0/Aggregation/v2.1.0/loadDetection/optimized/LoadANDChop-v2.1.0/build/CMakeFiles 0
-.PHONY : CMakeFiles/checkOperator.dir/rule
+.PHONY : CMakeFiles/LoadDetection.dir/rule
 
 # Convenience name for target.
-checkOperator: CMakeFiles/checkOperator.dir/rule
-.PHONY : checkOperator
+LoadDetection: CMakeFiles/LoadDetection.dir/rule
+.PHONY : LoadDetection
 
 # clean rule for target.
-CMakeFiles/checkOperator.dir/clean:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/clean
-.PHONY : CMakeFiles/checkOperator.dir/clean
+CMakeFiles/LoadDetection.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/clean
+.PHONY : CMakeFiles/LoadDetection.dir/clean
 
 #=============================================================================
 # Special targets to cleanup operation of make.

@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
                       << "  -d, -D                Enable Debug Mode\n"
                       << "  -m, -M                Enable Monitor Mode\n"
                       << "  -v, -V                Show binary version and exit\n"
-                      << "  -vv, -VV              Show detailed version info andls exit\n"
+                      << "  -vv, -VV              Show detailed version info and exit\n"
                       << "  -f, -F                Read MinId from MinId.txt\n"
                       << "  --use=batchConsume    Enable batch consuming for consumers\n"
                       << "  --use=batchProduce    Enable batch producing for producers\n"

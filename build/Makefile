@@ -117,24 +117,24 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named checkOperator
+# Target rules for targets named LoadDetection
 
 # Build rule for target.
-checkOperator: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 checkOperator
-.PHONY : checkOperator
+LoadDetection: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 LoadDetection
+.PHONY : LoadDetection
 
 # fast build rule for target.
-checkOperator/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/build
-.PHONY : checkOperator/fast
+LoadDetection/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/build
+.PHONY : LoadDetection/fast
 
 Classifier/classifier.o: Classifier/classifier.cpp.o
 .PHONY : Classifier/classifier.o
 
 # target to build an object file
 Classifier/classifier.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/Classifier/classifier.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/Classifier/classifier.cpp.o
 .PHONY : Classifier/classifier.cpp.o
 
 Classifier/classifier.i: Classifier/classifier.cpp.i
@@ -142,7 +142,7 @@ Classifier/classifier.i: Classifier/classifier.cpp.i
 
 # target to preprocess a source file
 Classifier/classifier.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/Classifier/classifier.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/Classifier/classifier.cpp.i
 .PHONY : Classifier/classifier.cpp.i
 
 Classifier/classifier.s: Classifier/classifier.cpp.s
@@ -150,7 +150,7 @@ Classifier/classifier.s: Classifier/classifier.cpp.s
 
 # target to generate assembly for a file
 Classifier/classifier.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/Classifier/classifier.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/Classifier/classifier.cpp.s
 .PHONY : Classifier/classifier.cpp.s
 
 Cryptography/cipher.o: Cryptography/cipher.cpp.o
@@ -158,7 +158,7 @@ Cryptography/cipher.o: Cryptography/cipher.cpp.o
 
 # target to build an object file
 Cryptography/cipher.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/Cryptography/cipher.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/Cryptography/cipher.cpp.o
 .PHONY : Cryptography/cipher.cpp.o
 
 Cryptography/cipher.i: Cryptography/cipher.cpp.i
@@ -166,7 +166,7 @@ Cryptography/cipher.i: Cryptography/cipher.cpp.i
 
 # target to preprocess a source file
 Cryptography/cipher.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/Cryptography/cipher.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/Cryptography/cipher.cpp.i
 .PHONY : Cryptography/cipher.cpp.i
 
 Cryptography/cipher.s: Cryptography/cipher.cpp.s
@@ -174,7 +174,7 @@ Cryptography/cipher.s: Cryptography/cipher.cpp.s
 
 # target to generate assembly for a file
 Cryptography/cipher.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/Cryptography/cipher.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/Cryptography/cipher.cpp.s
 .PHONY : Cryptography/cipher.cpp.s
 
 Cryptography/cryptotools.o: Cryptography/cryptotools.cpp.o
@@ -182,7 +182,7 @@ Cryptography/cryptotools.o: Cryptography/cryptotools.cpp.o
 
 # target to build an object file
 Cryptography/cryptotools.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/Cryptography/cryptotools.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/Cryptography/cryptotools.cpp.o
 .PHONY : Cryptography/cryptotools.cpp.o
 
 Cryptography/cryptotools.i: Cryptography/cryptotools.cpp.i
@@ -190,7 +190,7 @@ Cryptography/cryptotools.i: Cryptography/cryptotools.cpp.i
 
 # target to preprocess a source file
 Cryptography/cryptotools.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/Cryptography/cryptotools.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/Cryptography/cryptotools.cpp.i
 .PHONY : Cryptography/cryptotools.cpp.i
 
 Cryptography/cryptotools.s: Cryptography/cryptotools.cpp.s
@@ -198,7 +198,7 @@ Cryptography/cryptotools.s: Cryptography/cryptotools.cpp.s
 
 # target to generate assembly for a file
 Cryptography/cryptotools.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/Cryptography/cryptotools.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/Cryptography/cryptotools.cpp.s
 .PHONY : Cryptography/cryptotools.cpp.s
 
 Cryptography/systemkeys.o: Cryptography/systemkeys.cpp.o
@@ -206,7 +206,7 @@ Cryptography/systemkeys.o: Cryptography/systemkeys.cpp.o
 
 # target to build an object file
 Cryptography/systemkeys.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/Cryptography/systemkeys.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/Cryptography/systemkeys.cpp.o
 .PHONY : Cryptography/systemkeys.cpp.o
 
 Cryptography/systemkeys.i: Cryptography/systemkeys.cpp.i
@@ -214,7 +214,7 @@ Cryptography/systemkeys.i: Cryptography/systemkeys.cpp.i
 
 # target to preprocess a source file
 Cryptography/systemkeys.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/Cryptography/systemkeys.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/Cryptography/systemkeys.cpp.i
 .PHONY : Cryptography/systemkeys.cpp.i
 
 Cryptography/systemkeys.s: Cryptography/systemkeys.cpp.s
@@ -222,7 +222,7 @@ Cryptography/systemkeys.s: Cryptography/systemkeys.cpp.s
 
 # target to generate assembly for a file
 Cryptography/systemkeys.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/Cryptography/systemkeys.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/Cryptography/systemkeys.cpp.s
 .PHONY : Cryptography/systemkeys.cpp.s
 
 Database/MongoDB.o: Database/MongoDB.cpp.o
@@ -230,7 +230,7 @@ Database/MongoDB.o: Database/MongoDB.cpp.o
 
 # target to build an object file
 Database/MongoDB.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/Database/MongoDB.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/Database/MongoDB.cpp.o
 .PHONY : Database/MongoDB.cpp.o
 
 Database/MongoDB.i: Database/MongoDB.cpp.i
@@ -238,7 +238,7 @@ Database/MongoDB.i: Database/MongoDB.cpp.i
 
 # target to preprocess a source file
 Database/MongoDB.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/Database/MongoDB.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/Database/MongoDB.cpp.i
 .PHONY : Database/MongoDB.cpp.i
 
 Database/MongoDB.s: Database/MongoDB.cpp.s
@@ -246,7 +246,7 @@ Database/MongoDB.s: Database/MongoDB.cpp.s
 
 # target to generate assembly for a file
 Database/MongoDB.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/Database/MongoDB.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/Database/MongoDB.cpp.s
 .PHONY : Database/MongoDB.cpp.s
 
 ReadConfigurations/configurate.o: ReadConfigurations/configurate.cpp.o
@@ -254,7 +254,7 @@ ReadConfigurations/configurate.o: ReadConfigurations/configurate.cpp.o
 
 # target to build an object file
 ReadConfigurations/configurate.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/ReadConfigurations/configurate.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/ReadConfigurations/configurate.cpp.o
 .PHONY : ReadConfigurations/configurate.cpp.o
 
 ReadConfigurations/configurate.i: ReadConfigurations/configurate.cpp.i
@@ -262,7 +262,7 @@ ReadConfigurations/configurate.i: ReadConfigurations/configurate.cpp.i
 
 # target to preprocess a source file
 ReadConfigurations/configurate.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/ReadConfigurations/configurate.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/ReadConfigurations/configurate.cpp.i
 .PHONY : ReadConfigurations/configurate.cpp.i
 
 ReadConfigurations/configurate.s: ReadConfigurations/configurate.cpp.s
@@ -270,7 +270,7 @@ ReadConfigurations/configurate.s: ReadConfigurations/configurate.cpp.s
 
 # target to generate assembly for a file
 ReadConfigurations/configurate.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/ReadConfigurations/configurate.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/ReadConfigurations/configurate.cpp.s
 .PHONY : ReadConfigurations/configurate.cpp.s
 
 SaveData/savedata.o: SaveData/savedata.cpp.o
@@ -278,7 +278,7 @@ SaveData/savedata.o: SaveData/savedata.cpp.o
 
 # target to build an object file
 SaveData/savedata.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/SaveData/savedata.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/SaveData/savedata.cpp.o
 .PHONY : SaveData/savedata.cpp.o
 
 SaveData/savedata.i: SaveData/savedata.cpp.i
@@ -286,7 +286,7 @@ SaveData/savedata.i: SaveData/savedata.cpp.i
 
 # target to preprocess a source file
 SaveData/savedata.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/SaveData/savedata.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/SaveData/savedata.cpp.i
 .PHONY : SaveData/savedata.cpp.i
 
 SaveData/savedata.s: SaveData/savedata.cpp.s
@@ -294,39 +294,15 @@ SaveData/savedata.s: SaveData/savedata.cpp.s
 
 # target to generate assembly for a file
 SaveData/savedata.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/SaveData/savedata.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/SaveData/savedata.cpp.s
 .PHONY : SaveData/savedata.cpp.s
-
-Service/Rahdari/rahdariService.o: Service/Rahdari/rahdariService.cpp.o
-.PHONY : Service/Rahdari/rahdariService.o
-
-# target to build an object file
-Service/Rahdari/rahdariService.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/Service/Rahdari/rahdariService.cpp.o
-.PHONY : Service/Rahdari/rahdariService.cpp.o
-
-Service/Rahdari/rahdariService.i: Service/Rahdari/rahdariService.cpp.i
-.PHONY : Service/Rahdari/rahdariService.i
-
-# target to preprocess a source file
-Service/Rahdari/rahdariService.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/Service/Rahdari/rahdariService.cpp.i
-.PHONY : Service/Rahdari/rahdariService.cpp.i
-
-Service/Rahdari/rahdariService.s: Service/Rahdari/rahdariService.cpp.s
-.PHONY : Service/Rahdari/rahdariService.s
-
-# target to generate assembly for a file
-Service/Rahdari/rahdariService.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/Service/Rahdari/rahdariService.cpp.s
-.PHONY : Service/Rahdari/rahdariService.cpp.s
 
 Service/Service.o: Service/Service.cpp.o
 .PHONY : Service/Service.o
 
 # target to build an object file
 Service/Service.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/Service/Service.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/Service/Service.cpp.o
 .PHONY : Service/Service.cpp.o
 
 Service/Service.i: Service/Service.cpp.i
@@ -334,7 +310,7 @@ Service/Service.i: Service/Service.cpp.i
 
 # target to preprocess a source file
 Service/Service.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/Service/Service.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/Service/Service.cpp.i
 .PHONY : Service/Service.cpp.i
 
 Service/Service.s: Service/Service.cpp.s
@@ -342,15 +318,39 @@ Service/Service.s: Service/Service.cpp.s
 
 # target to generate assembly for a file
 Service/Service.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/Service/Service.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/Service/Service.cpp.s
 .PHONY : Service/Service.cpp.s
+
+Service/WebService/webservice.o: Service/WebService/webservice.cpp.o
+.PHONY : Service/WebService/webservice.o
+
+# target to build an object file
+Service/WebService/webservice.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/Service/WebService/webservice.cpp.o
+.PHONY : Service/WebService/webservice.cpp.o
+
+Service/WebService/webservice.i: Service/WebService/webservice.cpp.i
+.PHONY : Service/WebService/webservice.i
+
+# target to preprocess a source file
+Service/WebService/webservice.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/Service/WebService/webservice.cpp.i
+.PHONY : Service/WebService/webservice.cpp.i
+
+Service/WebService/webservice.s: Service/WebService/webservice.cpp.s
+.PHONY : Service/WebService/webservice.s
+
+# target to generate assembly for a file
+Service/WebService/webservice.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/Service/WebService/webservice.cpp.s
+.PHONY : Service/WebService/webservice.cpp.s
 
 StoreImage/storeimage.o: StoreImage/storeimage.cpp.o
 .PHONY : StoreImage/storeimage.o
 
 # target to build an object file
 StoreImage/storeimage.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/StoreImage/storeimage.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/StoreImage/storeimage.cpp.o
 .PHONY : StoreImage/storeimage.cpp.o
 
 StoreImage/storeimage.i: StoreImage/storeimage.cpp.i
@@ -358,7 +358,7 @@ StoreImage/storeimage.i: StoreImage/storeimage.cpp.i
 
 # target to preprocess a source file
 StoreImage/storeimage.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/StoreImage/storeimage.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/StoreImage/storeimage.cpp.i
 .PHONY : StoreImage/storeimage.cpp.i
 
 StoreImage/storeimage.s: StoreImage/storeimage.cpp.s
@@ -366,7 +366,7 @@ StoreImage/storeimage.s: StoreImage/storeimage.cpp.s
 
 # target to generate assembly for a file
 StoreImage/storeimage.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/StoreImage/storeimage.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/StoreImage/storeimage.cpp.s
 .PHONY : StoreImage/storeimage.cpp.s
 
 SystemMonitor/monitor.o: SystemMonitor/monitor.cpp.o
@@ -374,7 +374,7 @@ SystemMonitor/monitor.o: SystemMonitor/monitor.cpp.o
 
 # target to build an object file
 SystemMonitor/monitor.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/SystemMonitor/monitor.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/SystemMonitor/monitor.cpp.o
 .PHONY : SystemMonitor/monitor.cpp.o
 
 SystemMonitor/monitor.i: SystemMonitor/monitor.cpp.i
@@ -382,7 +382,7 @@ SystemMonitor/monitor.i: SystemMonitor/monitor.cpp.i
 
 # target to preprocess a source file
 SystemMonitor/monitor.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/SystemMonitor/monitor.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/SystemMonitor/monitor.cpp.i
 .PHONY : SystemMonitor/monitor.cpp.i
 
 SystemMonitor/monitor.s: SystemMonitor/monitor.cpp.s
@@ -390,7 +390,7 @@ SystemMonitor/monitor.s: SystemMonitor/monitor.cpp.s
 
 # target to generate assembly for a file
 SystemMonitor/monitor.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/SystemMonitor/monitor.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/SystemMonitor/monitor.cpp.s
 .PHONY : SystemMonitor/monitor.cpp.s
 
 Time/timetools.o: Time/timetools.cpp.o
@@ -398,7 +398,7 @@ Time/timetools.o: Time/timetools.cpp.o
 
 # target to build an object file
 Time/timetools.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/Time/timetools.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/Time/timetools.cpp.o
 .PHONY : Time/timetools.cpp.o
 
 Time/timetools.i: Time/timetools.cpp.i
@@ -406,7 +406,7 @@ Time/timetools.i: Time/timetools.cpp.i
 
 # target to preprocess a source file
 Time/timetools.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/Time/timetools.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/Time/timetools.cpp.i
 .PHONY : Time/timetools.cpp.i
 
 Time/timetools.s: Time/timetools.cpp.s
@@ -414,7 +414,7 @@ Time/timetools.s: Time/timetools.cpp.s
 
 # target to generate assembly for a file
 Time/timetools.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/Time/timetools.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/Time/timetools.cpp.s
 .PHONY : Time/timetools.cpp.s
 
 Validator/validator.o: Validator/validator.cpp.o
@@ -422,7 +422,7 @@ Validator/validator.o: Validator/validator.cpp.o
 
 # target to build an object file
 Validator/validator.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/Validator/validator.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/Validator/validator.cpp.o
 .PHONY : Validator/validator.cpp.o
 
 Validator/validator.i: Validator/validator.cpp.i
@@ -430,7 +430,7 @@ Validator/validator.i: Validator/validator.cpp.i
 
 # target to preprocess a source file
 Validator/validator.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/Validator/validator.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/Validator/validator.cpp.i
 .PHONY : Validator/validator.cpp.i
 
 Validator/validator.s: Validator/validator.cpp.s
@@ -438,7 +438,7 @@ Validator/validator.s: Validator/validator.cpp.s
 
 # target to generate assembly for a file
 Validator/validator.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/Validator/validator.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/Validator/validator.cpp.s
 .PHONY : Validator/validator.cpp.s
 
 checkop/chop.o: checkop/chop.cpp.o
@@ -446,7 +446,7 @@ checkop/chop.o: checkop/chop.cpp.o
 
 # target to build an object file
 checkop/chop.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/checkop/chop.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/checkop/chop.cpp.o
 .PHONY : checkop/chop.cpp.o
 
 checkop/chop.i: checkop/chop.cpp.i
@@ -454,7 +454,7 @@ checkop/chop.i: checkop/chop.cpp.i
 
 # target to preprocess a source file
 checkop/chop.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/checkop/chop.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/checkop/chop.cpp.i
 .PHONY : checkop/chop.cpp.i
 
 checkop/chop.s: checkop/chop.cpp.s
@@ -462,7 +462,7 @@ checkop/chop.s: checkop/chop.cpp.s
 
 # target to generate assembly for a file
 checkop/chop.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/checkop/chop.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/checkop/chop.cpp.s
 .PHONY : checkop/chop.cpp.s
 
 main.o: main.cpp.o
@@ -470,7 +470,7 @@ main.o: main.cpp.o
 
 # target to build an object file
 main.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/main.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/main.cpp.o
 .PHONY : main.cpp.o
 
 main.i: main.cpp.i
@@ -478,7 +478,7 @@ main.i: main.cpp.i
 
 # target to preprocess a source file
 main.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/main.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/main.cpp.i
 .PHONY : main.cpp.i
 
 main.s: main.cpp.s
@@ -486,7 +486,7 @@ main.s: main.cpp.s
 
 # target to generate assembly for a file
 main.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/main.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/main.cpp.s
 .PHONY : main.cpp.s
 
 ocr/ocr.o: ocr/ocr.cpp.o
@@ -494,7 +494,7 @@ ocr/ocr.o: ocr/ocr.cpp.o
 
 # target to build an object file
 ocr/ocr.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/ocr/ocr.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/ocr/ocr.cpp.o
 .PHONY : ocr/ocr.cpp.o
 
 ocr/ocr.i: ocr/ocr.cpp.i
@@ -502,7 +502,7 @@ ocr/ocr.i: ocr/ocr.cpp.i
 
 # target to preprocess a source file
 ocr/ocr.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/ocr/ocr.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/ocr/ocr.cpp.i
 .PHONY : ocr/ocr.cpp.i
 
 ocr/ocr.s: ocr/ocr.cpp.s
@@ -510,7 +510,7 @@ ocr/ocr.s: ocr/ocr.cpp.s
 
 # target to generate assembly for a file
 ocr/ocr.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/checkOperator.dir/build.make CMakeFiles/checkOperator.dir/ocr/ocr.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LoadDetection.dir/build.make CMakeFiles/LoadDetection.dir/ocr/ocr.cpp.s
 .PHONY : ocr/ocr.cpp.s
 
 # Help Target
@@ -521,7 +521,7 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
-	@echo "... checkOperator"
+	@echo "... LoadDetection"
 	@echo "... Classifier/classifier.o"
 	@echo "... Classifier/classifier.i"
 	@echo "... Classifier/classifier.s"
@@ -543,12 +543,12 @@ help:
 	@echo "... SaveData/savedata.o"
 	@echo "... SaveData/savedata.i"
 	@echo "... SaveData/savedata.s"
-	@echo "... Service/Rahdari/rahdariService.o"
-	@echo "... Service/Rahdari/rahdariService.i"
-	@echo "... Service/Rahdari/rahdariService.s"
 	@echo "... Service/Service.o"
 	@echo "... Service/Service.i"
 	@echo "... Service/Service.s"
+	@echo "... Service/WebService/webservice.o"
+	@echo "... Service/WebService/webservice.i"
+	@echo "... Service/WebService/webservice.s"
 	@echo "... StoreImage/storeimage.o"
 	@echo "... StoreImage/storeimage.i"
 	@echo "... StoreImage/storeimage.s"

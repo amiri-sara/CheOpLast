@@ -616,7 +616,7 @@ Configurate::Configurate()
         throw;
     }
 
-    this->ReadCamerasCollection();
+    // this->ReadCamerasCollection(); //TODO MUST UNCOMMENT
 }
 
 void Configurate::ReadCamerasCollection()

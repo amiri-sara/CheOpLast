@@ -21,7 +21,9 @@
 class savedata
 {
 public:
-    savedata(); // اضافه کردن سازنده پیش‌فرض
+    // savedata(); // اضافه کردن سازنده پیش‌فرض
+    savedata(std::shared_ptr<MongoDB> db_client, Configurate::InfoDatabaseStruct db_info);
+
     ~savedata(); // اضافه کردن تخریب‌کننده برای پاکسازی منابع
     bool run(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH);
 
@@ -42,7 +44,7 @@ private:
     std::atomic<bool> m_running_flush_thread; // پرچم برای کنترل چرخه حیات رشته تایمر (وقتی false شود، رشته متوقف می‌شود)
     std::atomic<bool> m_is_flushing; // پرچم برای جلوگیری از اجرای همزمان دو عملیات فلش
     
-    const size_t BULK_INSERT_THRESHOLD = 100; // آستانه (تعداد اسناد) برای شروع درج دسته‌ای
+    const size_t BULK_INSERT_THRESHOLD = 1; // آستانه (تعداد اسناد) برای شروع درج دسته‌ای //TODO
     const int FLUSH_INTERVAL_SECONDS = 1; // فاصله زمانی (بر حسب ثانیه) برای فلش دوره‌ای بافر
 
     boost::asio::io_service m_io_service; // سرویس I/O برای مدیریت عملیات ناهمگام (مانند تایمر)

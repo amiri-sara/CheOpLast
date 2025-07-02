@@ -77,6 +77,7 @@ public:
         float probability = 0;
         int codeType = CodeTypes::NOT_PROCESSED; //TODO load detection code type 
         std::string ImageBase64;
+        cv::Mat Image;
     };
 
 

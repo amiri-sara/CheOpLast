@@ -7,8 +7,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 
 # Project name options
-option(LOADDETECTOR "Enable load detector mode" OFF)
-option(CHECKOPERATOR "Enable check operator mode" ON)
+option(LOADDETECTOR "Enable load detector mode" ON)
+option(CHECKOPERATOR "Enable check operator mode" OFF)
 
 if(LOADDETECTOR AND CHECKOPERATOR)
     message(FATAL_ERROR "Cannot enable both LOADDETECTOR and CHECKOPERATOR")
@@ -31,8 +31,8 @@ message(STATUS "CXX Compiler: ${CMAKE_CXX_COMPILER} (version ${CMAKE_CXX_COMPILE
 # Build options
 option(BUILDUBUNTU22 "Build for Ubuntu 22.04" ON)
 option(BUILDUBUNTU20 "Build for Ubuntu 20.04" OFF)
-option(CLIENTSERVICE "Run client service" ON)
-option(WEBSERVICE "Run web service" OFF)
+option(CLIENTSERVICE "Run client service" OFF)
+option(WEBSERVICE "Run web service" ON)
 option(KAFKASERVICE "Run Kafka service" OFF)
 option(INSERTDATABASE "Insert data into database" ON)
 option(FAILEDDATABASE "Handle failed database" OFF)
@@ -245,7 +245,8 @@ elseif(BUILDUBUNTU22)
     target_link_libraries(${PROJECT_NAME} PRIVATE
         ${LIB_DIR}/mongocxx/libmongocxx.so
         ${LIB_DIR}/mongocxx/libbsoncxx.so
-        ${INFERENCELIB_DIR}/libkodnn.so
+        # ${INFERENCELIB_DIR}/libkodnn.so
+        /home/amiri/projects/c++/models/LCC-Is-Here/KonectNeuralNetworkLibrary-v3.0-onnx1.17/examples/build/libkodnn.so
         ${INFERENCELIB_DIR}/libInference.so
         # ${LIB_DIR}/banner/libbannerapi.so
     )

@@ -118,7 +118,7 @@ private:
     int& convertVehcileType(int& InputVehicleType);
 
 
-    // --- شروع تغییرات برای بهینه‌سازی بارگذاری پیکربندی ---
+    // --- شروع تغییرات برای بهینه‌سازی بارگذاری پیکربندی --- //ُ]ي] 
     // اضافه کردن متغیرهای عضو برای ذخیره پیکربندی‌ها
     Configurate::FieldsStruct m_hasInputFields;
     Configurate::FieldsStruct m_hasOutputFields;

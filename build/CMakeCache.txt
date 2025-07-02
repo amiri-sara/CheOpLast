@@ -35,10 +35,10 @@ Boost_SYSTEM_LIBRARY_RELEASE:STRING=/usr/lib/x86_64-linux-gnu/libboost_system.so
 Boost_THREAD_LIBRARY_RELEASE:STRING=/usr/lib/x86_64-linux-gnu/libboost_thread.so.1.74.0
 
 //Enable check operator mode
-CHECKOPERATOR:BOOL=ON
+CHECKOPERATOR:BOOL=OFF
 
 //Run client service
-CLIENTSERVICE:BOOL=ON
+CLIENTSERVICE:BOOL=OFF
 
 //Path to a program.
 CMAKE_ADDR2LINE:FILEPATH=/usr/bin/addr2line
@@ -145,7 +145,7 @@ CMAKE_PROJECT_DESCRIPTION:STATIC=
 CMAKE_PROJECT_HOMEPAGE_URL:STATIC=
 
 //Value Computed by CMake
-CMAKE_PROJECT_NAME:STATIC=checkOperator
+CMAKE_PROJECT_NAME:STATIC=LoadDetection
 
 //Path to a program.
 CMAKE_RANLIB:FILEPATH=/usr/bin/ranlib
@@ -222,7 +222,16 @@ KAFKAOUTPUT:BOOL=OFF
 KAFKASERVICE:BOOL=OFF
 
 //Enable load detector mode
-LOADDETECTOR:BOOL=OFF
+LOADDETECTOR:BOOL=ON
+
+//Value Computed by CMake
+LoadDetection_BINARY_DIR:STATIC=/home/amiri/projects/c++/check_rahdari/check_try/Aggregation_V1.0.0/Aggregation/v2.1.0/loadDetection/optimized/LoadANDChop-v2.1.0/build
+
+//Value Computed by CMake
+LoadDetection_IS_TOP_LEVEL:STATIC=ON
+
+//Value Computed by CMake
+LoadDetection_SOURCE_DIR:STATIC=/home/amiri/projects/c++/check_rahdari/check_try/Aggregation_V1.0.0/Aggregation/v2.1.0/loadDetection/optimized/LoadANDChop-v2.1.0
 
 //Arguments to supply to pkg-config
 PKG_CONFIG_ARGN:STRING=
@@ -237,7 +246,7 @@ STOREIMAGE:BOOL=ON
 VALUEVALIDATION:BOOL=OFF
 
 //Run web service
-WEBSERVICE:BOOL=OFF
+WEBSERVICE:BOOL=ON
 
 //Enable GPU support
 WITH_GPU:BOOL=OFF

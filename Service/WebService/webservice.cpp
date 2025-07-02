@@ -59,23 +59,23 @@ std::string rectToString(const cv::Rect& rect) {
 
 
 
-std::shared_ptr<DataHandler::DataHandlerStruct> createClassifierSaveData(const std::shared_ptr<DataHandler::DataHandlerStruct>& dh, const Classifier::OutputStruct& classifierItem)
-{
-    auto newCarREct = dh->hasOutputFields.CarRect;
-    dh->hasOutputFields.ColorImage;
-    dh->hasOutputFields.CompanyCode;
-    dh->hasOutputFields.DeviceID;
-    dh->hasOutputFields.
-    dh->hasOutputFields
-    dh->hasOutputFields
+// std::shared_ptr<DataHandler::DataHandlerStruct> createClassifierSaveData(const std::shared_ptr<DataHandler::DataHandlerStruct>& dh, const Classifier::OutputStruct& classifierItem)
+// {
+//     auto newCarREct = dh->hasOutputFields.CarRect;
+//     dh->hasOutputFields.ColorImage;
+//     dh->hasOutputFields.CompanyCode;
+//     dh->hasOutputFields.DeviceID;
+//     dh->hasOutputFields.
+//     dh->hasOutputFields
+//     dh->hasOutputFields
     
-    auto newDH = std::make_shared<DataHandler::DataHandlerStruct>(*dh);
+//     auto newDH = std::make_shared<DataHandler::DataHandlerStruct>(*dh);
     
-    newDH->ProcessedInputData.VehicleModel = classifierItem.vehicleModel;
-    newDH->ProcessedInputData.CarRect = rectToString(classifierItem.box);
+//     newDH->ProcessedInputData.VehicleModel = classifierItem.vehicleModel;
+//     newDH->ProcessedInputData.CarRect = rectToString(classifierItem.box);
     
-    return newDH;
-}
+//     return newDH;
+// }
 
 WebService::WebService(Configurate::WebServiceConfigStruct ServiceConfig)
 {
@@ -84,6 +84,20 @@ WebService::WebService(Configurate::WebServiceConfigStruct ServiceConfig)
     this->app->loglevel(crow::LogLevel::Error);
     this->WebServiceConfig = ServiceConfig;
     // threadPool = std::make_unique<ThreadPool>(1);
+            // بارگذاری پیکربندی‌ها از Configurate Singleton به متغیرهای عضو
+    Configurate* ConfigurateObj = Configurate::getInstance();
+    m_hasInputFields = ConfigurateObj->getInputFields(); //
+    m_hasOutputFields = ConfigurateObj->getOutputFields(); //
+    m_StoreImageConfig = ConfigurateObj->getStoreImageConfig(); //
+    m_ViolationMap = ConfigurateObj->getViolationMap(); //
+    m_Cameras = ConfigurateObj->getCameras(); //
+    m_InsertDatabaseInfo = ConfigurateObj->getInsertDatabaseInfo(); //
+    m_FailedDatabaseInfo = ConfigurateObj->getFailedDatabaseInfo(); //
+    m_Modules = ConfigurateObj->getModules(); //
+    m_InsertDatabase = ConfigurateObj->getInsertDatabase(); //
+    m_FailedDatabase = ConfigurateObj->getFailedDatabase(); //
+    m_ConfigDatabase = ConfigurateObj->getConfigDatabase(); //
+    m_ConfigDatabaseInfo = ConfigurateObj->getConfigDatabaseInfo();
 }
 
 void WebService::run()
@@ -127,18 +141,34 @@ void WebService::InsertRoute() {
         
         // Initialize DataHandler
         auto DH = std::make_shared<DataHandler::DataHandlerStruct>();
-        Configurate* ConfigurateObj = Configurate::getInstance();
-        DH->hasInputFields = ConfigurateObj->getInputFields();
-        DH->hasOutputFields = ConfigurateObj->getOutputFields();
-        DH->StoreImageConfig = ConfigurateObj->getStoreImageConfig();
-        DH->ViolationMap = ConfigurateObj->getViolationMap();
-        DH->Cameras = ConfigurateObj->getCameras();
-        DH->DaysforPassedTimeAcceptable = this->WebServiceConfig.DaysforPassedTimeAcceptable;
-        DH->InsertDatabase = ConfigurateObj->getInsertDatabase();
-        DH->InsertDatabaseInfo = ConfigurateObj->getInsertDatabaseInfo();
-        DH->FailedDatabase = ConfigurateObj->getFailedDatabase();
-        DH->FailedDatabaseInfo = ConfigurateObj->getFailedDatabaseInfo();
-        DH->Modules = ConfigurateObj->getModules();
+        // Configurate* ConfigurateObj = Configurate::getInstance();
+        // DH->hasInputFields = ConfigurateObj->getInputFields();
+        // DH->hasOutputFields = ConfigurateObj->getOutputFields();
+        // DH->StoreImageConfig = ConfigurateObj->getStoreImageConfig();
+        // DH->ViolationMap = ConfigurateObj->getViolationMap();
+        // DH->Cameras = ConfigurateObj->getCameras();
+        // DH->DaysforPassedTimeAcceptable = this->WebServiceConfig.DaysforPassedTimeAcceptable;
+        // DH->InsertDatabase = ConfigurateObj->getInsertDatabase();
+        // DH->InsertDatabaseInfo = ConfigurateObj->getInsertDatabaseInfo();
+        // DH->FailedDatabase = ConfigurateObj->getFailedDatabase();
+        // DH->FailedDatabaseInfo = ConfigurateObj->getFailedDatabaseInfo();
+        // DH->Modules = ConfigurateObj->getModules();
+
+                // --- شروع تغییرات برای بهینه‌سازی بارگذاری پیکربندی ---
+        // استفاده از متغیرهای عضو به جای بارگذاری مجدد از Configurate Singleton
+        DH->hasInputFields = m_hasInputFields; //
+        DH->hasOutputFields = m_hasOutputFields; //
+        DH->StoreImageConfig = m_StoreImageConfig; //
+        DH->ViolationMap = m_ViolationMap; //
+        DH->Cameras = m_Cameras; //
+        DH->InsertDatabase = m_InsertDatabase; //
+        DH->InsertDatabaseInfo = m_InsertDatabaseInfo; //
+        DH->FailedDatabase = m_FailedDatabase; //
+        DH->FailedDatabaseInfo = m_FailedDatabaseInfo; //
+        DH->Modules = m_Modules; //
+        DH->ConfigDatabase = m_ConfigDatabase; //
+        DH->ConfigDatabaseInfo = m_ConfigDatabaseInfo; //
+            // --- پایان تغییرات برای بهینه‌سازی بارگذاری پیکربندی ---
         DH->DebugMode = this->WebServiceConfig.DebugMode;
         DH->InsertRoute = true;
         DH->WebServiceAuthentication = this->WebServiceConfig.Authentication;
@@ -229,69 +259,6 @@ void WebService::InsertRoute() {
         auto validationFinishTime = std::chrono::high_resolution_clock::now();
         auto ValidationTime = std::chrono::duration_cast<std::chrono::nanoseconds>(validationFinishTime - validationStartTime);
 
-        // Check RecordID
-        auto ChecRecordIDStartTime = std::chrono::high_resolution_clock::now();
-#ifdef INSERTDATABASE
-        // std::vector<MongoDB::Field> filter = {
-        //     {"RecordID", DH->ProcessedInputData.MongoID, MongoDB::FieldType::ObjectId, "$gte"},
-        //     {"RecordID", DH->ProcessedInputData.MongoID, MongoDB::FieldType::ObjectId, "$lte"}
-        // };
-        // MongoDB::FindOptionStruct Option;
-        // std::vector<std::string> ResultDoc;
-        // auto FindReturn = DH->InsertDatabase->Find(DH->InsertDatabaseInfo.DatabaseName, DH->InsertDatabaseInfo.CollectionName, filter, Option, ResultDoc);
-        // if (FindReturn.Code == MongoDB::MongoStatus::FindSuccessful) {
-        //     if (!ResultDoc.empty()) {
-        //         Response["Status"] = DUPLICATERECORD;
-        //         Response["Description"] = "Duplicate Record.";
-        //         if (DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
-        //             Response["RecordID"] = DH->ProcessedInputData.MongoID;
-        //         Response["IP"] = DH->Request.remoteIP;
-        //         if (DH->FailedDatabaseInfo.Enable) {
-        //             std::vector<MongoDB::Field> fields = {
-        //                 {"Status", std::to_string(DUPLICATERECORD), MongoDB::FieldType::Integer},
-        //                 {"Description", "Duplicate Record.", MongoDB::FieldType::String},
-        //                 {"IP", DH->Request.remoteIP, MongoDB::FieldType::String}
-        //             };
-        //             if (DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue) {
-        //                 fields.push_back({"RecordID", DH->ProcessedInputData.MongoID, MongoDB::FieldType::ObjectId});
-        //             }
-        //             threadPool->enqueue([DH, fields]() {
-        //                 DH->FailedDatabase->Insert(DH->FailedDatabaseInfo.DatabaseName, DH->FailedDatabaseInfo.CollectionName, fields);
-        //             });
-        //         }
-        //         SHOW_ERROR(crow::json::dump(Response));
-        //         ClientResponse["Status"] = DUPLICATERECORD;
-        //         ClientResponse["Description"] = "Duplicate Record.";
-        //         return crow::response{400, ClientResponse};
-        //     }
-        // } else {
-        //     Response["Status"] = DATABASEERROR;
-        //     Response["Description"] = "Network Internal Service Error.";
-        //     if (DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
-        //         Response["RecordID"] = DH->ProcessedInputData.MongoID;
-        //     Response["IP"] = DH->Request.remoteIP;
-        //     if (DH->FailedDatabaseInfo.Enable) {
-        //         std::vector<MongoDB::Field> fields = {
-        //             {"Status", std::to_string(DATABASEERROR), MongoDB::FieldType::Integer},
-        //             {"Description", "Network Internal Service Error.", MongoDB::FieldType::String},
-        //             {"IP", DH->Request.remoteIP, MongoDB::FieldType::String}
-        //         };
-        //         if (DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue) {
-        //             fields.push_back({"RecordID", DH->ProcessedInputData.MongoID, MongoDB::FieldType::ObjectId});
-        //         }
-        //         threadPool->enqueue([DH, fields]() {
-        //             DH->FailedDatabase->Insert(DH->FailedDatabaseInfo.DatabaseName, DH->FailedDatabaseInfo.CollectionName, fields);
-        //         });
-        //     }
-        //     SHOW_ERROR(crow::json::dump(Response));
-        //     ClientResponse["Status"] = DATABASEERROR;
-        //     ClientResponse["Description"] = "Network Internal Service Error.";
-        //     return crow::response{500, ClientResponse};
-        // }
-#endif
-        auto ChecRecordIDFinishTime = std::chrono::high_resolution_clock::now();
-        auto ChecRecordIDTime = std::chrono::duration_cast<std::chrono::nanoseconds>(ChecRecordIDFinishTime - ChecRecordIDStartTime);
-
         // Check Operator Module
         auto CheckOpStartTime = std::chrono::high_resolution_clock::now();
         if (DH->Modules.CheckOperator.active && DH->hasInputFields.PlateImage) {
@@ -338,27 +305,122 @@ void WebService::InsertRoute() {
         auto CheckOpFinishTime = std::chrono::high_resolution_clock::now();
         auto CheckOpTime = std::chrono::duration_cast<std::chrono::nanoseconds>(CheckOpFinishTime - CheckOpStartTime);
 
+
         // Classifier Module
-        auto ClassifierStartTime = std::chrono::high_resolution_clock::now();
         std::vector<Classifier::OutputStruct> ClassifierOutputVec;
         if (DH->Modules.Classifier.active) {
             Classifier::InputStruct inputClassify;
-            inputClassify.ImageBase64 = DH->Input.ColorImage;
+            inputClassify.Image = DH->ProcessedInputData.ColorImageMat.clone();
             int ClassifierObjectIndex = this->getClassifierIndex();
             try {
+                auto ClassifierStartTime = std::chrono::high_resolution_clock::now();
+
                 ClassifierOutputVec = this->m_pClassifierObjects[ClassifierObjectIndex]->run(inputClassify);
+
+                auto ClassifierFinishTime = std::chrono::high_resolution_clock::now();
+                auto ClassifierTime = std::chrono::duration_cast<std::chrono::nanoseconds>(ClassifierFinishTime - ClassifierStartTime);
+
                 this->releaseClassifierIndex(ClassifierObjectIndex);
+
                 std::vector<crow::json::wvalue> classificationsJson;
                 for (auto& output : ClassifierOutputVec) {
-                    crow::json::wvalue CResponse;
-                    CResponse["VehiclModel"] = output.vehicleModel;
-                    crow::json::wvalue rectJson;
-                    rectJson["x"] = output.box.x;
-                    rectJson["y"] = output.box.y;
-                    rectJson["width"] = output.box.width;
-                    rectJson["height"] = output.box.height;
-                    CResponse["CarRect"] = std::move(rectJson);
-                    classificationsJson.push_back(std::move(CResponse));
+                    DH->ProcessedInputData.VehicleModel = output.vehicleModel;
+
+                    auto storeImageStartTime = std::chrono::high_resolution_clock::now();
+#ifdef STOREIMAGE
+        // 5- Store Image
+        std::shared_ptr<storeimage> storeimageobj = std::make_shared<storeimage>();
+        if(!(storeimageobj->run(DH)))
+        {
+            Response["Status"] = DH->Response.errorCode;
+            Response["Description"] = DH->Response.Description;
+            if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+                Response["RecordID"] = DH->ProcessedInputData.MongoID;
+            Response["IP"] = DH->Request.remoteIP;
+            if(DH->FailedDatabaseInfo.Enable)
+            {
+                std::vector<MongoDB::Field> fields = {
+                    {"Status", std::to_string(DH->Response.errorCode), MongoDB::FieldType::Integer},
+                    {"Description", DH->Response.Description, MongoDB::FieldType::String},
+                    {"IP", DH->Request.remoteIP, MongoDB::FieldType::String}
+                };
+
+                if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+                {
+                    MongoDB::Field RecordIDField = {"RecordID", DH->ProcessedInputData.MongoID, MongoDB::FieldType::ObjectId};
+                    fields.push_back(RecordIDField);
+                }
+
+                DH->FailedDatabase ->Insert(DH->FailedDatabaseInfo.DatabaseName, DH->FailedDatabaseInfo.CollectionName, fields);
+            }
+            SHOW_ERROR(crow::json::dump(Response));
+            ClientResponse["Status"] = DH->Response.errorCode;
+            ClientResponse["Description"] = DH->Response.Description;
+            return crow::response{DH->Response.HTTPCode , ClientResponse};
+        }
+#endif // STOREIMAGE
+        auto storeImageFinishTime = std::chrono::high_resolution_clock::now();
+        auto storeImaheTime =  std::chrono::duration_cast<std::chrono::nanoseconds>(storeImageFinishTime - storeImageStartTime);        
+
+        auto saveDataStartTime = std::chrono::high_resolution_clock::now();
+#if defined KAFKAOUTPUT || defined INSERTDATABASE
+        // 6- Save Data
+        std::shared_ptr<savedata> savedataobj = std::make_shared<savedata>();
+#ifdef KAFKAOUTPUT
+        int OutputKafkaConnectionIndex = this->getKafkaConnectionIndex();
+        savedataobj->setOutputKafkaConnection(this->OutputKafkaConnections[OutputKafkaConnectionIndex]);
+#endif // KAFKAOUTPUT
+        
+        if(!(savedataobj->run(DH)))
+        {
+            Response["Status"] = DH->Response.errorCode;
+            Response["Description"] = DH->Response.Description;
+            if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+                Response["RecordID"] = DH->ProcessedInputData.MongoID;
+            Response["IP"] = DH->Request.remoteIP;
+            if(DH->FailedDatabaseInfo.Enable)
+            {
+                std::vector<MongoDB::Field> fields = {
+                    {"Status", std::to_string(DH->Response.errorCode), MongoDB::FieldType::Integer},
+                    {"Description", DH->Response.Description, MongoDB::FieldType::String},
+                    {"IP", DH->Request.remoteIP, MongoDB::FieldType::String}
+                };
+
+                if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
+                {
+                    MongoDB::Field RecordIDField = {"RecordID", DH->ProcessedInputData.MongoID, MongoDB::FieldType::ObjectId};
+                    fields.push_back(RecordIDField);
+                }
+
+                DH->FailedDatabase ->Insert(DH->FailedDatabaseInfo.DatabaseName, DH->FailedDatabaseInfo.CollectionName, fields);
+            }
+            SHOW_ERROR(crow::json::dump(Response));
+            ClientResponse["Status"] = DH->Response.errorCode;
+            ClientResponse["Description"] = DH->Response.Description;
+            return crow::response{DH->Response.HTTPCode , ClientResponse};
+        }
+#ifdef KAFKAOUTPUT
+        this->releaseKafkaIndex(OutputKafkaConnectionIndex);
+#endif // KAFKAOUTPUT
+#endif // KAFKAOUTPUT || INSERTDATABASE
+        auto saveDataFinishTime = std::chrono::high_resolution_clock::now();
+        auto saveDataTime =  std::chrono::duration_cast<std::chrono::nanoseconds>(saveDataFinishTime - saveDataStartTime);     
+
+        auto requestFinishTime = std::chrono::high_resolution_clock::now();
+        auto requestTime =  std::chrono::duration_cast<std::chrono::nanoseconds>(requestFinishTime - requstStartTime);
+                         //TODO
+
+
+                    
+                crow::json::wvalue CResponse;
+                CResponse["VehiclModel"] = output.vehicleModel;
+                crow::json::wvalue rectJson;
+                rectJson["x"] = output.box.x;
+                rectJson["y"] = output.box.y;
+                rectJson["width"] = output.box.width;
+                rectJson["height"] = output.box.height;
+                CResponse["CarRect"] = std::move(rectJson);
+                classificationsJson.push_back(std::move(CResponse));
                 }
                 crow::json::wvalue j;
                 j["EmsInfoId"] = DH->Input.RecordID;
@@ -371,137 +433,18 @@ void WebService::InsertRoute() {
                 this->releaseClassifierIndex(ClassifierObjectIndex);
             }
         }
-        auto ClassifierFinishTime = std::chrono::high_resolution_clock::now();
-        auto ClassifierTime = std::chrono::duration_cast<std::chrono::nanoseconds>(ClassifierFinishTime - ClassifierStartTime);
 
-        // Store Image (offloaded to thread pool)
-        auto storeImageStartTime = std::chrono::high_resolution_clock::now();
-#ifdef STOREIMAGE
-        // auto storeImageDH = std::make_shared<DataHandler::DataHandlerStruct>(DH); // Copy DH for thread safety
-        threadPool->enqueue([DH, this]() {
-            std::shared_ptr<storeimage> storeimageobj = std::make_shared<storeimage>();
-            if (!storeimageobj->run(DH)) {
-                // crow::json::wvalue Response;
-                // Response["Status"] = DH->Response.errorCode;
-                // Response["Description"] = DH->Response.Description;
-                // if (DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
-                //     Response["RecordID"] = DH->ProcessedInputData.MongoID;
-                // Response["IP"] = DH->Request.remoteIP;
-                // if (DH->FailedDatabaseInfo.Enable) {
-                //     std::vector<MongoDB::Field> fields = {
-                //         {"Status", std::to_string(DH->Response.errorCode), MongoDB::FieldType::Integer},
-                //         {"Description", DH->Response.Description, MongoDB::FieldType::String},
-                //         {"IP", DH->Request.remoteIP, MongoDB::FieldType::String}
-                //     };
-                //     if (DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue) {
-                //         fields.push_back({"RecordID", DH->ProcessedInputData.MongoID, MongoDB::FieldType::ObjectId});
-                //     }
-                //     DH->FailedDatabase->Insert(DH->FailedDatabaseInfo.DatabaseName, DH->FailedDatabaseInfo.CollectionName, fields);
-                // }
-                // SHOW_ERROR(crow::json::dump(Response));
-            }
-        });
-#endif
-        auto storeImageFinishTime = std::chrono::high_resolution_clock::now();
-        auto storeImaheTime = std::chrono::duration_cast<std::chrono::nanoseconds>(storeImageFinishTime - storeImageStartTime);
 
-        // Save Data (offloaded to thread pool)
-        auto saveDataStartTime = std::chrono::high_resolution_clock::now();
-#if defined KAFKAOUTPUT || defined INSERTDATABASE
-    if(DH->Modules.Classifier.active && !ClassifierOutputVec.empty())
-    {
-        for (auto&item : ClassifierOutputVec)
-        { 
-            auto saveData = createClassifierSaveData(DH, item);
 
-            // saveDataDH->ProcessedInputData.VehicleModel = item.vehicleModel;
-            // saveDataDH->ProcessedInputData.CarRect =  rectToString (item.box);
-            std::cout<<saveData->ProcessedInputData.VehicleModel<<std::endl;
-            std::cout<<saveData->ProcessedInputData.CarRect<<std::endl;
-
-            threadPool->enqueue([saveData, this]() {
-                std::shared_ptr<savedata> savedataobj = std::make_shared<savedata>();
-#ifdef KAFKAOUTPUT
-                int OutputKafkaConnectionIndex = this->getKafkaConnectionIndex();
-                savedataobj->setOutputKafkaConnection(this->OutputKafkaConnections[OutputKafkaConnectionIndex]);
-#endif
-                if (!savedataobj->run(saveData)) {
-                    // crow::json::wvalue Response;
-                    // Response["Status"] = DH->Response.errorCode;
-                    // Response["Description"] = DH->Response.Description;
-                    // if (DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
-                    //     Response["RecordID"] = DH->ProcessedInputData.MongoID;
-                    // Response["IP"] = DH->Request.remoteIP;
-                    // if (DH->FailedDatabaseInfo.Enable) {
-                    //     std::vector<MongoDB::Field> fields = {
-                    //         {"Status", std::to_string(DH->Response.errorCode), MongoDB::FieldType::Integer},
-                    //         {"Description", DH->Response.Description, MongoDB::FieldType::String},
-                    //         {"IP", DH->Request.remoteIP, MongoDB::FieldType::String}
-                    //     };
-                    //     if (DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue) {
-                    //         fields.push_back({"RecordID", DH->ProcessedInputData.MongoID, MongoDB::FieldType::ObjectId});
-                    //     }
-                    //     DH->FailedDatabase->Insert(DH->FailedDatabaseInfo.DatabaseName, DH->FailedDatabaseInfo.CollectionName, fields);
-                    // }
-                    SHOW_ERROR(saveData->ProcessedInputData.VehicleModel);
-                }
-#ifdef KAFKAOUTPUT
-                this->releaseKafkaIndex(OutputKafkaConnectionIndex);
-#endif
-            });
-        }
-    }else{
-
-                // auto saveDataDH = std::make_shared<DataHandler::DataHandlerStruct>(DH); // Copy DH for thread safety
-        threadPool->enqueue([DH, this]() {
-            std::shared_ptr<savedata> savedataobj = std::make_shared<savedata>();
-#ifdef KAFKAOUTPUT
-            int OutputKafkaConnectionIndex = this->getKafkaConnectionIndex();
-            savedataobj->setOutputKafkaConnection(this->OutputKafkaConnections[OutputKafkaConnectionIndex]);
-#endif
-            if (!savedataobj->run(DH)) {
-                // crow::json::wvalue Response;
-                // Response["Status"] = DH->Response.errorCode;
-                // Response["Description"] = DH->Response.Description;
-                // if (DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
-                //     Response["RecordID"] = DH->ProcessedInputData.MongoID;
-                // Response["IP"] = DH->Request.remoteIP;
-                // if (DH->FailedDatabaseInfo.Enable) {
-                //     std::vector<MongoDB::Field> fields = {
-                //         {"Status", std::to_string(DH->Response.errorCode), MongoDB::FieldType::Integer},
-                //         {"Description", DH->Response.Description, MongoDB::FieldType::String},
-                //         {"IP", DH->Request.remoteIP, MongoDB::FieldType::String}
-                //     };
-                //     if (DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue) {
-                //         fields.push_back({"RecordID", DH->ProcessedInputData.MongoID, MongoDB::FieldType::ObjectId});
-                //     }
-                //     DH->FailedDatabase->Insert(DH->FailedDatabaseInfo.DatabaseName, DH->FailedDatabaseInfo.CollectionName, fields);
-                // }
-                // SHOW_ERROR(crow::json::dump(Response));
-            }
-#ifdef KAFKAOUTPUT
-            this->releaseKafkaIndex(OutputKafkaConnectionIndex);
-#endif
-        });
-#endif
-
-    }
-
-        auto saveDataFinishTime = std::chrono::high_resolution_clock::now();
-        auto saveDataTime = std::chrono::duration_cast<std::chrono::nanoseconds>(saveDataFinishTime - saveDataStartTime);
-
-        auto requestFinishTime = std::chrono::high_resolution_clock::now();
-        auto requestTime = std::chrono::duration_cast<std::chrono::nanoseconds>(requestFinishTime - requstStartTime);
-
-        if (DH->DebugMode)
-            SHOW_IMPORTANTLOG3("ProccessTime(ns) = " << std::to_string(requestTime.count()) << std::endl
-                              << "0- Authentication ProccessTime(ns) = " << std::to_string(AuthenticationTime.count()) << std::endl
-                              << "1- Validation ProccessTime(ns) = " << std::to_string(ValidationTime.count()) << std::endl
-                              << "2- Check RecordID ProccessTime(ns) = " << std::to_string(ChecRecordIDTime.count()) << std::endl
-                              << "3- CheckOp ProccessTime(ns) = " << std::to_string(CheckOpTime.count()) << std::endl
-                              << "4- Classifier ProccessTime(ns) = " << std::to_string(ClassifierTime.count()) << std::endl
-                              << "5- Store image ProccessTime(ns) = " << std::to_string(storeImaheTime.count()) << std::endl
-                              << "6- Save data ProccessTime(ns) = " << std::to_string(saveDataTime.count()));
+        // if (DH->DebugMode)
+        //     SHOW_IMPORTANTLOG3("ProccessTime(ns) = " << std::to_string(requestTime.count()) << std::endl
+        //                       << "0- Authentication ProccessTime(ns) = " << std::to_string(AuthenticationTime.count()) << std::endl
+        //                       << "1- Validation ProccessTime(ns) = " << std::to_string(ValidationTime.count()) << std::endl
+        //                       << "2- Check RecordID ProccessTime(ns) = " << std::to_string(ChecRecordIDTime.count()) << std::endl
+        //                       << "3- CheckOp ProccessTime(ns) = " << std::to_string(CheckOpTime.count()) << std::endl
+        //                       << "4- Classifier ProccessTime(ns) = " << std::to_string(ClassifierTime.count()) << std::endl
+        //                       << "5- Store image ProccessTime(ns) = " << std::to_string(storeImaheTime.count()) << std::endl
+        //                       << "6- Save data ProccessTime(ns) = " << std::to_string(saveDataTime.count()));
 
         Response["Status"] = SUCCESSFUL;
         if (DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)

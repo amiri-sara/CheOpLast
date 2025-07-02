@@ -1,16 +1,30 @@
 #include "savedata.h"
 
-// سازنده: منابع جدید را مقداردهی اولیه کرده و رشته تایمر را آغاز می‌کند.
-savedata::savedata() : m_running_flush_thread(true), m_is_flushing(false), m_io_thread(boost::bind(&boost::asio::io_service::run, &m_io_service))
+// // سازنده: منابع جدید را مقداردهی اولیه کرده و رشته تایمر را آغاز می‌کند.
+// savedata::savedata() : m_running_flush_thread(true), m_is_flushing(false), m_io_thread(boost::bind(&boost::asio::io_service::run, &m_io_service))
+// {
+//     // --- اضافه کردن work_guard ---
+//     // این خط io_service را فعال نگه می‌دارد تا حتی بدون کارهای pending هم run() خارج نشود.
+//     m_work_guard = std::make_unique<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>>(m_io_service.get_executor());
+//     // --- پایان اضافه ---
+
+//     m_flush_timer = std::make_unique<boost::asio::deadline_timer>(m_io_service);
+//     startFlushTimer(); // شروع تایمر برای فلش دوره‌ای
+// }
+
+// --- پیاده‌سازی سازنده جدید ---
+// این سازنده، کلاینت MongoDB را در زمان ساخت شیء savedata مقداردهی اولیه می‌کند.
+savedata::savedata(std::shared_ptr<MongoDB> db_client, Configurate::InfoDatabaseStruct db_info)
+    : m_running_flush_thread(true), m_is_flushing(false), m_io_thread(boost::bind(&boost::asio::io_service::run, &m_io_service)),
+      m_insert_database_client(db_client), m_insert_database_info(db_info) // مقداردهی اولیه اعضا در initializer list
 {
-    // --- اضافه کردن work_guard ---
     // این خط io_service را فعال نگه می‌دارد تا حتی بدون کارهای pending هم run() خارج نشود.
     m_work_guard = std::make_unique<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>>(m_io_service.get_executor());
-    // --- پایان اضافه ---
 
     m_flush_timer = std::make_unique<boost::asio::deadline_timer>(m_io_service);
     startFlushTimer(); // شروع تایمر برای فلش دوره‌ای
 }
+// --- پایان پیاده‌سازی سازنده جدید ---
 
 
 // تخریب‌کننده: تضمین می‌کند که رشته تایمر متوقف شده و منابع آزاد شوند.
@@ -31,18 +45,18 @@ savedata::~savedata()
 bool savedata::run(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH)
 {
 
-    // --- در اولین فراخوانی `run`، client مربوط به MongoDB را ذخیره می‌کنیم ---
-    // این کار تضمین می‌کند که m_insert_database_client و m_insert_database_info فقط یک بار تنظیم شوند.
-    // همچنین، در اینجا چک می‌کنیم که DH->InsertDatabase معتبر باشد.
-    static std::once_flag init_flag;
-    std::call_once(init_flag, [&]() {
-        if (DH->InsertDatabase) { // بررسی معتبر بودن shared_ptr
-            m_insert_database_client = DH->InsertDatabase;
-            m_insert_database_info = DH->InsertDatabaseInfo;
-        } else {
-            Logger::getInstance().logError("DH->InsertDatabase is null. Bulk insert will not work.");
-        }
-    });
+    // // --- در اولین فراخوانی `run`، client مربوط به MongoDB را ذخیره می‌کنیم ---
+    // // این کار تضمین می‌کند که m_insert_database_client و m_insert_database_info فقط یک بار تنظیم شوند.
+    // // همچنین، در اینجا چک می‌کنیم که DH->InsertDatabase معتبر باشد.
+    // static std::once_flag init_flag;
+    // std::call_once(init_flag, [&]() {
+    //     if (DH->InsertDatabase) { // بررسی معتبر بودن shared_ptr
+    //         m_insert_database_client = DH->InsertDatabase;
+    //         m_insert_database_info = DH->InsertDatabaseInfo;
+    //     } else {
+    //         Logger::getInstance().logError("DH->InsertDatabase is null. Bulk insert will not work.");
+    //     }
+    // });
 
 #ifdef INSERTDATABASE
     // Insert Database
