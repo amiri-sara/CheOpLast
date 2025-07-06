@@ -28,7 +28,8 @@ private:
     bool AddPlateCrop(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH);
     bool CreateBanner(const std::shared_ptr<DataHandler::DataHandlerStruct> &DH);
     
-    bool StoreImage(std::string FolderName, std::string ImageName, cv::Mat Image, bool EnableResize, int MaxSize);
+    // --- تغییر امضای متد StoreImage ---
+    bool StoreImage(std::string FolderName, std::string ImageName, const cv::Mat& Image, bool EnableResize, int MaxSize);
     void setPermissionsDir(std::string Path);
     int getLocationName(std::string Lat, std::string Lon, std::string &Response);
 };

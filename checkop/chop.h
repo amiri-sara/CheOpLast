@@ -37,6 +37,8 @@ using namespace gocr;
 
 class ChOp
 {
+
+
 public:
     enum CodeTypes
     {
@@ -76,6 +78,12 @@ public:
         ModelConfigStruct TZOCRConfig;
         ModelConfigStruct FZOCRConfig;
         ModelConfigStruct FROCRConfig;
+
+        // classifier
+        ModelConfigStruct CDConfig;
+        ModelConfigStruct LCCConfig;
+
+
         bool ignoreInputPlateType = false;
     };
 
@@ -150,7 +158,8 @@ public:
 private:
 
 
-    struct checkOpPlateResult {
+    struct checkOpPlateResult 
+    {
         // Rect2d bbox;
         string plateClass;
         float classConfidence;
@@ -160,7 +169,7 @@ private:
         // float probability = 0;
         string plateNumber;
         int plateType;
-    }m_results;
+    } m_results;
 
 
     struct ModelOutputStruct 
@@ -184,7 +193,7 @@ private:
         OCROutputStruct OCRResult;
     };
 
-    std::unique_ptr<NNModel> getModel(BaseNNConfig& conf, const std::string& modelData, const string& path);
+    std::unique_ptr<NNModel> getModel(BaseNNConfig& conf, const string& path);
 
     struct ModelsStruct
     {
@@ -192,6 +201,8 @@ private:
         std::unique_ptr<NNModel> PD = nullptr;
         std::unique_ptr<NNModel> PC = nullptr;
         std::unique_ptr<NNModel> FROCR = nullptr;
+        std::unique_ptr<NNModel> CD = nullptr;
+        std::unique_ptr<NNModel> LCC = nullptr;
         // std::shared_ptr<inference::Handler> PD      = nullptr;
         // std::shared_ptr<inference::Handler> PC      = nullptr;
         std::shared_ptr<inference::Handler> IROCR   = nullptr;

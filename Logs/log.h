@@ -40,6 +40,10 @@
 
 #include <curl/curl.h>
 
+// Include a faster JSON library, e.g., RapidJSON or simdjson
+#include <rapidjson/document.h>
+#include <rapidjson/error/en.h>
+
 #define SHOW_ERROR(X)             std::cout<<"\033[1;31m"<<X<<"\033[0m"<<std::endl
 #define SHOW_LOG(X)               std::cout<<"\033[1;32m"<<X<<"\033[0m"<<std::endl
 #define SHOW_WARNING(X)           std::cout<<"\033[1;33m"<<X<<"\033[0m"<<std::endl
@@ -163,5 +167,8 @@ private:
 #define CANNOTCREATEBANNER                                  657
 #define CANNOTADDPLATECROP                                  658
 #define CANNOTFINDIMAGE                                     659
+#define INVALIDSYSTEMCODE                                   664
+#define INVALIDCOMPANYCODE                                  665
+
 
 #endif // LOG_H

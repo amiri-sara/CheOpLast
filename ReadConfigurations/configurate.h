@@ -63,6 +63,7 @@ public:
         bool ReadFromMinIdTXT;
         bool UseBatchProduce = false;
         bool UseBatchConsume = false;
+        bool UseBulkImages = false;
         std::vector<Configurate::ClientServiceInfoStruct> OtherService;
 
     };
@@ -156,6 +157,7 @@ public:
         bool PassedVehicleRecordsId = false;
         bool CompanyCode            = false;
         bool SystemCode             = false;
+        bool EmsInfoId              = false;
     };
 
     struct ViolationStruct
@@ -185,6 +187,22 @@ public:
         Configurate::ModelConfigStruct TZOCR;
         Configurate::ModelConfigStruct FZOCR;
         Configurate::ModelConfigStruct FROCR;
+// classifier
+        Configurate::ModelConfigStruct CD;
+        Configurate::ModelConfigStruct LCC;
+
+    };
+
+    struct ClassifierStruct
+    { // classifier
+
+        bool active;
+        int NumberOfObjectPerService;
+        int NumberOfThreadPerService;
+        std::string ModelsPath;
+        Configurate::ModelConfigStruct CD;
+        Configurate::ModelConfigStruct LCC;
+
     };
 
     struct ClassifierModelConfigStruct : public ModelConfigStruct
@@ -194,13 +212,13 @@ public:
         bool UseRect               = false;
     };
 
-    struct ClassifierStruct
-    {
-        bool active;
-        int NumberOfObjectPerService;
-        std::string ModelsPath;
-        std::vector<Configurate::ClassifierModelConfigStruct> Models;
-    };
+    // struct ClassifierStruct
+    // {
+    //     bool active;
+    //     int NumberOfObjectPerService;
+    //     std::string ModelsPath;
+    //     std::vector<Configurate::ClassifierModelConfigStruct> Models;
+    // };
 
     struct ModulesStruct
     {

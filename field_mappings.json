@@ -1,0 +1,193 @@
+{
+  "fields": [
+    {
+      "internal_name": "DeviceID",
+      "external_keys": ["DeviceID", "DeviceId"],
+      "type": "integer",
+      "required": false
+    },
+    {
+      "internal_name": "RecordID",
+      "external_keys": ["EmsInfoId"],
+      "type": "uint64",
+      "required": false
+    },
+    {
+      "internal_name": "UserID",
+      "external_keys": ["UserID", "UserId"],
+      "type": "integer",
+      "required": false
+    },
+    {
+      "internal_name": "StreetID",
+      "external_keys": ["StreetID", "StreetId"],
+      "type": "integer",
+      "required": false
+    },
+    {
+      "internal_name": "ViolationID",
+      "external_keys": ["ViolationID", "ViolationId"],
+      "type": "integer",
+      "required": false
+    },
+    {
+      "internal_name": "Direction",
+      "external_keys": ["Direction"],
+      "type": "integer",
+      "required": false
+    },
+    {
+      "internal_name": "PlateType",
+      "external_keys": ["PlateType"],
+      "type": "integer",
+      "required": false
+    },
+    {
+      "internal_name": "PlateValue",
+      "external_keys": ["PlateValue"],
+      "type": "string",
+      "required": false
+    },
+    {
+      "internal_name": "Suspicious",
+      "external_keys": ["Suspicious"],
+      "type": "string",
+      "required": false
+    },
+    {
+      "internal_name": "Speed",
+      "external_keys": ["Speed"],
+      "type": "integer",
+      "required": false
+    },
+    {
+      "internal_name": "VehicleType",
+      "external_keys": ["VehicleType"],
+      "type": "integer",
+      "required": false
+    },
+    {
+      "internal_name": "VehicleColor",
+      "external_keys": ["VehicleColor"],
+      "type": "integer",
+      "required": false
+    },
+    {
+      "internal_name": "VehicleModel",
+      "external_keys": ["VehicleModel"],
+      "type": "integer",
+      "required": false
+    },
+    {
+      "internal_name": "Lane",
+      "external_keys": ["Lane"],
+      "type": "integer",
+      "required": false
+    },
+    {
+      "internal_name": "PassedTime",
+      "external_keys": ["PassedTime"],
+      "type": "string",
+      "required": false
+
+    },
+    {
+      "internal_name": "ColorImage",
+      "external_keys": ["ColorImage","Image"],
+      "type": "string",
+      "required": false
+
+    },
+    {
+      "internal_name": "ImageAddress",
+      "external_keys": ["ImageAddress"],
+      "type": "string",
+      "required": false
+    },
+    {
+      "internal_name": "PlateImage",
+      "external_keys": ["PlateImage"],
+      "type": "string",
+      "required": false
+  
+    },
+    {
+      "internal_name": "Latitude",
+      "external_keys": ["Latitude"],
+      "type": "double",
+      "required": false
+
+    },
+    {
+      "internal_name": "Longitude",
+      "external_keys": ["Longitude"],
+      "type": "double",
+      "required": false
+ 
+    },
+    {
+      "internal_name": "Accuracy",
+      "external_keys": ["Accuracy"],
+      "type": "integer",
+      "required": false
+
+    },
+    {
+      "internal_name": "PlateRect",
+      "external_keys": ["PlateRect"],
+      "type": "string",
+      "required": false
+ 
+    },
+    {
+      "internal_name": "CarRect",
+      "external_keys": ["CarRect"],
+      "type": "string",
+      "required": false
+    },
+    {
+      "internal_name": "CodeType",
+      "external_keys": ["CodeType"],
+      "type": "integer",
+      "required": false
+    },
+    {
+      "internal_name": "Probability",
+      "external_keys": ["Probability"],
+      "type": "integer",
+      "required": false
+
+    },
+    {
+      "internal_name": "MasterPlate",
+      "external_keys": ["MasterPlate","MasterPlateNumber"],
+      "type": "string",
+      "required": false
+    },
+    {
+      "internal_name": "ReceivedTime",
+      "external_keys": ["ReceivedTime"],
+      "type": "string",
+      "required": false
+
+    },
+    {
+      "internal_name": "SystemCode",
+      "external_keys": ["SystemCode","SystemId","systemId"],
+      "type": "integer",
+      "required": false
+
+    },
+    {
+      "internal_name": "CompanyCode",
+      "external_keys": ["CompanyId"],
+      "type": "integer",
+      "required": false
+
+    }
+
+  ]
+}
+
+
+

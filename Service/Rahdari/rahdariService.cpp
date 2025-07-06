@@ -52,10 +52,13 @@ void RahdariService::producerThread() {
         if(Info.empty()) 
         {
             Logger::getInstance().logError("Info is empty !!!");
-            boost::this_thread::sleep_for(boost::chrono::milliseconds(100));
+            boost::this_thread::sleep_for(boost::chrono::milliseconds(10));
             continue;
         } 
-        
+        std::vector<TTOInfo> batch_to_queue;
+
+        if(this->use_bulk_images)
+        {
 
         // Step 2: Fetch images in the same ID range
 
@@ -67,7 +70,6 @@ void RahdariService::producerThread() {
         }
 
         // Step 3: Match metadata and images by ID
-        std::vector<TTOInfo> batch_to_queue;
         for (auto& info : Info)
         {
             auto it = Images_map.find(info.TTOInfoId);
@@ -100,6 +102,47 @@ void RahdariService::producerThread() {
                 }
             }
 
+        }
+        }
+        else
+        {
+            // Step 2: Fetch images one by one
+            for (auto& info : Info) {
+                // Fetch single image for the current record
+                std::unordered_map<uint64_t, std::string> Images_map = getSingleImage(Url, info.TTOInfoId);
+                if(Images_map.empty()){
+                    Logger::getInstance().logError("ImageMap Is Empty !!!");
+                    continue;  //TODO HANDEL BETTER With try
+
+                }
+                
+                auto it = Images_map.find(info.TTOInfoId);
+                if(it != Images_map.end()){
+
+                    info.PlateImageBase64 = it->second;
+
+                    if(it->second == "Image Not Available" )  
+                        info.error = "Image Not Available" ;
+
+                    else if(it->second == "null" || it->second == "NULL"  )
+                        info.error = "Image Is NULL" ;
+                }else{
+                    info.error = "There Is No Image For This RecordId ." ;
+                }
+
+                // Step 3: Push to queue immediately for single mode
+                std::unique_lock<std::mutex> lock(queue_mutex);
+                record_queue.push(info);
+                if (record_queue.size() > this->ThresholdFetchedRecors) {
+                    lock.unlock();
+                    Logger::getInstance().logWarning("queue exceeds the threshold");
+                    std::unique_lock<std::mutex> wait_lock(queue_mutex);
+                    queue_not_full.wait(wait_lock, [this]() {
+                        return record_queue.size() <= this->ThresholdFetchedRecors / 2;
+                    });
+                }
+            }
+        }
 
         // Batch queueing (if enabled)
         if (this->use_batch_queueing && !batch_to_queue.empty()) {
@@ -118,25 +161,9 @@ void RahdariService::producerThread() {
             batch_to_queue.clear();
         }
 
+        // }
 
-        // // Lock the queue and push the record
-        //     {
-        //         std::unique_lock<std::mutex> lock(queue_mutex);
-        //         record_queue.push(info);
-        //         if (record_queue.size() > this->ThresholdFetchedRecors) {   // Notify that queue is full and wait for consumer to process
-
-        //         lock.unlock(); // Unlock before waiting to allow consumer to proceed
-        //         Logger::getInstance().logWarning("queue exceeds the threshold");
-        //         std::unique_lock<std::mutex> wait_lock(queue_mutex);
-        //         queue_not_full.wait(wait_lock, [this]() { 
-        //             return record_queue.size() <= this->ThresholdFetchedRecors / 2; 
-        //          });
-        //         }
-        //     }
-
-        }
-
-        boost::this_thread::sleep_for(boost::chrono::milliseconds(5));
+        boost::this_thread::sleep_for(boost::chrono::milliseconds(1));
     }
 }
 
@@ -145,13 +172,42 @@ void RahdariService::producerThread() {
 RahdariService::RahdariService(Configurate::ClientServiceConfigStruct ServiceConfig)
 {
     this->ClientServiceConfig = ServiceConfig;
+
+        // بارگذاری پیکربندی‌ها از Configurate Singleton به متغیرهای عضو
+    Configurate* ConfigurateObj = Configurate::getInstance();
+    m_hasInputFields = ConfigurateObj->getInputFields(); //
+    m_hasOutputFields = ConfigurateObj->getOutputFields(); //
+    m_StoreImageConfig = ConfigurateObj->getStoreImageConfig(); //
+    m_ViolationMap = ConfigurateObj->getViolationMap(); //
+    m_Cameras = ConfigurateObj->getCameras(); //
+    m_InsertDatabaseInfo = ConfigurateObj->getInsertDatabaseInfo(); //
+    m_FailedDatabaseInfo = ConfigurateObj->getFailedDatabaseInfo(); //
+    m_Modules = ConfigurateObj->getModules(); //
+    m_InsertDatabase = ConfigurateObj->getInsertDatabase(); //
+    m_FailedDatabase = ConfigurateObj->getFailedDatabase(); //
+    m_ConfigDatabase = ConfigurateObj->getConfigDatabase(); //
+    m_ConfigDatabaseInfo = ConfigurateObj->getConfigDatabaseInfo();
 }
 int RahdariService::init()
 {
     if(!this->ClientServiceConfig.ReadFromMinIdTXT)
     {
-        Configurate* ConfigurateObj = Configurate::getInstance();
-        this->MinId = ConfigurateObj->getMeta().last_processed_id;
+        // --- استفاده از متغیر عضو m_ConfigDatabaseInfo ---
+        std::vector<MongoDB::Field> MetaFindFields = {
+            {"_id", "last_processed_id", MongoDB::FieldType::String, "eq"}
+        };
+        MongoDB::FindOptionStruct Option;
+        std::vector<std::string> MetaDoc;
+        MongoDB::ResponseStruct FindReturn = m_ConfigDatabase->Find(m_ConfigDatabaseInfo.DatabaseName, "Meta", MetaFindFields, Option, MetaDoc); //
+
+        if(FindReturn.Code == MongoDB::MongoStatus::FindSuccessful && !MetaDoc.empty()) {
+            crow::json::rvalue AggregationConfigJSON = crow::json::load(MetaDoc[0]);
+            this->MinId = static_cast<uint64_t>(AggregationConfigJSON["PassedVehicleRecordsId"].i()); //
+        } else {
+            Logger::getInstance().logError("Could not find 'last_processed_id' in Meta collection. Starting from 0.");
+            this->MinId = 0;
+        }
+
         std::cout << "********************" << std::endl;
         std::cout<<"MinId: " <<this->MinId<<std::endl;
         std::cout << "********************" << std::endl;   
@@ -163,15 +219,12 @@ int RahdariService::init()
         }
         std::ifstream t("MinId.txt");
         std::cout << "********************" << std::endl;
-            // Read the entire file content into a string
         std::string minIdStr;
         t.seekg(0, std::ios::end);
         minIdStr.reserve(t.tellg());
         t.seekg(0, std::ios::beg);
         minIdStr.assign((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
-        // Output the raw string read from the file
         std::cout << "Raw MinId from file: " << minIdStr << std::endl;
-        // Convert string to long long
         try{
             this->MinId = std::stoll(minIdStr);
             std::cout << "Converted MinId: " << this->MinId << std::endl;
@@ -181,7 +234,6 @@ int RahdariService::init()
             } catch (const std::out_of_range& e) {
                 Logger::getInstance().logError("MinId value is out of range.");
                 return -1;
-            
         }
         std::cout << "********************" << std::endl;   
     }
@@ -189,12 +241,12 @@ int RahdariService::init()
 
     curl_global_init(CURL_GLOBAL_ALL);
 
-
     std::vector<boost::thread> threads;
     this->NumberOfProducerThread = this->ClientServiceConfig.ThreadNumber;
     this->ThresholdFetchedRecors = this->ClientServiceConfig.ThresholdFetchedRecors;
     this->use_batch_consume = this->ClientServiceConfig.UseBatchConsume;
     this->use_batch_queueing = this->ClientServiceConfig.UseBatchProduce;
+    this->use_bulk_images = this->ClientServiceConfig.UseBulkImages;
     
     for (int i = 0; i < this->NumberOfProducerThread; ++i) {
         threads.emplace_back(boost::bind(&RahdariService::producerThread, this)  );
@@ -204,13 +256,21 @@ int RahdariService::init()
         thread.detach();
     }
 
-
     return 0; // Success
 }
 void RahdariService::run()
 {
+        // --- تغییرات: ایجاد اشیاء storeimageobj و savedataobj یک بار برای هر رشته Consumer ---
+    // این اشیاء در ابتدای اجرای تابع run توسط هر ترد Consumer ساخته می‌شوند
+    // و تا پایان عمر آن ترد/تابع پابرجا خواهند بود.
+    std::shared_ptr<storeimage> storeimageobj = std::make_shared<storeimage>();
+    // std::shared_ptr<savedata> savedataobj = std::make_shared<savedata>();
+    // --- پایان تغییرات ---
+    // --- پاس دادن m_InsertDatabase و m_InsertDatabaseInfo به سازنده savedata ---
+    std::shared_ptr<savedata> savedataobj = std::make_shared<savedata>(this->m_InsertDatabase, this->m_InsertDatabaseInfo);
+    // --- پایان تغییر ---
 
-    while(true)
+    while(!stop.load())
     {
         TTOInfo record;
         std::vector<TTOInfo> recordsVec;
@@ -218,57 +278,50 @@ void RahdariService::run()
         {
             std::lock_guard<std::mutex> lock(queue_mutex);
             if (record_queue.empty()) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
             continue;
             }
 
-            if (this->use_batch_consume) {
-                // Batch consume: Pop up to batch_size records
+            if (this->use_batch_consume) { // Batch consume: Pop up to batch_size records
+                
                 size_t count = 0;
                 while (!record_queue.empty() && count < InfoCount) {
                     recordsVec.push_back(record_queue.front());
                     record_queue.pop();
                     ++count;
                 }
-            } else {
-                // Single-record consume
+            } else {  // Single-record consume
+               
                 recordsVec.push_back(record_queue.front());
                 record_queue.pop();
             }
 
-            // Notify producer if queue size is below threshold
+           
             if (record_queue.size() <= this->ThresholdFetchedRecors / 2) {
-                queue_not_full.notify_one();
+                queue_not_full.notify_one();   // Notify producer if queue size is below threshold
             }
-
-
-
-            // record = record_queue.front();
-            // record_queue.pop();
-
-            // // Notify producer if queue size is now below or at threshold
-            // if (record_queue.size() <= this->ThresholdFetchedRecors /2) {
-            //     queue_not_full.notify_one();
-            // }
-            
+            queueSize = record_queue.size();            
 
         }
         for (auto& record : recordsVec) {
-
+            auto processStartTime = std::chrono::high_resolution_clock::now();
             std::shared_ptr<DataHandler::DataHandlerStruct> DH = std::make_shared<DataHandler::DataHandlerStruct>();
-            Configurate* ConfigurateObj = Configurate::getInstance();
-            DH->hasInputFields = ConfigurateObj->getInputFields();
-            DH->hasOutputFields = ConfigurateObj->getOutputFields();
-            DH->StoreImageConfig = ConfigurateObj->getStoreImageConfig();
-            DH->ViolationMap = ConfigurateObj->getViolationMap();
-            DH->Cameras = ConfigurateObj->getCameras();
-            // DH->DaysforPassedTimeAcceptable = this->WebServiceConfig.DaysforPassedTimeAcceptable;
-            DH->InsertDatabase = ConfigurateObj->getInsertDatabase();
-            DH->InsertDatabaseInfo = ConfigurateObj->getInsertDatabaseInfo();
-            DH->FailedDatabase = ConfigurateObj->getFailedDatabase();
-            DH->FailedDatabaseInfo = ConfigurateObj->getFailedDatabaseInfo();
-            DH->Modules = ConfigurateObj->getModules();
+            // --- شروع تغییرات برای بهینه‌سازی بارگذاری پیکربندی ---
+            // استفاده از متغیرهای عضو به جای بارگذاری مجدد از Configurate Singleton
+            DH->hasInputFields = m_hasInputFields; //
+            DH->hasOutputFields = m_hasOutputFields; //
+            DH->StoreImageConfig = m_StoreImageConfig; //
+            DH->ViolationMap = m_ViolationMap; //
+            DH->Cameras = m_Cameras; //
+            DH->InsertDatabase = m_InsertDatabase; //
+            DH->InsertDatabaseInfo = m_InsertDatabaseInfo; //
+            DH->FailedDatabase = m_FailedDatabase; //
+            DH->FailedDatabaseInfo = m_FailedDatabaseInfo; //
+            DH->Modules = m_Modules; //
             DH->DebugMode = this->ClientServiceConfig.DebugMode;
+            DH->ConfigDatabase = m_ConfigDatabase; //
+            DH->ConfigDatabaseInfo = m_ConfigDatabaseInfo; //
+            // --- پایان تغییرات برای بهینه‌سازی بارگذاری پیکربندی ---
 
             DH->Input.DeviceID        =     record.DeviceId;
             DH->Input.Lane            =     record.LineNumber;
@@ -361,101 +414,74 @@ void RahdariService::run()
             auto CheckOpTime =  std::chrono::duration_cast<std::chrono::milliseconds>(CheckOpFinishTime - CheckOpStartTime).count();
             chopTime += CheckOpTime;
 
-            // if(DH->DebugMode)
-            // SHOW_IMPORTANTLOG3("ProccessTime(ms) = " << std::to_string(CheckOpTime.count()) << std::endl );
+            if(DH->DebugMode)
+                SHOW_IMPORTANTLOG3("ProccessTime(ms) = " << std::to_string(CheckOpTime) << std::endl );
 
 
-            auto storeImageStartTime = std::chrono::high_resolution_clock::now();
+        // auto storeImageDH = std::make_shared<DataHandler::DataHandlerStruct>(DH); // Copy DH for thread safety
+        threadPool->enqueue([DH, this, storeimageobj, savedataobj]() {
+           
 #ifdef STOREIMAGE
-            // 4- Store Image
-            std::shared_ptr<storeimage> storeimageobj = std::make_shared<storeimage>();
-            if(!(storeimageobj->run(DH)))
-            {
-                // Response["Status"] = DH->Response.errorCode;
-                // Response["Description"] = DH->Response.Description;
-                // if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
-                //     Response["RecordID"] = DH->ProcessedInputData.MongoID;
-                // Response["IP"] = DH->Request.remoteIP;
-                // if(DH->FailedDatabaseInfo.Enable)
-                // {
-                //     std::vector<MongoDB::Field> fields = {
-                //         {"Status", std::to_string(DH->Response.errorCode), MongoDB::FieldType::Integer},
-                //         {"Description", DH->Response.Description, MongoDB::FieldType::String},
-                //         {"IP", DH->Request.remoteIP, MongoDB::FieldType::String}
-                //     };
+             auto storeImageStartTime = std::chrono::high_resolution_clock::now();
+            // std::shared_ptr<storeimage> storeimageobj = std::make_shared<storeimage>();
+            if (!storeimageobj->run(DH)) {
 
-                //     if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
-                //     {
-                //         MongoDB::Field RecordIDField = {"RecordID", DH->ProcessedInputData.MongoID, MongoDB::FieldType::ObjectId};
-                //         fields.push_back(RecordIDField);
-                //     }
-
-                //     DH->FailedDatabase ->Insert(DH->FailedDatabaseInfo.DatabaseName, DH->FailedDatabaseInfo.CollectionName, fields);
-                // }
-                // SHOW_ERROR(crow::json::dump(Response));
-                // ClientResponse["Status"] = DH->Response.errorCode;
-                // ClientResponse["Description"] = DH->Response.Description;
-                // return crow::response{DH->Response.HTTPCode , ClientResponse};
             }
-#endif // STOREIMAGE
+        // });
+            storeImageCounter++;
             auto storeImageFinishTime = std::chrono::high_resolution_clock::now();
-            auto storeImaheTime =  std::chrono::duration_cast<std::chrono::nanoseconds>(storeImageFinishTime - storeImageStartTime);     
+            auto storeImaheTime =  std::chrono::duration_cast<std::chrono::microseconds>(storeImageFinishTime - storeImageStartTime).count();
+            storeImageTime +=storeImaheTime;
+            if(DH->DebugMode){
+            	SHOW_IMPORTANTLOG3("storeImageTime(microseconds) = " << std::to_string(storeImaheTime) << std::endl );
+            	SHOW_IMPORTANTLOG3("storeImageCounter = " << std::to_string(storeImageCounter) << std::endl );
+            	}       
+#endif //STOREIMAGE
+            
 #ifdef INSERTDATABASE
             auto saveDataStartTime = std::chrono::high_resolution_clock::now();
         // 6- Save Data
-            std::shared_ptr<savedata> savedataobj = std::make_shared<savedata>();
+            // std::shared_ptr<savedata> savedataobj = std::make_shared<savedata>();
 
                 if(!(savedataobj->run(DH)))
                 {
-                //     Response["Status"] = DH->Response.errorCode;
-                //     Response["Description"] = DH->Response.Description;
-                //     // if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
-                //     Response["RecordID"] = DH->Input.PassedVehicleRecordsId;
-                //     Response["CompanyCode"] = DH->Input.CompanyCode;
-                //     if(DH->FailedDatabaseInfo.Enable)
-                //     {
-                //         std::vector<MongoDB::Field> fields = {
-                //         {"Status", std::to_string(DH->Response.errorCode), MongoDB::FieldType::Integer},
-                //         {"Description", DH->Response.Description, MongoDB::FieldType::String},
-                //         {"CompanyCode", std::to_string(DH->Input.CompanyCode), MongoDB::FieldType::Integer}
-                //     };
-                //     //                 if(DH->hasInputFields.DeviceID && DH->hasInputFields.ViolationID && DH->hasInputFields.PassedTime && DH->hasInputFields.PlateValue)
-                //     // {
-                //     MongoDB::Field RecordIDField = {"RecordID", std::to_string(DH->Input.PassedVehicleRecordsId), MongoDB::FieldType::Int64};
-                //     fields.push_back(RecordIDField);
-                //     // }
 
-                //     DH->FailedDatabase ->Insert(DH->FailedDatabaseInfo.DatabaseName, DH->FailedDatabaseInfo.CollectionName, fields);
 
-                //     }
-
-                //     Logger::getInstance().logError(crow::json::dump(Response));
-
-                // }
-
+                }
+                processCounter++;
+                saveRecordCounter++;
+                if(processCounter > 1000)
+                {
+                    std::vector<MongoDB::Field> MetaUpdateFields = { 
+                    {"PassedVehicleRecordsId", std::to_string(DH->Input.RecordID), MongoDB::FieldType::Int64, "set"} //TODO  Think for better 
+                    };
+                    DH->ConfigDatabase->Update_one(DH->ConfigDatabaseInfo.DatabaseName,"Meta",MetaFindFields,MetaUpdateFields);
+                    processCounter.exchange(0);
+                }
                 auto SaveEndTime = std::chrono::high_resolution_clock::now();
-                double durationSaveTime = std::chrono::duration_cast<std::chrono::milliseconds>(SaveEndTime - saveDataStartTime).count();
-
-                // MinId_mutex.lock();
-                std::vector<MongoDB::Field> MetaUpdateFields = { 
-                    {"PassedVehicleRecordsId", std::to_string(DH->Input.PassedVehicleRecordsId), MongoDB::FieldType::Int64, "set"} //TODO  Think for better 
-                };
-                DH->ConfigDatabase->Update_one(DH->ConfigDatabaseInfo.DatabaseName,"Meta",MetaFindFields,MetaUpdateFields);
-            }
+                double durationSaveTime = std::chrono::duration_cast<std::chrono::microseconds>(SaveEndTime - saveDataStartTime).count();
+                saveRecordTime += durationSaveTime;
+	            if(DH->DebugMode)
+                    SHOW_IMPORTANTLOG3("saveRecordTime(microseconds) = " << std::to_string(durationSaveTime) << std::endl );
 
 #endif //Save Data
+
+
+        
+        });
+        auto endTime = std::chrono::high_resolution_clock::now();
+        double durationTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - processStartTime).count();
+        if(DH->DebugMode)
+            SHOW_IMPORTANTLOG3("durationTime one Record (milliseconds) = " << std::to_string(durationTime) << std::endl );
         }
 
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        std::this_thread::sleep_for(std::chrono::milliseconds(2));
+        
 
     }
 }
 
-
-
 RahdariService::getImagesResultStruct RahdariService::parsePlateImages(const std::string& jsonString, uint64_t MinId) {
-
     getImagesResultStruct result; // Initialize the result struct
 
     rapidjson::Document document;
@@ -463,80 +489,275 @@ RahdariService::getImagesResultStruct RahdariService::parsePlateImages(const std
         std::cerr << "Image JSON Parse Error: " << rapidjson::GetParseError_En(document.GetParseError()) << std::endl;
         result.Error = rapidjson::GetParseError_En(document.GetParseError());
         result.ErrorCode = INVALIDJSON;
-        return result; // Return empty ResponseValue on error
+        return result;
     }
 
-// // Check for "Error" field in the JSON (uncommented and improved)
-//     if (document.HasMember("Error") && document["Error"].IsString()) {
-//         result.Error = document["Error"].GetString();
-//         result.ErrorCode = SERVERERROR; // Or a specific error code for server-reported errors
-//         std::cerr << "Image Server reported error: " << result.Error << std::endl;
-//         return result;
-//     }
-
-    if (!document.IsArray()) {
-        Logger::getInstance().logError("The record received is not in the correct format !!! ["+ std::to_string(MinId)+"]");
-        result.Error = "JSON is not an array";
-        result.ErrorCode = INVALIDTYPE;
-        return result; // Return early if top-level JSON is not an array
-    }
-
-        // Log if the array is empty
-    if (document.Empty()) {
-        Logger::getInstance().logError("The document array is empty. Skipping record... [" + std::to_string(MinId) + "]");
-        result.Error = "Image Array is Empty";
-        result.ErrorCode = EMPTYRESPONSE;
-        return result; //s Return early if array is emptys
-    }
-
-    // Reserve space in the map if you have an idea of the number of records
-    result.PlateImages_map.reserve(document.Size());
-    ImageCounter += document.Size();
-
-    for (const auto& item : document.GetArray()) {
-        // Validate that each element is an json object
+    // Helper lambda to process a single image object
+    auto processImageObject = [&](const rapidjson::Value& item) {
+        // Validate that item is a JSON object
         if (!item.IsObject()) {
-            Logger::getInstance().logWarning("Invalid record format: Expected an json object. Skipping record...["+ std::to_string(MinId)+"]");
-            result.Error = "Item in 'Images' array is not an object";
+            std::string errorMsg = item.IsArray() ? "Item is an array, expected a JSON object" : "Item is not a JSON object";
+            Logger::getInstance().logWarning(errorMsg + ". Skipping record...[" + std::to_string(MinId) + "]");
+            result.Error = errorMsg;
             result.ErrorCode = INVALIDTYPE;
-            std::cerr << result.Error << std::endl;
-            continue; // Skip non-object elements
+            return false;
         }
 
-        // Validate the presence and types of required fields
-        if (!item.HasMember("tid") ||!item.HasMember("plate_image") ){ //|| !item["plate_image"].IsString()) {
-            
-            Logger::getInstance().logWarning("Record missing required fields or invalid field types. Skipping record...["+ std::to_string(MinId)+"]");
+        // Validate required fields
+        if (!item.HasMember("tid") || !item.HasMember("plate_image")) {
+            Logger::getInstance().logWarning("Record missing required fields. Skipping record...[" + std::to_string(MinId) + "]");
             result.Error = "Missing 'tid' or 'plate_image' field in JSON response";
             result.ErrorCode = MISSINGFIELD;
-            continue; // Skip records with missing or invalid fields
+            return false;
         }
 
         uint64_t tid = item["tid"].GetUint64();
         std::string plate_image;
 
-        if(item["plate_image"].IsString()){ 
-
+        if (item["plate_image"].IsString()) {
             plate_image = item["plate_image"].GetString();
-
-// Efficiently remove newline characters
-            plate_image.erase(std::remove(plate_image.begin(), plate_image.end(), '\n'), plate_image.end());
-
-
-        }else if(item["plate_image"].IsNull()){
-            // result.Error = "Image Is NULL";
+            // Efficiently remove newline characters
+            // plate_image.erase(std::remove(plate_image.begin(), plate_image.end(), '\n'), plate_image.end());
+        } else if (item["plate_image"].IsNull()) {
             plate_image = "null";
             nullImageCounter++;
-            if(this->ClientServiceConfig.DebugMode)
-                Logger::getInstance().logWarning("Image Is NULL With tid : " +std::to_string(tid)); //TODO RETURN CODE TYPE;
+            if (this->ClientServiceConfig.DebugMode)
+                Logger::getInstance().logWarning("Image Is NULL With tid: " + std::to_string(tid));
         }
 
         result.PlateImages_map[tid] = std::move(plate_image); // Move instead of copy
+        return true;
+    };
 
+    // Check if JSON is an array (batch images) or single object
+    if (document.IsArray()) {
+        // Handle batch images
+        if (document.Empty()) {
+            Logger::getInstance().logError("The document array is empty. Skipping record... [" + std::to_string(MinId) + "]");
+            result.Error = "Image Array is Empty";
+            result.ErrorCode = EMPTYRESPONSE;
+            return result;
+        }
+
+        // Reserve space in the map
+        result.PlateImages_map.reserve(document.Size());
+        ImageCounter += document.Size();
+
+        // Process each item in the array
+        for (const auto& item : document.GetArray()) {
+            processImageObject(item);
+        }
+    } else if (document.IsObject()) {
+        // Handle single image
+        result.PlateImages_map.reserve(1);
+        ImageCounter += 1;
+
+        if (processImageObject(document)) {
+            // Successfully processed single image
+        } else {
+            // Return with error if single image processing fails
+            return result;
+        }
+    } else {
+        Logger::getInstance().logError("The record received is not in the correct format (neither array nor object) [" + std::to_string(MinId) + "]");
+        result.Error = "JSON is neither an array nor an object";
+        result.ErrorCode = INVALIDTYPE;
+        return result;
+    }
+
+    return result; // Return the result struct
+}
+
+// RahdariService::getImagesResultStruct RahdariService::parsePlateImages(const std::string& jsonString, uint64_t MinId) {
+
+//     getImagesResultStruct result; // Initialize the result struct
+
+//     rapidjson::Document document;
+//     if (document.Parse(jsonString.c_str()).HasParseError()) {
+//         std::cerr << "Image JSON Parse Error: " << rapidjson::GetParseError_En(document.GetParseError()) << std::endl;
+//         result.Error = rapidjson::GetParseError_En(document.GetParseError());
+//         result.ErrorCode = INVALIDJSON;
+//         return result; // Return empty ResponseValue on error
+//     }
+
+// // // Check for "Error" field in the JSON (uncommented and improved)
+// //     if (document.HasMember("Error") && document["Error"].IsString()) {
+// //         result.Error = document["Error"].GetString();
+// //         result.ErrorCode = SERVERERROR; // Or a specific error code for server-reported errors
+// //         std::cerr << "Image Server reported error: " << result.Error << std::endl;
+// //         return result;
+// //     }
+
+//     if (!document.IsArray()) {
+//         Logger::getInstance().logError("The record received is not in the correct format !!! ["+ std::to_string(MinId)+"]");
+//         result.Error = "JSON is not an array";
+//         result.ErrorCode = INVALIDTYPE;
+//         return result; // Return early if top-level JSON is not an array
+//     }
+
+//         // Log if the array is empty
+//     if (document.Empty()) {
+//         Logger::getInstance().logError("The document array is empty. Skipping record... [" + std::to_string(MinId) + "]");
+//         result.Error = "Image Array is Empty";
+//         result.ErrorCode = EMPTYRESPONSE;
+//         return result; //s Return early if array is emptys
+//     }
+
+//     // Reserve space in the map if you have an idea of the number of records
+//     result.PlateImages_map.reserve(document.Size());
+//     ImageCounter += document.Size();
+
+//     for (const auto& item : document.GetArray()) {
+//         // Validate that each element is an json object
+//         if (!item.IsObject()) {
+//             Logger::getInstance().logWarning("Invalid record format: Expected an json object. Skipping record...["+ std::to_string(MinId)+"]");
+//             result.Error = "Item in 'Images' array is not an object";
+//             result.ErrorCode = INVALIDTYPE;
+//             std::cerr << result.Error << std::endl;
+//             continue; // Skip non-object elements
+//         }
+
+//         // Validate the presence and types of required fields
+//         if (!item.HasMember("tid") ||!item.HasMember("plate_image") ){ //|| !item["plate_image"].IsString()) {
+            
+//             Logger::getInstance().logWarning("Record missing required fields or invalid field types. Skipping record...["+ std::to_string(MinId)+"]");
+//             result.Error = "Missing 'tid' or 'plate_image' field in JSON response";
+//             result.ErrorCode = MISSINGFIELD;
+//             continue; // Skip records with missing or invalid fields
+//         }
+
+//         uint64_t tid = item["tid"].GetUint64();
+//         std::string plate_image;
+
+//         if(item["plate_image"].IsString()){ 
+
+//             plate_image = item["plate_image"].GetString();
+
+// // Efficiently remove newline characters
+//             plate_image.erase(std::remove(plate_image.begin(), plate_image.end(), '\n'), plate_image.end());
+
+
+//         }else if(item["plate_image"].IsNull()){
+//             // result.Error = "Image Is NULL";
+//             plate_image = "null";
+//             nullImageCounter++;
+//             if(this->ClientServiceConfig.DebugMode)
+//                 Logger::getInstance().logWarning("Image Is NULL With tid : " +std::to_string(tid)); //TODO RETURN CODE TYPE;
+//         }
+
+//         result.PlateImages_map[tid] = std::move(plate_image); // Move instead of copy
+
+
+//         }
+        
+//     return result; // Return the result struct
+// }
+
+std::unordered_map<uint64_t, std::string> RahdariService::getSingleImage(const std::string& Url, uint64_t Id)
+{
+    std::unordered_map<uint64_t, std::string> result;
+    std::string requestUrl = Url + "/getplateimage/";
+    CURL* curl = curl_easy_init();
+    if(curl)
+    {
+        curl_easy_setopt(curl, CURLOPT_URL, requestUrl.c_str());
+        std::string Packet = (std::string)"{\"username\": \"sharif\",\"password\":\"sharif@@654\",\"tid\":"+std::to_string(Id)+"}";
+        // SHOW_IMPORTANTLOG("getplateimage_packet: " <<Packet<<"\n");
+
+
+        struct curl_slist* HList = NULL;
+        HList = curl_slist_append(HList, "Content-Type: application/json");
+        HList = curl_slist_append(HList, "Accept: application/json");
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, HList);
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, Packet.c_str());
+        std::string response;
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeToString);
+
+        long http_code = 0;
+        const int maxRetries = 3;
+        int retryCount = 0;
+        int64_t duration_Image = 0;
+        CURLcode res ;
+        while(retryCount < maxRetries)
+        {
+                                // Start timing the request
+            auto startTimeRequest = std::chrono::high_resolution_clock::now();
+            res = curl_easy_perform(curl);
+                    // End timing the request
+            auto endTimeRequest = std::chrono::high_resolution_clock::now();
+            duration_Image = std::chrono::duration_cast<std::chrono::milliseconds>(endTimeRequest - startTimeRequest).count();
+            curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
+            if (res == CURLE_OK) 
+                break; // Success, exit retry loop
+
+            else if(http_code == 429) {
+            Logger::getInstance().logError("Rate limit hit for URL: " + requestUrl);
+            std::this_thread::sleep_for(std::chrono::seconds(5)); // Wait before retry
+            continue;
+            // Retry logic here
+            }else
+            {
+            Logger::getInstance().logError("Attempt " + std::to_string(retryCount + 1) + " curl_easy_perform() failed for URL: " + requestUrl +
+                                " Error: " + curl_easy_strerror(res) +
+                                " HTTP Code: " + (http_code ? std::to_string(http_code) : "N/A"));
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000 * retryCount)); // Exponential backoff
+            }
+        retryCount++;
 
         }
-        
-    return result; // Return the result struct
+        ImageRequestTime+=duration_Image;
+        ImageRequestCounter ++;
+        if (res != CURLE_OK) {
+            Logger::getInstance().logError("All retries failed for URL: " + requestUrl);
+
+            std::string errorMsg = curl_easy_strerror(res);
+            if (res == CURLE_COULDNT_RESOLVE_HOST) {
+                Logger::getInstance().logError("DNS resolution failed for URL: " + requestUrl);
+                return {}; // No retry for DNS issues
+            } else if (res == CURLE_HTTP_RETURNED_ERROR) {
+                long http_code = 0;
+                curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
+                Logger::getInstance().logError("HTTP error " + std::to_string(http_code) +
+                                            " for URL: " + requestUrl);
+                // Handle specific HTTP codes (e.g., 429 for rate-limiting)
+            }
+            Logger::getInstance().logError("curl_easy_perform() failed for URL: " + requestUrl +
+                                        " Error: " + errorMsg);
+
+            return {}; // Return empty vector on failure 
+        }else{
+            //SHOW_WARNING( "Response is : " << response);
+            // ResponseValue ResVal = getResponseValue(response,"getPlateImage");
+            curl_slist_free_all(HList);
+            curl_easy_cleanup(curl);
+            auto parseStartTime = std::chrono::high_resolution_clock::now();
+
+            auto ResVal = parsePlateImages(response,Id);
+                    // End timing the JSON parsing
+            auto parseEndTime = std::chrono::high_resolution_clock::now();
+            double parseDuration = std::chrono::duration_cast<std::chrono::milliseconds>(parseEndTime - parseStartTime).count();
+            
+            if(ResVal.Error == ""){
+                result = ResVal.PlateImages_map;
+                return result;
+            }
+
+            else{
+                std::cout<<"Could not get Image: "<<ResVal.Error<<std::endl;
+                return {};
+
+            }
+        }
+        // curl_slist_free_all(HList);
+        // curl_easy_cleanup(curl);
+    }
+    else
+    {
+        std::cout<<"curl_easy_init() failed: curl is NULL"<<std::endl;
+        return {}; // Return empty map on failure
+    }
+    // return result;
 }
 
 std::unordered_map<uint64_t, std::string> RahdariService::getImageBase64_bulk(const std::string& Url, uint64_t MinId, uint64_t MaxId)
@@ -1032,6 +1253,41 @@ RahdariService::ResponseValue RahdariService::getResponseValue(const std::string
 
             }
             
+    }
+    else if(ResType == "getPlateImage")
+    {
+        // ResponseValue ResVal;
+
+    //std::cout << "getResponseValue input is : " << Response << std::endl;
+
+    try
+    {
+        boost::property_tree::ptree InputJson;
+
+        std::stringstream InputJsonStructure;
+        InputJsonStructure << jsonString;
+        boost::property_tree::read_json(InputJsonStructure, InputJson);
+
+        // std::cout << InputJsonStructure.str() << std::endl;
+
+        resVal.Error = InputJson.get<std::string>("Error", "");
+        resVal.ImageResult.TTOInfoId = std::to_string(InputJson.get<int>("tid", -1));
+
+//        std::string tmpcolor = InputJson.get<std::string>("color_image", "");
+        std::string tmpplate = InputJson.get<std::string>("plate_image", "");
+
+//        tmpcolor.erase(std::remove(tmpcolor.begin(), tmpcolor.end(), '\n'), tmpcolor.end());
+        tmpplate.erase(std::remove(tmpplate.begin(), tmpplate.end(), '\n'), tmpplate.end());
+
+        //std::cout << "plate image is : "  <<  tmpplate << std::endl;
+
+//        ResVal.ImageResult.ColorImage = tmpcolor;
+        resVal.ImageResult.PlateImageBase64 = tmpplate;
+    }
+    catch(...)
+    {
+        std::cout<<"Invalid Json Packet !!!"<<std::endl;
+    }
     }
 
     return resVal;

@@ -4,3 +4,5 @@ RequiredـDocuments
 build/
 .vscode/
 .VSCodeCounter/
+perf.data
+perf.data.old
